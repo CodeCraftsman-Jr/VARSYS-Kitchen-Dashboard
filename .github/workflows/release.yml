@@ -1,0 +1,223 @@
+name: 🚀 Build and Release VARSYS Kitchen Dashboard
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.1)'
+        required: true
+        default: 'v1.0.1'
+
+jobs:
+  security-check:
+    name: 🔒 Security Verification
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run security verification
+      run: python verify_security.py
+    
+    - name: Check for sensitive files
+      run: |
+        if (Test-Path "secure_credentials/firebase_credentials.json") {
+          $content = Get-Content "secure_credentials/firebase_credentials.json" -Raw
+          if ($content -match "YOUR_ACTUAL_") {
+            Write-Error "Firebase credentials not properly configured"
+            exit 1
+          }
+        }
+
+  build:
+    name: 🏗️ Build Secure Executable
+    runs-on: windows-latest
+    needs: security-check
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Build secure executable
+      run: python build_secure.py
+      env:
+        VARSYS_APP_SECRET: ${{ secrets.VARSYS_APP_SECRET }}
+        VARSYS_FIREBASE_SECRET: ${{ secrets.VARSYS_FIREBASE_SECRET }}
+        VARSYS_INTEGRITY_KEY: ${{ secrets.VARSYS_INTEGRITY_KEY }}
+    
+    - name: Verify executable
+      run: |
+        if (!(Test-Path "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe")) {
+          Write-Error "Executable not found"
+          exit 1
+        }
+        $size = (Get-Item "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe").Length
+        Write-Output "Executable size: $($size / 1MB) MB"
+    
+    - name: Create release package
+      run: |
+        New-Item -ItemType Directory -Force -Path "release"
+        Copy-Item "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe" "release/"
+        Copy-Item "README.md" "release/"
+        Copy-Item "LICENSE" "release/"
+        Copy-Item "COMMERCIAL_SETUP_GUIDE.md" "release/"
+        
+        # Create installation guide
+        @"
+        # 🍳 VARSYS Kitchen Dashboard Installation Guide
+        
+        ## Quick Start
+        1. Download VARSYS_Kitchen_Dashboard.exe
+        2. Run the executable (no installation required)
+        3. Activate with your license key
+        4. Start managing your kitchen!
+        
+        ## System Requirements
+        - Windows 10/11 (64-bit)
+        - 4GB RAM minimum, 8GB recommended
+        - 2GB free disk space
+        - Internet connection for cloud features
+        
+        ## Getting a License
+        📧 Email: sales@varsys.com
+        📱 WhatsApp: +91-XXXXX-XXXXX
+        🌐 Website: www.varsys.com
+        
+        ## Support
+        - Documentation: https://github.com/${{ github.repository }}/wiki
+        - Issues: https://github.com/${{ github.repository }}/issues
+        - Email: support@varsys.com
+        "@ | Out-File -FilePath "release/INSTALLATION.md" -Encoding UTF8
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: varsys-kitchen-dashboard
+        path: release/
+
+  release:
+    name: 📦 Create GitHub Release
+    runs-on: windows-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: varsys-kitchen-dashboard
+        path: release/
+    
+    - name: Get version
+      id: version
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ github.event.inputs.version }}"
+        } else {
+          $version = "${{ github.ref_name }}"
+        }
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "Version: $version"
+    
+    - name: Create ZIP package
+      run: |
+        $version = "${{ steps.version.outputs.version }}"
+        Compress-Archive -Path "release/*" -DestinationPath "VARSYS_Kitchen_Dashboard_$version.zip"
+    
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        $version = "${{ steps.version.outputs.version }}"
+        $notes = @"
+        # 🍳 VARSYS Kitchen Dashboard $version
+        
+        ## 🚀 What's New
+        - ✅ Complete kitchen management system
+        - ✅ AI-powered business insights  
+        - ✅ Firebase cloud synchronization
+        - ✅ Commercial licensing system
+        - ✅ Enterprise-grade security
+        - ✅ Professional user interface
+        
+        ## 📦 Download Options
+        - **Windows Executable**: ``VARSYS_Kitchen_Dashboard.exe`` (Recommended)
+        - **Complete Package**: ``VARSYS_Kitchen_Dashboard_$version.zip``
+        - **Source Code**: Available below
+        
+        ## 🔐 Commercial Licensing
+        This software requires a commercial license for business use:
+        - **Single Restaurant**: ₹15,000/year
+        - **Multi-Location**: ₹45,000/year  
+        - **Enterprise**: Custom pricing
+        
+        📧 Contact: sales@varsys.com for licensing
+        
+        ## ✨ Key Features
+        - 📦 Advanced inventory management
+        - 💰 Financial tracking and budgeting
+        - 📊 Sales analytics and reporting
+        - 🤖 AI-powered insights and forecasting
+        - ☁️ Secure cloud synchronization
+        - 🎨 Modern, responsive interface
+        
+        ## 📋 System Requirements
+        - **OS**: Windows 10/11 (64-bit)
+        - **RAM**: 4GB minimum, 8GB recommended
+        - **Storage**: 2GB free space
+        - **Network**: Internet connection for cloud features
+        
+        ## 🚀 Quick Start
+        1. Download ``VARSYS_Kitchen_Dashboard.exe``
+        2. Run the executable (no installation required)
+        3. Activate with your license key
+        4. Start managing your kitchen operations!
+        
+        ## 📞 Support
+        - 📧 Email: support@varsys.com
+        - 📖 Documentation: [Wiki](../../wiki)
+        - 🐛 Issues: [GitHub Issues](../../issues)
+        - 💬 Discussions: [GitHub Discussions](../../discussions)
+        
+        ---
+        **Built with ❤️ for the food service industry**
+        "@
+        
+        $notes | Out-File -FilePath "release_notes.md" -Encoding UTF8
+        echo "notes_file=release_notes.md" >> $env:GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: 🍳 VARSYS Kitchen Dashboard ${{ steps.version.outputs.version }}
+        body_path: ${{ steps.release_notes.outputs.notes_file }}
+        files: |
+          release/VARSYS_Kitchen_Dashboard.exe
+          VARSYS_Kitchen_Dashboard_${{ steps.version.outputs.version }}.zip
+          release/INSTALLATION.md
+          release/COMMERCIAL_SETUP_GUIDE.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

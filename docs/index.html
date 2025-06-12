@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍳 VARSYS Kitchen Dashboard - Professional Kitchen Management</title>
+    <meta name="description" content="Professional kitchen management system with AI-powered insights, Firebase sync, and commercial licensing. Perfect for restaurants and commercial kitchens.">
+    <meta name="keywords" content="kitchen management, restaurant software, inventory management, sales analytics, AI insights">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-username.github.io/VARSYS-Kitchen-Dashboard/">
+    <meta property="og:title" content="VARSYS Kitchen Dashboard - Professional Kitchen Management">
+    <meta property="og:description" content="Transform your kitchen operations with AI-powered insights and cloud synchronization">
+    <meta property="og:image" content="https://your-username.github.io/VARSYS-Kitchen-Dashboard/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://your-username.github.io/VARSYS-Kitchen-Dashboard/">
+    <meta property="twitter:title" content="VARSYS Kitchen Dashboard - Professional Kitchen Management">
+    <meta property="twitter:description" content="Transform your kitchen operations with AI-powered insights and cloud synchronization">
+    <meta property="twitter:image" content="https://your-username.github.io/VARSYS-Kitchen-Dashboard/assets/og-image.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .features {
+            background: white;
+            padding: 80px 0;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .pricing {
+            background: #f8f9fa;
+            padding: 80px 0;
+        }
+
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border: 3px solid #667eea;
+            transform: scale(1.05);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .features-list li {
+            padding: 0.5rem 0;
+            color: #666;
+        }
+
+        .features-list li:before {
+            content: "✅ ";
+            margin-right: 0.5rem;
+        }
+
+        footer {
+            background: #333;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .footer-section a {
+            color: #ccc;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">🍳 VARSYS Kitchen Dashboard</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#download">Download</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>🍳 Transform Your Kitchen Operations</h1>
+            <p>Professional kitchen management system with AI-powered insights, cloud synchronization, and enterprise-grade security</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/releases/latest" class="btn btn-primary">📥 Download Now</a>
+                <a href="#pricing" class="btn btn-secondary">💰 View Pricing</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <h2>✨ Powerful Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Smart Inventory Management</h3>
+                    <p>Real-time tracking, automated alerts, expiry monitoring, and intelligent reorder suggestions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Financial Analytics</h3>
+                    <p>Budget tracking, expense analysis, profit calculations, and comprehensive financial reporting</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Sales Intelligence</h3>
+                    <p>Revenue analytics, trend analysis, customer insights, and performance dashboards</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Insights</h3>
+                    <p>Demand forecasting, menu optimization, cost reduction recommendations, and predictive analytics</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">☁️</div>
+                    <h3>Cloud Synchronization</h3>
+                    <p>Secure Firebase integration, real-time backup, multi-device access, and team collaboration</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Enterprise Security</h3>
+                    <p>Commercial licensing, encrypted storage, tamper protection, and compliance-ready features</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2>💰 Choose Your Plan</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Single Restaurant</h3>
+                    <div class="price">₹15,000<span style="font-size: 1rem; color: #666;">/year</span></div>
+                    <ul class="features-list">
+                        <li>Complete dashboard access</li>
+                        <li>Inventory management</li>
+                        <li>Sales analytics</li>
+                        <li>Cloud synchronization</li>
+                        <li>Email support</li>
+                        <li>Regular updates</li>
+                    </ul>
+                    <a href="mailto:sales@varsys.com?subject=Single Restaurant License" class="btn btn-primary">Get Started</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <h3>Multi-Location</h3>
+                    <div class="price">₹45,000<span style="font-size: 1rem; color: #666;">/year</span></div>
+                    <ul class="features-list">
+                        <li>Up to 5 locations</li>
+                        <li>All single restaurant features</li>
+                        <li>Multi-location sync</li>
+                        <li>Advanced reporting</li>
+                        <li>Priority support</li>
+                        <li>Training included</li>
+                    </ul>
+                    <a href="mailto:sales@varsys.com?subject=Multi-Location License" class="btn btn-primary">Most Popular</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">Custom<span style="font-size: 1rem; color: #666;"> pricing</span></div>
+                    <ul class="features-list">
+                        <li>Unlimited locations</li>
+                        <li>Custom integrations</li>
+                        <li>Dedicated support</li>
+                        <li>Custom features</li>
+                        <li>On-site training</li>
+                        <li>SLA guarantee</li>
+                    </ul>
+                    <a href="mailto:sales@varsys.com?subject=Enterprise License" class="btn btn-primary">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>📞 Contact</h3>
+                    <a href="mailto:sales@varsys.com">📧 sales@varsys.com</a>
+                    <a href="mailto:support@varsys.com">🛠️ support@varsys.com</a>
+                    <a href="tel:+91XXXXXXXXXX">📱 +91-XXXXX-XXXXX</a>
+                </div>
+                <div class="footer-section">
+                    <h3>🔗 Links</h3>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard">GitHub Repository</a>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/releases">Download</a>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/wiki">Documentation</a>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/issues">Support</a>
+                </div>
+                <div class="footer-section">
+                    <h3>📋 Legal</h3>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/blob/main/LICENSE">License</a>
+                    <a href="https://github.com/YOUR_USERNAME/VARSYS-Kitchen-Dashboard/blob/main/SECURITY.md">Security</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+            <p>&copy; 2025 VARSYS Team. Built with ❤️ for the food service industry.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add scroll effect to header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(255, 255, 255, 0.95)';
+                header.style.color = '#333';
+            } else {
+                header.style.background = 'rgba(255, 255, 255, 0.1)';
+                header.style.color = 'white';
+            }
+        });
+    </script>
+</body>
+</html>
