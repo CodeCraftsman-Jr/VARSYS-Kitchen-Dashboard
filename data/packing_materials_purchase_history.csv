@@ -1,0 +1,6 @@
+purchase_id,material_id,material_name,purchase_date,quantity_purchased,price_per_unit,total_cost,supplier,invoice_number,notes
+1,21,Spoon,2025-06-09,100.0,1.0,100.0,MojoAgency,INV/MS/250610/0015,local dealer
+2,24,Pickle,2025-06-09,100.0,1.0,100.0,ajithbakri,INV/MS/4455562/0024,local dealer
+3,25,Silver Paper Large,2025-06-10,1.0,1.0,1.0,instaco,567484845833,local dealer
+4,25,Silver Paper Large,2025-06-10,50.0,1.8,90.0,instaco,7878787878,local dealer
+5,26,silver paper medium,2025-06-10,50.0,1.8,90.0,instaco,455745646865,local dealer

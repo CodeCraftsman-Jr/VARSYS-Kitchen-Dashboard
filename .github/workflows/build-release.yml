@@ -1,0 +1,211 @@
+name: Build and Release VARSYS Kitchen Dashboard
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install cx_Freeze
+        
+    - name: Install additional build dependencies
+      run: |
+        pip install pillow
+        pip install setuptools
+        
+    - name: Verify dependencies
+      run: |
+        python -c "import PySide6; print('PySide6 OK')"
+        python -c "import pandas; print('Pandas OK')"
+        python -c "import matplotlib; print('Matplotlib OK')"
+        python -c "import firebase_admin; print('Firebase OK')"
+        
+    - name: Create app icon
+      run: |
+        python -c "
+        import os
+        from pathlib import Path
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # Create icon directory
+        icon_dir = Path('assets/icons')
+        icon_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create a professional icon
+        img = Image.new('RGBA', (256, 256), (0, 123, 255, 255))
+        draw = ImageDraw.Draw(img)
+        
+        # Draw VARSYS logo
+        try:
+            font = ImageFont.truetype('arial.ttf', 60)
+        except:
+            font = ImageFont.load_default()
+            
+        # Draw 'V' for VARSYS
+        draw.text((100, 80), 'V', fill=(255, 255, 255, 255), font=font)
+        draw.text((80, 140), 'ARSYS', fill=(255, 255, 255, 200), font=ImageFont.load_default())
+        
+        # Save as ICO
+        img.save('assets/icons/app_icon.ico', format='ICO')
+        print('Icon created successfully')
+        "
+        
+    - name: Build EXE
+      run: |
+        python setup_cx_freeze.py build
+        
+    - name: Verify build
+      run: |
+        if (Test-Path "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe") {
+          Write-Host "✅ EXE build successful"
+          $size = (Get-Item "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe").Length / 1MB
+          Write-Host "📦 EXE size: $([math]::Round($size, 2)) MB"
+          # Copy to dist for consistency
+          New-Item -ItemType Directory -Force -Path "dist"
+          Copy-Item "build/exe.win-amd64-3.10/VARSYS_Kitchen_Dashboard.exe" "dist/"
+        } else {
+          Write-Host "❌ EXE build failed"
+          exit 1
+        }
+        
+    - name: Test EXE (basic)
+      run: |
+        # Basic test to ensure EXE can start
+        Start-Process -FilePath "dist/VARSYS_Kitchen_Dashboard.exe" -ArgumentList "--version" -Wait -NoNewWindow
+        
+    - name: Create release package
+      run: |
+        # Create release directory
+        New-Item -ItemType Directory -Force -Path "release"
+        
+        # Copy EXE
+        Copy-Item "dist/VARSYS_Kitchen_Dashboard.exe" "release/"
+        
+        # Copy documentation
+        if (Test-Path "README.md") { Copy-Item "README.md" "release/" }
+        if (Test-Path "RELEASE_NOTES.md") { Copy-Item "RELEASE_NOTES.md" "release/" }
+        if (Test-Path "requirements.txt") { Copy-Item "requirements.txt" "release/" }
+        
+        # Create version info
+        $version = python -c "from __version__ import get_version_string; print(get_version_string())"
+        $versionInfo = @{
+          version = $version
+          build_date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+          platform = "Windows"
+          architecture = "x64"
+        } | ConvertTo-Json
+        
+        $versionInfo | Out-File -FilePath "release/version.json" -Encoding UTF8
+        
+        # Create ZIP package
+        $zipName = "VARSYS_Kitchen_Dashboard_v$version.zip"
+        Compress-Archive -Path "release/*" -DestinationPath $zipName
+        
+        Write-Host "📦 Created package: $zipName"
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: VARSYS-Kitchen-Dashboard-Windows
+        path: |
+          *.zip
+          release/
+          
+    - name: Get version
+      id: version
+      run: |
+        $version = python -c "from __version__ import get_version_string; print(get_version_string())"
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          VARSYS_Kitchen_Dashboard_v${{ steps.version.outputs.VERSION }}.zip
+        name: VARSYS Kitchen Dashboard v${{ steps.version.outputs.VERSION }}
+        body: |
+          # VARSYS Kitchen Dashboard v${{ steps.version.outputs.VERSION }}
+          
+          ## 🎉 What's New
+          - Complete kitchen management system
+          - Inventory tracking and management  
+          - Meal planning with recipe integration
+          - Budget and expense tracking
+          - Sales analytics and reporting
+          - Gas management system
+          - Packing materials tracking
+          - Pricing management
+          - Enterprise features
+          - AI & ML integration
+          - Responsive design
+          - Firebase cloud sync
+          
+          ## 📋 System Requirements
+          - Windows 10 or Windows 11
+          - 4GB RAM minimum (8GB recommended)
+          - 500MB free disk space
+          - Internet connection (for cloud features)
+          
+          ## 🚀 Installation
+          1. Download the ZIP package below
+          2. Extract to your desired location
+          3. Run `VARSYS_Kitchen_Dashboard.exe`
+          4. Follow the setup wizard
+          
+          ## 📞 Support
+          - Issues: [GitHub Issues](https://github.com/VARSYS-Solutions/Kitchen-Dashboard/issues)
+          - Email: support@varsys-solutions.com
+          
+          ---
+          Built with ❤️ by VARSYS Solutions
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+  notify-completion:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify build completion
+      run: |
+        if [ "${{ needs.build-windows.result }}" == "success" ]; then
+          echo "✅ Build completed successfully!"
+          echo "🚀 Release is ready for distribution"
+        else
+          echo "❌ Build failed!"
+          echo "🔍 Check the logs for details"
+        fi

@@ -1,0 +1,9 @@
+budget_id,category,budget_amount,actual_amount,period,date
+1,Groceries,500.0,156.7,Monthly,2025-06-06
+2,Dining Out,200.0,45.0,Monthly,2025-05-30
+3,Kitchen Equipment,100.0,0.0,Monthly,2025-05-23
+4,Cleaning Supplies,50.0,12.5,Monthly,2025-05-16
+5,Raw Materials,800.0,234.5,Monthly,2025-06-01
+6,Utilities,150.0,89.3,Monthly,2025-06-01
+7,Staff Wages,1200.0,800.0,Monthly,2025-06-01
+8,Marketing,75.0,25.0,Monthly,2025-06-01

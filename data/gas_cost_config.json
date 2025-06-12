@@ -1,0 +1,33 @@
+{
+  "gas_cost_settings": {
+    "gas_consumption_per_hour_kg": 0.3,
+    "gas_rate_per_kg_inr": 60.67,
+    "minimum_cost_inr": 0.5,
+    "use_total_preparation_time": true,
+    "description": "Gas cost calculation settings for pricing tab"
+  },
+  "cylinder_settings": {
+    "cylinder_weight_kg": 15,
+    "cylinder_cost_inr": 910,
+    "cost_per_kg_inr": 60.67,
+    "supplier": "Indian Gas Agency",
+    "delivery_charges_inr": 0,
+    "description": "15kg LPG cylinder pricing for Indian market"
+  },
+  "alert_settings": {
+    "low_gas_threshold_days": 3,
+    "critical_gas_threshold_days": 1,
+    "enable_notifications": true,
+    "notification_time": "09:00",
+    "description": "Alert system for gas level monitoring"
+  },
+  "calculation_notes": {
+    "gas_consumption": "Average gas consumption in kg per hour for cooking",
+    "gas_rate": "Calculated from 15kg cylinder cost (₹910 ÷ 15kg = ₹60.67/kg)",
+    "minimum_cost": "Minimum gas cost to charge even for very short cooking times",
+    "total_prep_time": "If true, uses prep_time + cook_time; if false, uses only cook_time",
+    "cylinder_basis": "All calculations based on standard 15kg LPG cylinder pricing"
+  },
+  "last_updated": "2024-12-19",
+  "version": "2.0"
+}

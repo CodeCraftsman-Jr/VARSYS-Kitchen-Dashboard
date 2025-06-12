@@ -1,0 +1,21 @@
+category_id,category_name,description
+1,Grains,"Rice, pasta, wheat, etc."
+2,Baking,"Flour, sugar, baking powder, etc."
+3,Spices,"Salt, herbs, spices, powders"
+4,Oils,"Cooking oils, ghee, butter"
+5,Meat,"Beef, pork, lamb, etc."
+6,Poultry,"Chicken, turkey, duck, etc."
+7,Vegetables,Fresh vegetables
+8,Dairy,"Milk, cheese, yogurt, etc."
+9,Fruits,Fresh fruits
+10,Legumes,"Beans, lentils, chickpeas, etc."
+11,Prepared Foods,"Cooked items, chutneys, gravies"
+12,Beverages,"Tea, coffee, milk drinks"
+13,Nuts & Seeds,"Cashews, peanuts, sesame seeds"
+14,Condiments,"Sauces, pastes, pickles"
+15,Seafood,"Fish, prawns, shellfish"
+16,Eggs,"Chicken eggs, duck eggs"
+17,Bread & Bakery,"Bread, naan, chapathi"
+18,Sweeteners,"Sugar, jaggery, honey"
+20,Unknown,Items with unknown category
+20,Aromatics,Items with unknown category

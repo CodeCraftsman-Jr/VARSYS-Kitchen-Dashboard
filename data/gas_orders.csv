@@ -1,0 +1,2 @@
+order_id,order_date,supplier,cylinder_weight_kg,quantity,cost_per_cylinder_inr,delivery_charges_inr,total_cost_inr,expected_delivery_date,actual_delivery_date,status,payment_method,payment_status,notes
+1,2024-12-19,Indian Gas Agency,15,1,910,0,910,2024-12-19,2024-12-19,Delivered,Cash,Paid,Initial cylinder purchase

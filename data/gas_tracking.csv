@@ -1,0 +1,2 @@
+cylinder_id,purchase_date,supplier,cylinder_weight_kg,cost_inr,delivery_charges_inr,total_cost_inr,installation_date,current_weight_kg,estimated_days_remaining,status,last_updated,notes
+1,2024-12-19,Indian Gas Agency,15,910,0,910,2024-12-19,15.0,50,Active,2024-12-19 09:00:00,Initial cylinder installation

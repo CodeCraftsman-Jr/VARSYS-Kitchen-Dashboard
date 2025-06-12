@@ -1,0 +1,68 @@
+recipe_name,others_pricing,our_pricing,cooking_time,other_charges
+Dosa,76.0,5.0,20 mins,2.0
+2 Masala Dosa,110.0,120.0,30 mins,2.0
+2 Ghee Dosa,75.0,125.0,20 mins,2.0
+2 Paper Roast,100.0,96.0,25 mins,2.0
+Idli(2 pcs),45.0,48.0,15 mins,2.0
+Podi Idli,75.0,56.0,20 mins,2.0
+Mini Idli,110.0,62.0,15 mins,2.0
+Idli Podimas,90.0,100.0,25 mins,2.0
+Tomato Chutney,15.0,250.0,15 mins,2.0
+Coconut Chutney,15.0,135.0,10 mins,2.0
+Sambar,20.0,400.0,40 mins,2.0
+Kurma,20.0,65.0,35 mins,2.0
+Ginger Tea,50.0,38.0,10 mins,2.0
+Tea(250 ml),35.0,40.0,5 mins,2.0
+Coffee,45.0,60.0,5 mins,2.0
+Boost,50.0,65.0,5 mins,2.0
+Horlicks,50.0,65.0,5 mins,2.0
+Black Coffee,30.0,30.0,5 mins,2.0
+Tea(125ml),27.0,22.0,5 mins,2.0
+Tea(500ml),100.0,70.0,10 mins,2.0
+Tea(750ml),100.0,105.0,15 mins,2.0
+Milk,100.0,32.0,5 mins,2.0
+Chapathi,50.0,40.0,20 mins,2.0
+Kuli Paniyaram,90.0,100.0,20 mins,2.0
+Lemon Rice,80.0,56.0,15 mins,2.0
+Tomato Rice,80.0,60.0,20 mins,2.0
+Plain Rice,70.0,50.0,15 mins,2.0
+Curd Rice,80.0,62.0,10 mins,2.0
+cooked rice(InventorySide),300.0,280.0,30 mins,2.0
+Masala Dosa,110.0,115.0,30 mins,2.0
+Paper Roast,100.0,62.0,25 mins,2.0
+Ghee Dosa,100.0,90.0,20 mins,2.0
+Onion Egg Dosa,120.0,110.0,20 mins,2.0
+Onion Dosa,60.0,90.0,15 mins,2.0
+Tomato Dosa,60.0,60.0,15 mins,2.0
+Egg Dosa,80.0,85.0,20 mins,2.0
+Onion Podi Dosa,100.0,90.0,18 mins,2.0
+Idly 5 pcs,55.0,52.0,15 mins,2.0
+Mini Podi Idli,69.0,50.0,15 mins,2.0
+Ghee Mini Idli with Sambhar (15 pcs),100.0,68.0,20 mins,2.0
+Chappathi and Channa (2 pcs),90.0,105.0,25 mins,2.0
+Boiled Egg,20.0,22.0,10 mins,2.0
+Fish Kolambu(Parai Fish),900.0,750.0,30 mins,2.0
+Dosa with Fish Kolambu(Parai Fish),110.0,73.0,25 mins,2.0
+2 Masala Dosa with Fish Kolambu(Parai Fish),75.0,152.0,35 mins,2.0
+2 Ghee Dosa with Fish Kolambu(Parai Fish),100.0,94.0,25 mins,2.0
+2 Paper Roast with Fish Kolambu(Parai Fish),45.0,75.0,30 mins,2.0
+Idli(2 pcs) with Fish Kolambu(Parai Fish),110.0,190.0,20 mins,2.0
+Mini Idli with Fish Kolambu(Parai Fish),50.0,90.0,20 mins,2.0
+Chapathi with Fish Kolambu(Parai Fish),90.0,80.0,25 mins,2.0
+Kuli Paniyaram with Fish Kolambu(Parai Fish),70.0,70.0,25 mins,2.0
+Onion Dosa with Fish Kolambu(Parai Fish),60.0,102.0,20 mins,2.0
+Tomato Dosa with Fish Kolambu(Parai Fish),80.0,125.0,20 mins,2.0
+Egg Dosa with Fish Kolambu(Parai Fish),300.0,182.0,25 mins,2.0
+Plain rice with Fish Kolambu(Parai Fish),110.0,125.0,20 mins,2.0
+Masala Dosa with Fish Kolambu(Parai Fish),100.0,125.0,35 mins,2.0
+Paper Roast with Fish Kolambu(Parai Fish),100.0,125.0,30 mins,2.0
+Ghee Dosa with Fish Kolambu(Parai Fish),100.0,125.0,25 mins,2.0
+Carrot and Coriander Uthapam,80.0,125.0,18 mins,2.0
+Onion Uttapam,100.0,90.0,16 mins,2.0
+Tomato Uttapam,100.0,80.0,17 mins,2.0
+Plain Uttapam,100.0,70.0,18 mins,2.0
+Double Omelette,80.0,58.0,10 mins,2.0
+Onion bread omellete,120.0,102.0,12 mins,2.0
+Plain bread omellete,100.0,92.0,10 mins,2.0
+Chicken Gravy,170.0,100.0,35 mins,2.0
+Chicken Gravy(250G),120.0,190.0,35 mins,2.0

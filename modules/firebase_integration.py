@@ -1,0 +1,509 @@
+# Firebase integration for Kitchen Dashboard
+
+import os
+import json
+import pandas as pd
+from datetime import datetime
+import requests
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Import logger if available
+try:
+    from modules.firebase_logger import log_info, log_warning, log_error
+    LOGGER_AVAILABLE = True
+except ImportError:
+    LOGGER_AVAILABLE = False
+    # Fallback logging functions
+    def log_info(message):
+        print(f"INFO: {message}")
+    def log_warning(message):
+        print(f"WARNING: {message}")
+    def log_error(message, exception=None):
+        print(f"ERROR: {message}")
+        if exception:
+            print(f"Exception details: {str(exception)}")
+
+# For user authentication
+try:
+    import pyrebase
+    PYREBASE_AVAILABLE = True
+except ImportError:
+    PYREBASE_AVAILABLE = False
+    log_warning("Pyrebase is not available. User authentication will not work.")
+
+# Global variables
+FIREBASE_APP = None
+FIRESTORE_DB = None
+FIREBASE_AUTH = None
+
+# Define the path to the credentials files
+current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+credentials_path = os.path.join(current_dir, "firebase_credentials.json")
+web_config_path = os.path.join(current_dir, "firebase_web_config.json")
+
+# Firebase is considered available if both credential files exist
+FIREBASE_AVAILABLE = os.path.exists(credentials_path) and os.path.exists(web_config_path)
+
+# Data synchronization functions
+def sync_data_to_firebase(user_id, data_dir):
+    """
+    Sync data from local CSV files to Firebase Firestore
+    
+    Args:
+        user_id (str): User ID to store data under
+        data_dir (str): Directory containing CSV files
+        
+    Returns:
+        bool: True if sync was successful, False otherwise
+    """
+    global FIRESTORE_DB
+    
+    if not FIRESTORE_DB:
+        log_error("Firestore database is not initialized")
+        return False
+    
+    try:
+        log_info(f"Starting sync to Firebase for user: {user_id}")
+        
+        # Get list of CSV files in the data directory
+        if not os.path.exists(data_dir):
+            log_error(f"Data directory not found: {data_dir}")
+            return False
+            
+        csv_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
+        if not csv_files:
+            log_warning(f"No CSV files found in directory: {data_dir}")
+            return False
+            
+        # Reference to the user's data collection
+        user_ref = FIRESTORE_DB.collection('users').document(user_id)
+        
+        # Create user document if it doesn't exist
+        if not user_ref.get().exists:
+            user_ref.set({
+                'email': user_id if '@' in user_id else f"{user_id}@kitchen-dashboard.app",
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'last_sync': firestore.SERVER_TIMESTAMP
+            })
+            log_info(f"Created new user document for: {user_id}")
+        
+        # Upload each CSV file as a collection
+        for csv_file in csv_files:
+            collection_name = os.path.splitext(csv_file)[0]  # Remove .csv extension
+            file_path = os.path.join(data_dir, csv_file)
+            
+            try:
+                # Read CSV file
+                df = pd.read_csv(file_path)
+                
+                # Skip empty dataframes
+                if df.empty:
+                    log_info(f"Skipping empty dataframe: {collection_name}")
+                    continue
+                
+                # Convert dataframe to list of dictionaries
+                records = df.to_dict('records')
+                
+                # Delete existing collection
+                collection_ref = user_ref.collection(collection_name)
+                delete_collection(collection_ref, 10)
+                
+                # Upload new data
+                batch = FIRESTORE_DB.batch()
+                batch_count = 0
+                batch_size = 500  # Firestore batch size limit
+                
+                for i, record in enumerate(records):
+                    # Convert any NaN values to None
+                    record = {k: (None if pd.isna(v) else v) for k, v in record.items()}
+                    
+                    # Add document to batch
+                    doc_ref = collection_ref.document(f"doc_{i}")
+                    batch.set(doc_ref, record)
+                    batch_count += 1
+                    
+                    # Commit batch when it reaches the limit
+                    if batch_count >= batch_size:
+                        batch.commit()
+                        log_info(f"Committed batch of {batch_count} documents for {collection_name}")
+                        batch = FIRESTORE_DB.batch()
+                        batch_count = 0
+                
+                # Commit any remaining documents
+                if batch_count > 0:
+                    batch.commit()
+                    log_info(f"Committed final batch of {batch_count} documents for {collection_name}")
+                
+                log_info(f"Successfully uploaded {len(records)} records for {collection_name}")
+                
+            except Exception as e:
+                log_error(f"Error uploading {csv_file}", e)
+                continue
+        
+        # Update last sync timestamp
+        user_ref.update({
+            'last_sync': firestore.SERVER_TIMESTAMP
+        })
+        
+        log_info(f"Successfully synced all data to Firebase for user: {user_id}")
+        return True
+        
+    except Exception as e:
+        log_error("Error in sync_data_to_firebase", e)
+        return False
+
+def sync_data_from_firebase(user_id, data_dir):
+    """
+    Sync data from Firebase Firestore to local CSV files
+    
+    Args:
+        user_id (str): User ID to retrieve data for
+        data_dir (str): Directory to store CSV files
+        
+    Returns:
+        bool: True if sync was successful, False otherwise
+    """
+    global FIRESTORE_DB
+    
+    if not FIRESTORE_DB:
+        log_error("Firestore database is not initialized")
+        return False
+    
+    try:
+        log_info(f"Starting sync from Firebase for user: {user_id}")
+        
+        # Create data directory if it doesn't exist
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+            log_info(f"Created data directory: {data_dir}")
+        
+        # Reference to the user's data collection
+        user_ref = FIRESTORE_DB.collection('users').document(user_id)
+        
+        # Check if user document exists
+        if not user_ref.get().exists:
+            log_error(f"User document not found for: {user_id}")
+            return False
+        
+        # Get all collections for the user
+        collections = user_ref.collections()
+        collection_count = 0
+        
+        for collection in collections:
+            collection_name = collection.id
+            
+            try:
+                # Get all documents in the collection
+                docs = collection.stream()
+                records = [doc.to_dict() for doc in docs]
+                
+                # Skip empty collections
+                if not records:
+                    log_info(f"Skipping empty collection: {collection_name}")
+                    continue
+                
+                # Convert to dataframe
+                df = pd.DataFrame(records)
+                
+                # Save to CSV
+                file_path = os.path.join(data_dir, f"{collection_name}.csv")
+                df.to_csv(file_path, index=False)
+                
+                log_info(f"Successfully downloaded {len(records)} records for {collection_name}")
+                collection_count += 1
+                
+            except Exception as e:
+                log_error(f"Error downloading {collection_name}", e)
+                continue
+        
+        if collection_count == 0:
+            log_warning(f"No collections found for user: {user_id}")
+            return False
+        
+        log_info(f"Successfully synced {collection_count} collections from Firebase for user: {user_id}")
+        return True
+        
+    except Exception as e:
+        log_error("Error in sync_data_from_firebase", e)
+        return False
+
+# Authentication functions
+def sign_in_with_email(email, password):
+    """
+    Sign in with email and password
+    
+    Args:
+        email (str): User email
+        password (str): User password
+        
+    Returns:
+        dict: User information if successful, None otherwise
+    """
+    global FIREBASE_AUTH
+    
+    # Log the authentication attempt
+    log_info(f"Attempting to sign in user: {email}")
+    
+    # Check if Firebase Auth is available
+    if not FIREBASE_AUTH or not PYREBASE_AVAILABLE:
+        log_error("Firebase Auth is not initialized")
+        return None
+    
+    try:
+        # Attempt to sign in
+        user = FIREBASE_AUTH.sign_in_with_email_and_password(email, password)
+        log_info(f"User authenticated successfully: {email}")
+        return user
+    except requests.exceptions.HTTPError as e:
+        # Parse error message from Firebase
+        error_json = e.args[1]
+        try:
+            error_data = json.loads(error_json)
+            error_message = error_data.get('error', {}).get('message', 'Unknown error')
+            log_error(f"Authentication failed: {error_message}", e)
+        except:
+            log_error("Authentication failed with unknown error", e)
+        return None
+    except Exception as e:
+        log_error("Authentication failed with exception", e)
+        return None
+
+# Delete collection utility function
+def delete_collection(coll_ref, batch_size):
+    """Delete a collection by batches"""
+    docs = coll_ref.limit(batch_size).stream()
+    deleted = 0
+
+    for doc in docs:
+        doc.reference.delete()
+        deleted += 1
+
+    if deleted >= batch_size:
+        return delete_collection(coll_ref, batch_size)
+
+def initialize_firebase():
+    """Initialize Firebase and check for credentials file"""
+    global FIREBASE_APP, FIRESTORE_DB, FIREBASE_AUTH, FIREBASE_AVAILABLE
+    
+    # Get the absolute path to the project root directory
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    # Path to the Firebase credentials JSON file
+    credentials_path = os.path.join(current_dir, "firebase_credentials.json")
+    
+    # Log the initialization process
+    log_info("Initializing Firebase integration...")
+    log_info(f"Looking for credentials at: {credentials_path}")
+    
+    # Check if the credentials file exists
+    if not os.path.exists(credentials_path):
+        log_error(f"Firebase credentials file not found at: {credentials_path}")
+        FIREBASE_AVAILABLE = False
+        return False
+    
+    try:
+        # Load the Firebase service account credentials for Admin SDK
+        log_info("Loading Firebase credentials...")
+        with open(credentials_path, 'r') as f:
+            admin_config = json.load(f)
+        
+        # Initialize Firebase Admin SDK
+        if not firebase_admin._apps:
+            log_info("Initializing Firebase Admin SDK...")
+            cred = credentials.Certificate(credentials_path)
+            firebase_admin.initialize_app(cred)
+        
+        # Get Firestore database instance
+        log_info("Getting Firestore database instance...")
+        FIRESTORE_DB = firestore.client()
+        
+        # Initialize Pyrebase for authentication if available
+        if PYREBASE_AVAILABLE:
+            # Try to load the web config for Pyrebase
+            web_config_path = os.path.join(current_dir, "firebase_web_config.json")
+            
+            if os.path.exists(web_config_path):
+                log_info(f"Loading Firebase web config from: {web_config_path}")
+                with open(web_config_path, 'r') as f:
+                    web_config = json.load(f)
+                
+                log_info("Initializing Pyrebase for authentication...")
+                FIREBASE_APP = pyrebase.initialize_app(web_config)
+                FIREBASE_AUTH = FIREBASE_APP.auth()
+            else:
+                log_warning(f"Firebase web config not found at: {web_config_path}")
+                log_warning("Authentication will not work without web config.")
+        else:
+            log_warning("Pyrebase not available, user authentication will not work.")
+        
+        # Set global flag that Firebase is available
+        FIREBASE_AVAILABLE = True
+        log_info("Firebase initialization successful!")
+        
+        return True
+    except Exception as e:
+        log_error("Failed to initialize Firebase", e)
+        FIREBASE_AVAILABLE = False
+        return False
+
+def authenticate_user(email, password):
+    """Authenticate a user with Firebase"""
+    if not FIREBASE_AVAILABLE or not PYREBASE_AVAILABLE:
+        log_error("Firebase or Pyrebase is not available. Cannot authenticate user.")
+        return None
+    
+    try:
+        log_info(f"Authenticating user: {email}")
+        # Sign in the user
+        user = FIREBASE_AUTH.sign_in_with_email_and_password(email, password)
+        log_info("User authentication successful!")
+        return user
+    except Exception as e:
+        log_error(f"Authentication failed for user: {email}", e)
+        return None
+
+def get_user_data(user_id, data_type):
+    """Get user data from Firestore"""
+    if not FIREBASE_AVAILABLE:
+        log_error("Firebase is not available. Cannot get user data.")
+        return None
+    
+    try:
+        log_info(f"Getting {data_type} data for user: {user_id}")
+        # Get a reference to the user's data collection
+        user_ref = FIRESTORE_DB.collection("users").document(user_id).collection(data_type)
+        
+        # Get all documents in the collection
+        docs = user_ref.stream()
+        
+        # Convert to list of dictionaries
+        data = [doc.to_dict() for doc in docs]
+        
+        log_info(f"Successfully retrieved {len(data)} {data_type} records for user: {user_id}")
+        return data
+    except Exception as e:
+        log_error(f"Failed to get {data_type} data for user: {user_id}", e)
+        return None
+
+def save_user_data(user_id, data_type, data):
+    """Save user data to Firestore"""
+    if not FIREBASE_AVAILABLE:
+        log_error("Firebase is not available. Cannot save user data.")
+        return False
+    
+    try:
+        log_info(f"Saving {data_type} data for user: {user_id}")
+        
+        # Create a timestamp
+        timestamp = datetime.now().isoformat()
+        
+        # Save data to Firestore
+        FIRESTORE_DB.collection("users").document(user_id).collection(data_type).document(timestamp).set(data)
+        
+        log_info(f"Successfully saved {data_type} data for user: {user_id}")
+        return True
+    except Exception as e:
+        log_error(f"Failed to save {data_type} data for user: {user_id}", e)
+        return False
+
+def sync_data_to_firebase(user_id, data_dir):
+    """Sync local CSV data to Firebase"""
+    if not FIREBASE_AVAILABLE:
+        log_error("Firebase is not available. Cannot sync data to Firebase.")
+        return False
+    
+    if not os.path.exists(data_dir) or not os.path.isdir(data_dir):
+        log_error(f"Data directory not found: {data_dir}")
+        return False
+    
+    try:
+        log_info(f"Syncing data to Firebase for user: {user_id} from directory: {data_dir}")
+        
+        # For each data file, store in Firebase
+        files_synced = 0
+        for filename in os.listdir(data_dir):
+            if filename.endswith('.csv'):
+                # Parse file name (remove extension)
+                collection_name = os.path.splitext(filename)[0]
+                filepath = os.path.join(data_dir, filename)
+                
+                log_info(f"Processing file: {filename} for collection: {collection_name}")
+                
+                try:
+                    # Read CSV file using pandas
+                    df = pd.read_csv(filepath, encoding='utf-8')
+                    
+                    # Convert DataFrame to dict for Firebase
+                    data_dict = df.to_dict(orient='records')
+                    
+                    # Get a reference to the user's collection
+                    collection_ref = FIRESTORE_DB.collection("users").document(user_id).collection(collection_name)
+                    
+                    # Clear existing data (optional)
+                    log_info(f"Clearing existing data for collection: {collection_name}")
+                    delete_collection(collection_ref, 10)
+                    
+                    # Save each record with a unique ID
+                    for i, record in enumerate(data_dict):
+                        collection_ref.document(f"record_{i}").set(record)
+                    
+                    log_info(f"Successfully synced {len(data_dict)} records for {collection_name}")
+                    files_synced += 1
+                except Exception as e:
+                    log_error(f"Error processing file: {filename}", e)
+                    continue
+        
+        log_info(f"Sync completed. Total files synced: {files_synced}")
+        return True
+    except Exception as e:
+        log_error("Failed to sync data to Firebase", e)
+        return False
+
+def sync_data_from_firebase(user_id, data_dir):
+    """Sync data from Firebase to local CSV files"""
+    if not FIREBASE_AVAILABLE:
+        log_error("Firebase is not available. Cannot sync data from Firebase.")
+        return False
+    
+    if not os.path.exists(data_dir):
+        log_info(f"Creating data directory: {data_dir}")
+        os.makedirs(data_dir)
+    
+    try:
+        log_info(f"Syncing data from Firebase for user: {user_id} to directory: {data_dir}")
+        
+        # Get all collections for the user
+        user_ref = FIRESTORE_DB.collection("users").document(user_id)
+        collections = user_ref.collections()
+        
+        collections_synced = 0
+        
+        # For each collection, fetch data and save to CSV
+        for collection in collections:
+            collection_name = collection.id
+            log_info(f"Processing collection: {collection_name}")
+            
+            # Get all documents in the collection
+            docs = collection.stream()
+            records = [doc.to_dict() for doc in docs]
+            
+            if not records:
+                log_warning(f"No records found in collection: {collection_name}")
+                continue
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(records)
+            
+            # Save to CSV
+            csv_path = os.path.join(data_dir, f"{collection_name}.csv")
+            df.to_csv(csv_path, index=False, encoding='utf-8')
+            
+            log_info(f"Successfully saved {len(records)} records to {csv_path}")
+            collections_synced += 1
+        
+        log_info(f"Sync completed. Total collections synced: {collections_synced}")
+        return True
+    except Exception as e:
+        log_error("Failed to sync data from Firebase", e)
+        return False

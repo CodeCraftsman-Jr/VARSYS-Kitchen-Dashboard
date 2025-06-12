@@ -1,0 +1,458 @@
+{
+  "recipe_120": {
+    "recipe_id": 120,
+    "recipe_name": "Sambar",
+    "missing_items": [
+      {
+        "name": "perugayam(asafoetida)",
+        "quantity": 3.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      },
+      {
+        "name": "sambhar podi",
+        "quantity": 5.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      },
+      {
+        "name": "Pasiparupu(algae lenthils)",
+        "quantity": 50.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      },
+      {
+        "name": "Bringal",
+        "quantity": 250.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "Fennel Seed(Sombu)-saunf",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Curry Leaves(Karuvepulai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coriander(kothamali)",
+        "matched_item": null,
+        "price": 5.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Green Chilli",
+        "matched_item": "green chilli",
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Mustard Urad Dal(Kadugu Uluntha Parupu)",
+        "matched_item": null,
+        "price": 15.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Garlic",
+        "matched_item": "garlic",
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "kolambu molaga thool",
+        "matched_item": null,
+        "price": 750.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "toovaram parupu(toor dal)",
+        "matched_item": null,
+        "price": 90.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "tomato",
+        "matched_item": null,
+        "price": 90.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "onion",
+        "matched_item": null,
+        "price": 50.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.111583",
+    "status": "incomplete"
+  },
+  "recipe_121": {
+    "recipe_id": 121,
+    "recipe_name": "Sweet Kuli Paniyaram",
+    "missing_items": [
+      {
+        "name": "vellam(jaggery)",
+        "quantity": 60.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "Cardamon(Yelakai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coconut",
+        "matched_item": null,
+        "price": 120.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coconut Chutni(Cooked)",
+        "matched_item": null,
+        "price": 30.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Tomato Chutni(Cooked)",
+        "matched_item": null,
+        "price": 35.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Dosa batter",
+        "matched_item": null,
+        "price": 200.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.161360",
+    "status": "incomplete"
+  },
+  "recipe_122": {
+    "recipe_id": 122,
+    "recipe_name": "Sweet Kuli Paniyaram With Chicken Gravy",
+    "missing_items": [
+      {
+        "name": "vellam(jaggery)",
+        "quantity": 60.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "Cardamon(Yelakai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coconut",
+        "matched_item": null,
+        "price": 120.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Chicken Gravy",
+        "matched_item": "Chicken gravy",
+        "price": 276.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Dosa batter",
+        "matched_item": null,
+        "price": 200.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.203919",
+    "status": "incomplete"
+  },
+  "recipe_123": {
+    "recipe_id": 123,
+    "recipe_name": "Sweet Kuli Paniyaram With Fish Kolambu(Parai Fish)",
+    "missing_items": [
+      {
+        "name": "vellam(jaggery)",
+        "quantity": 60.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "Cardamon(Yelakai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coconut",
+        "matched_item": null,
+        "price": 120.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Fish Kolambu(Parai Fish)",
+        "matched_item": null,
+        "price": 142.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Dosa batter",
+        "matched_item": null,
+        "price": 200.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.249105",
+    "status": "incomplete"
+  },
+  "recipe_128": {
+    "recipe_id": 128,
+    "recipe_name": "Tomato Chutney",
+    "missing_items": [
+      {
+        "name": "Dry Chilli",
+        "quantity": 10.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "ginger",
+        "matched_item": null,
+        "price": 10.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Mustard Urad Dal(Kadugu Uluntha Parupu)",
+        "matched_item": null,
+        "price": 15.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "garlic",
+        "matched_item": null,
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Curry Leaves(Karuvepulai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "green chilli",
+        "matched_item": null,
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Salt",
+        "matched_item": null,
+        "price": 25.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Tomato",
+        "matched_item": "tomato",
+        "price": 90.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Onion",
+        "matched_item": "onion",
+        "price": 50.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.412362",
+    "status": "incomplete"
+  },
+  "recipe_132": {
+    "recipe_id": 132,
+    "recipe_name": "Tomato Rice",
+    "missing_items": [
+      {
+        "name": "Pasiparupu(algae lenthils)",
+        "quantity": 5.0,
+        "unit": "grams",
+        "reason": "not_in_catalog",
+        "matched_item": null,
+        "validation_details": {
+          "step1_items_found": false,
+          "step2_categorized": false,
+          "step3_in_inventory": false
+        }
+      }
+    ],
+    "found_items": [
+      {
+        "name": "Mustard Urad Dal(Kadugu Uluntha Parupu)",
+        "matched_item": null,
+        "price": 15.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Fennel Seed(Sombu)-saunf",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "green chilli",
+        "matched_item": null,
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Coriander(kothamali)",
+        "matched_item": null,
+        "price": 5.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Ginger",
+        "matched_item": "ginger",
+        "price": 10.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "garlic",
+        "matched_item": null,
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Curry Leaves(Karuvepulai)",
+        "matched_item": null,
+        "price": 3.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "kadalai parupu(bengal gram)",
+        "matched_item": null,
+        "price": 20.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "cooked rice",
+        "matched_item": null,
+        "price": 22.2,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Oil",
+        "matched_item": null,
+        "price": 219.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "onion",
+        "matched_item": null,
+        "price": 50.0,
+        "source": "exact_inventory_match"
+      },
+      {
+        "name": "Tomato",
+        "matched_item": "tomato",
+        "price": 90.0,
+        "source": "exact_inventory_match"
+      }
+    ],
+    "last_checked": "2025-06-12T04:01:05.583608",
+    "status": "incomplete"
+  }
+}

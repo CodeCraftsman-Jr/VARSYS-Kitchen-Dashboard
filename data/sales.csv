@@ -1,0 +1,2 @@
+sale_id,date,order_id,platform,customer,item_name,quantity,subtotal,taxes,delivery_fee,discount,total_amount,payment_method,status,notes
+
