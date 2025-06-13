@@ -166,16 +166,18 @@ class EnhancedCostBreakdownPanel(QWidget):
         # Header with recipe selector
         self.create_header(layout)
         
-        # Main content splitter
-        splitter = QSplitter(Qt.Horizontal)
-        
-        # Left panel - Cost breakdown cards
-        self.create_cost_cards_panel(splitter)
-        
-        # Right panel - Detailed ingredient table
-        self.create_ingredient_panel(splitter)
-        
-        layout.addWidget(splitter)
+        # Main content with vertical layout - cost breakdown cards on top, ingredients table below
+        main_content_widget = QWidget()
+        main_content_layout = QVBoxLayout(main_content_widget)
+        main_content_layout.setSpacing(20)
+
+        # Top section - Cost breakdown cards
+        self.create_cost_cards_panel(main_content_layout)
+
+        # Bottom section - Detailed ingredient table
+        self.create_ingredient_panel(main_content_layout)
+
+        layout.addWidget(main_content_widget)
         
         # Bottom panel - Cost adjustment tools
         self.create_adjustment_panel(layout)
@@ -239,47 +241,33 @@ class EnhancedCostBreakdownPanel(QWidget):
         
         parent_layout.addWidget(header_frame)
     
-    def create_cost_cards_panel(self, parent_splitter):
-        """Create cost breakdown cards panel with better layout"""
-        cards_widget = QWidget()
-        cards_layout = QVBoxLayout(cards_widget)
-        cards_layout.setContentsMargins(10, 10, 10, 10)
-
+    def create_cost_cards_panel(self, parent_layout):
+        """Create cost breakdown cards panel with vertical layout"""
         # Cards title
         cards_title = QLabel("💰 Cost Breakdown")
         cards_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px;")
-        cards_layout.addWidget(cards_title)
+        parent_layout.addWidget(cards_title)
 
-        # Cards container with grid layout for better space utilization
+        # Cards container with vertical layout (straight line) as requested
         self.cards_container = QWidget()
-        self.cards_layout = QGridLayout(self.cards_container)
+        self.cards_layout = QVBoxLayout(self.cards_container)
         self.cards_layout.setSpacing(12)
         self.cards_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Add cards container directly (no scroll area to save space)
-        cards_layout.addWidget(self.cards_container)
-
-        # Add stretch to push cards to top
-        cards_layout.addStretch()
-
-        parent_splitter.addWidget(cards_widget)
+        # Add cards container directly
+        parent_layout.addWidget(self.cards_container)
     
-    def create_ingredient_panel(self, parent_splitter):
-        """Create detailed ingredient analysis panel"""
-        ingredient_widget = QWidget()
-        ingredient_layout = QVBoxLayout(ingredient_widget)
-        
+    def create_ingredient_panel(self, parent_layout):
+        """Create detailed ingredient analysis panel below cost breakdown cards"""
         # Ingredient table title
-        table_title = QLabel("Ingredient Details")
-        table_title.setStyleSheet("font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 10px;")
-        ingredient_layout.addWidget(table_title)
-        
+        table_title = QLabel("🥘 Ingredient Details")
+        table_title.setStyleSheet("font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 10px; margin-top: 20px;")
+        parent_layout.addWidget(table_title)
+
         # Ingredient table
         self.ingredient_table = IngredientCostTable()
         self.ingredient_table.ingredient_selected.connect(self.on_ingredient_selected)
-        ingredient_layout.addWidget(self.ingredient_table)
-        
-        parent_splitter.addWidget(ingredient_widget)
+        parent_layout.addWidget(self.ingredient_table)
     
     def create_adjustment_panel(self, parent_layout):
         """Create cost adjustment tools panel"""
@@ -631,7 +619,7 @@ class EnhancedCostBreakdownPanel(QWidget):
             return {}
     
     def update_cost_cards(self, cost_breakdown):
-        """Update cost breakdown cards with better grid layout"""
+        """Update cost breakdown cards with vertical layout (straight line)"""
         # Clear existing cards
         for i in reversed(range(self.cards_layout.count())):
             item = self.cards_layout.itemAt(i)
@@ -651,14 +639,13 @@ class EnhancedCostBreakdownPanel(QWidget):
             ('Overhead Cost', cost_breakdown['overhead_cost'], '#84cc16')
         ]
 
-        # Arrange cards in 2 columns for better space utilization
+        # Arrange cards in vertical layout (straight line) as requested
         for i, (name, amount, color) in enumerate(cost_components):
             percentage = (amount / total_cost * 100) if total_cost > 0 else 0
             card = CostBreakdownCard(name, amount, percentage, color)
 
-            row = i // 2
-            col = i % 2
-            self.cards_layout.addWidget(card, row, col)
+            # Add each card vertically in a straight line
+            self.cards_layout.addWidget(card)
     
     def update_ingredient_table(self, ingredients):
         """Update ingredient details table"""

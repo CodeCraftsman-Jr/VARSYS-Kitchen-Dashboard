@@ -1,9 +1,10 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
                              QLabel, QComboBox, QLineEdit, QPushButton, QTabWidget,
                              QFormLayout, QSpinBox, QDoubleSpinBox, QDateEdit, QGroupBox,
-                             QMessageBox, QHeaderView, QSplitter, QTextEdit)
+                             QMessageBox, QHeaderView, QSplitter, QTextEdit, QDialog, QCheckBox,
+                             QApplication, QMenu, QInputDialog, QFileDialog)
 from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor, QFont, QAction, QKeySequence, QShortcut
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -268,90 +269,221 @@ class MealPlanningWidget(QWidget):
         self.meal_plan_table.setSpan(timestamp_row, 0, 1, len(columns))
         self.meal_plan_table.setItem(timestamp_row, 0, update_item)
         
-        # Add or edit meal plan section
-        add_group = QGroupBox("Add/Edit Meal")
-        add_form_layout = QFormLayout(add_group)
-        layout.addWidget(add_group)
-        
+        # Enhanced meal plan management section
+        meal_management_group = QGroupBox("Meal Plan Management")
+        meal_management_layout = QVBoxLayout(meal_management_group)
+        layout.addWidget(meal_management_group)
+
+        # Quick add section
+        quick_add_group = QGroupBox("Quick Add/Edit Meal")
+        quick_add_layout = QFormLayout(quick_add_group)
+
         # Day selection
         self.day_combo = QComboBox()
         self.day_combo.addItems(days_of_week)
-        add_form_layout.addRow("Day:", self.day_combo)
-        
+        quick_add_layout.addRow("Day:", self.day_combo)
+
         # Meal type selection with added snack options
         meal_type_label = QLabel("Meal Type:")
         self.meal_type_combo = QComboBox()
         self.meal_type_combo.addItems(["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner"])
-        add_form_layout.addRow(meal_type_label, self.meal_type_combo)
-        
-        # Recipe selection
+        quick_add_layout.addRow(meal_type_label, self.meal_type_combo)
+
+        # Recipe selection with search capability
+        recipe_layout = QHBoxLayout()
         self.recipe_combo = QComboBox()
+        self.recipe_combo.setEditable(True)
         self.recipe_combo.addItem("Select Recipe...")
         self.recipe_combo.addItems(self.recipes_df['recipe_name'].tolist())
-        add_form_layout.addRow("Recipe:", self.recipe_combo)
-        
-        # Servings removed as requested
-        
+        recipe_layout.addWidget(self.recipe_combo)
+
+        # Recipe search button
+        search_recipe_btn = QPushButton("🔍")
+        search_recipe_btn.setMaximumWidth(30)
+        search_recipe_btn.setToolTip("Search recipes")
+        search_recipe_btn.clicked.connect(self.show_recipe_search_dialog)
+        recipe_layout.addWidget(search_recipe_btn)
+
+        quick_add_layout.addRow("Recipe:", recipe_layout)
+
+        # Servings
+        self.servings_spin = QSpinBox()
+        self.servings_spin.setMinimum(1)
+        self.servings_spin.setMaximum(20)
+        self.servings_spin.setValue(1)
+        quick_add_layout.addRow("Servings:", self.servings_spin)
+
         # Notes
         self.notes_edit = QLineEdit()
-        add_form_layout.addRow("Notes:", self.notes_edit)
-        
-        # Buttons layout
+        self.notes_edit.setPlaceholderText("Optional notes (e.g., 'extra spicy', 'for guests')")
+        quick_add_layout.addRow("Notes:", self.notes_edit)
+
+        meal_management_layout.addWidget(quick_add_group)
+
+        # Action buttons
         buttons_layout = QHBoxLayout()
 
-        # Add button
-        self.add_meal_button = QPushButton("Add/Update Meal")
+        # Add/Update button
+        self.add_meal_button = QPushButton("➕ Add/Update Meal")
+        self.add_meal_button.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #229954;
+            }
+        """)
         self.add_meal_button.clicked.connect(self.add_update_meal)
         buttons_layout.addWidget(self.add_meal_button)
 
+        # Edit meal plan button
+        self.edit_meal_plan_btn = QPushButton("✏️ Edit Meal Plan")
+        self.edit_meal_plan_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #5dade2;
+            }
+            QPushButton:pressed {
+                background-color: #2980b9;
+            }
+        """)
+        self.edit_meal_plan_btn.clicked.connect(self.show_meal_plan_editor)
+        buttons_layout.addWidget(self.edit_meal_plan_btn)
+
         # Delete button
-        self.delete_meal_button = QPushButton("Delete Selected Meal")
+        self.delete_meal_button = QPushButton("🗑️ Delete Selected")
         self.delete_meal_button.setStyleSheet("""
             QPushButton {
                 background-color: #dc3545;
                 color: white;
                 border: none;
                 border-radius: 6px;
-                padding: 8px 16px;
-                font-weight: 500;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
             }
             QPushButton:hover {
                 background-color: #c82333;
+            }
+            QPushButton:pressed {
+                background-color: #b02a37;
             }
         """)
         self.delete_meal_button.clicked.connect(self.delete_selected_meal)
         buttons_layout.addWidget(self.delete_meal_button)
 
-        add_form_layout.addRow("", buttons_layout)
+        # Clear all button
+        self.clear_week_btn = QPushButton("🗑️ Clear Week")
+        self.clear_week_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #ec7063;
+            }
+            QPushButton:pressed {
+                background-color: #c0392b;
+            }
+        """)
+        self.clear_week_btn.clicked.connect(self.clear_week_meal_plan)
+        buttons_layout.addWidget(self.clear_week_btn)
+
+        # Generate meal plan button
+        self.generate_plan_btn = QPushButton("🎲 Auto Generate")
+        self.generate_plan_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #9b59b6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #a569bd;
+            }
+            QPushButton:pressed {
+                background-color: #8e44ad;
+            }
+        """)
+        self.generate_plan_btn.clicked.connect(self.auto_generate_meal_plan)
+        buttons_layout.addWidget(self.generate_plan_btn)
+
+        meal_management_layout.addLayout(buttons_layout)
+
+        # Enable table selection for editing
+        self.meal_plan_table.itemSelectionChanged.connect(self.on_meal_plan_selection_changed)
     
     def add_update_meal(self):
         # Check if a recipe is selected
         if self.recipe_combo.currentText() == "Select Recipe...":
             QMessageBox.warning(self, "Warning", "Please select a recipe.")
             return
-        
+
         # Get values from form
         day = self.day_combo.currentText()
         meal_type = self.meal_type_combo.currentText()
         recipe = self.recipe_combo.currentText()
+        servings = self.servings_spin.value()
         notes = self.notes_edit.text()
-        
+
         # Get recipe details
-        recipe_data = self.recipes_df[self.recipes_df['recipe_name'] == recipe].iloc[0]
-        
+        recipe_matches = self.recipes_df[self.recipes_df['recipe_name'] == recipe]
+        if recipe_matches.empty:
+            QMessageBox.warning(self, "Warning", f"Recipe '{recipe}' not found in database.")
+            return
+
+        recipe_data = recipe_matches.iloc[0]
+
         # Check if this day and meal type already exists
         existing_meal = self.meal_plan_df[
-            (self.meal_plan_df['day'] == day) & 
+            (self.meal_plan_df['day'] == day) &
             (self.meal_plan_df['meal_type'] == meal_type)
         ]
-        
+
         if len(existing_meal) > 0:
+            # Confirm update
+            reply = QMessageBox.question(
+                self,
+                "Update Existing Meal",
+                f"A meal already exists for {day} {meal_type}.\nDo you want to replace it with {recipe}?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+
             # Update existing meal
             self.meal_plan_df.loc[
-                (self.meal_plan_df['day'] == day) & 
+                (self.meal_plan_df['day'] == day) &
                 (self.meal_plan_df['meal_type'] == meal_type),
-                ['recipe_id', 'recipe_name', 'notes']
-            ] = [recipe_data['recipe_id'], recipe, notes]
+                ['recipe_id', 'recipe_name', 'servings', 'prep_time', 'cook_time', 'notes']
+            ] = [recipe_data['recipe_id'], recipe, servings, recipe_data['prep_time'], recipe_data['cook_time'], notes]
+            action = "Updated"
         else:
             # Add new meal
             new_meal = {
@@ -359,22 +491,28 @@ class MealPlanningWidget(QWidget):
                 'meal_type': meal_type,
                 'recipe_id': recipe_data['recipe_id'],
                 'recipe_name': recipe,
-                'notes': notes,
+                'servings': servings,
                 'prep_time': recipe_data['prep_time'],
                 'cook_time': recipe_data['cook_time'],
-                'date_added': datetime.now().strftime('%Y-%m-%d')
+                'notes': notes
             }
             self.meal_plan_df = pd.concat([self.meal_plan_df, pd.DataFrame([new_meal])], ignore_index=True)
-        
+            action = "Added"
+
         # Save to CSV
         self.meal_plan_df.to_csv('data/meal_plan.csv', index=False)
-        
+
         # Update data dictionary
         self.data['meal_plan'] = self.meal_plan_df
-        
+
         # Show success message
-        QMessageBox.information(self, "Success", f"Added {recipe} to {day} {meal_type}!")
-        
+        QMessageBox.information(self, "Success", f"{action} {recipe} for {day} {meal_type}!")
+
+        # Clear form
+        self.recipe_combo.setCurrentIndex(0)
+        self.servings_spin.setValue(1)
+        self.notes_edit.clear()
+
         # Update the meal plan table
         self.setup_meal_plan_tab()
 
@@ -459,6 +597,349 @@ class MealPlanningWidget(QWidget):
             QMessageBox.warning(self, "Refresh Error",
                               f"Failed to refresh meal plan data: {str(e)}")
 
+    def show_recipe_search_dialog(self):
+        """Show a dialog to search and select recipes"""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QPushButton
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Search Recipes")
+        dialog.setMinimumWidth(400)
+        dialog.setMinimumHeight(300)
+
+        layout = QVBoxLayout(dialog)
+
+        # Search box
+        search_layout = QHBoxLayout()
+        search_label = QLabel("Search:")
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Type recipe name or ingredient...")
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(search_input)
+        layout.addLayout(search_layout)
+
+        # Recipe list
+        recipe_list = QListWidget()
+        layout.addWidget(recipe_list)
+
+        # Populate initial list
+        def populate_list(filter_text=""):
+            recipe_list.clear()
+            for _, recipe in self.recipes_df.iterrows():
+                recipe_name = recipe['recipe_name']
+                if not filter_text or filter_text.lower() in recipe_name.lower():
+                    item = QListWidgetItem(f"{recipe_name} ({recipe['prep_time']}+{recipe['cook_time']} min)")
+                    item.setData(Qt.UserRole, recipe_name)
+                    recipe_list.addItem(item)
+
+        populate_list()
+        search_input.textChanged.connect(populate_list)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        select_btn = QPushButton("Select")
+        cancel_btn = QPushButton("Cancel")
+        button_layout.addWidget(select_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+
+        # Connect buttons
+        def select_recipe():
+            current_item = recipe_list.currentItem()
+            if current_item:
+                recipe_name = current_item.data(Qt.UserRole)
+                # Find the recipe in combo box and select it
+                index = self.recipe_combo.findText(recipe_name)
+                if index >= 0:
+                    self.recipe_combo.setCurrentIndex(index)
+                dialog.accept()
+
+        select_btn.clicked.connect(select_recipe)
+        cancel_btn.clicked.connect(dialog.reject)
+        recipe_list.itemDoubleClicked.connect(select_recipe)
+
+        dialog.exec_()
+
+    def on_meal_plan_selection_changed(self):
+        """Handle meal plan table selection changes"""
+        selected_items = self.meal_plan_table.selectedItems()
+        if selected_items:
+            # Get the selected row
+            row = selected_items[0].row()
+
+            # Skip if it's the timestamp row
+            if row >= len(self.meal_plan_df):
+                return
+
+            # Try to extract meal information from the table
+            try:
+                day_item = self.meal_plan_table.item(row, 0)
+                if day_item and day_item.text() in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+                    # Find the corresponding meal in the dataframe
+                    day = day_item.text()
+
+                    # Set the day in the combo box
+                    day_index = self.day_combo.findText(day)
+                    if day_index >= 0:
+                        self.day_combo.setCurrentIndex(day_index)
+
+            except Exception as e:
+                print(f"Error handling meal plan selection: {e}")
+
+    def show_meal_plan_editor(self):
+        """Show comprehensive meal plan editor dialog"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Meal Plan Editor")
+        dialog.setMinimumWidth(800)
+        dialog.setMinimumHeight(600)
+        dialog.setModal(True)
+
+        layout = QVBoxLayout(dialog)
+
+        # Header
+        header_label = QLabel("Weekly Meal Plan Editor")
+        header_label.setFont(QFont("Arial", 16, QFont.Bold))
+        header_label.setAlignment(Qt.AlignCenter)
+        header_label.setStyleSheet("color: #2c3e50; padding: 10px;")
+        layout.addWidget(header_label)
+
+        # Create table for editing
+        edit_table = QTableWidget()
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        meals = ['Breakfast', 'Lunch', 'Dinner']
+
+        edit_table.setRowCount(len(days))
+        edit_table.setColumnCount(len(meals) + 1)  # +1 for day column
+        edit_table.setHorizontalHeaderLabels(['Day'] + meals)
+        edit_table.setVerticalHeaderLabels(days)
+
+        # Populate table with current meal plan
+        for i, day in enumerate(days):
+            # Day column
+            day_item = QTableWidgetItem(day)
+            day_item.setFlags(day_item.flags() & ~Qt.ItemIsEditable)  # Make read-only
+            day_item.setBackground(QColor(240, 240, 240))
+            edit_table.setItem(i, 0, day_item)
+
+            # Meal columns
+            for j, meal in enumerate(meals):
+                # Find existing meal
+                existing_meals = self.meal_plan_df[
+                    (self.meal_plan_df['day'] == day) &
+                    (self.meal_plan_df['meal_type'] == meal)
+                ]
+
+                if not existing_meals.empty:
+                    recipe_name = existing_meals.iloc[0]['recipe_name']
+                    meal_item = QTableWidgetItem(recipe_name)
+                else:
+                    meal_item = QTableWidgetItem("")
+
+                meal_item.setData(Qt.UserRole, {'day': day, 'meal_type': meal})
+                edit_table.setItem(i, j + 1, meal_item)
+
+        edit_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(edit_table)
+
+        # Instructions
+        instructions = QLabel("Double-click a cell to edit. Enter recipe names or leave blank to remove meals.")
+        instructions.setStyleSheet("color: #7f8c8d; font-style: italic; padding: 5px;")
+        layout.addWidget(instructions)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        save_btn = QPushButton("💾 Save Changes")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+        """)
+
+        cancel_btn = QPushButton("❌ Cancel")
+        cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #bdc3c7;
+            }
+        """)
+
+        button_layout.addWidget(cancel_btn)
+        button_layout.addWidget(save_btn)
+        layout.addLayout(button_layout)
+
+        # Save function
+        def save_changes():
+            try:
+                # Create new meal plan dataframe
+                new_meal_plan = []
+
+                for i in range(edit_table.rowCount()):
+                    day = days[i]
+                    for j in range(1, edit_table.columnCount()):  # Skip day column
+                        meal_type = meals[j - 1]
+                        item = edit_table.item(i, j)
+
+                        if item and item.text().strip():
+                            recipe_name = item.text().strip()
+
+                            # Find recipe details
+                            recipe_matches = self.recipes_df[self.recipes_df['recipe_name'] == recipe_name]
+                            if not recipe_matches.empty:
+                                recipe_data = recipe_matches.iloc[0]
+                                new_meal_plan.append({
+                                    'day': day,
+                                    'meal_type': meal_type,
+                                    'recipe_id': recipe_data['recipe_id'],
+                                    'recipe_name': recipe_name,
+                                    'servings': 1,
+                                    'prep_time': recipe_data['prep_time'],
+                                    'cook_time': recipe_data['cook_time']
+                                })
+
+                # Update meal plan dataframe
+                self.meal_plan_df = pd.DataFrame(new_meal_plan)
+
+                # Save to CSV
+                self.meal_plan_df.to_csv('data/meal_plan.csv', index=False)
+
+                # Update data dictionary
+                self.data['meal_plan'] = self.meal_plan_df
+
+                # Refresh display
+                self.setup_meal_plan_tab()
+
+                QMessageBox.information(dialog, "Success", "Meal plan updated successfully!")
+                dialog.accept()
+
+            except Exception as e:
+                QMessageBox.critical(dialog, "Error", f"Failed to save changes: {str(e)}")
+
+        save_btn.clicked.connect(save_changes)
+        cancel_btn.clicked.connect(dialog.reject)
+
+        dialog.exec_()
+
+    def clear_week_meal_plan(self):
+        """Clear the entire week's meal plan"""
+        reply = QMessageBox.question(
+            self,
+            "Clear Week",
+            "Are you sure you want to clear the entire week's meal plan?\nThis action cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                # Clear the meal plan dataframe
+                self.meal_plan_df = pd.DataFrame(columns=['day', 'meal_type', 'recipe_id', 'recipe_name', 'servings', 'prep_time', 'cook_time'])
+
+                # Save to CSV
+                self.meal_plan_df.to_csv('data/meal_plan.csv', index=False)
+
+                # Update data dictionary
+                self.data['meal_plan'] = self.meal_plan_df
+
+                # Refresh display
+                self.setup_meal_plan_tab()
+
+                QMessageBox.information(self, "Success", "Week's meal plan cleared successfully!")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to clear meal plan: {str(e)}")
+
+    def auto_generate_meal_plan(self):
+        """Auto-generate a meal plan based on available recipes"""
+        if len(self.recipes_df) == 0:
+            QMessageBox.warning(self, "No Recipes", "No recipes available to generate meal plan.")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Auto Generate Meal Plan",
+            "This will replace your current meal plan with an automatically generated one.\nDo you want to continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                import random
+
+                # Clear existing meal plan
+                new_meal_plan = []
+
+                days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                meal_types = ['Breakfast', 'Lunch', 'Dinner']
+
+                # Get recipes by category if available
+                breakfast_recipes = self.recipes_df[
+                    self.recipes_df['category'].str.contains('Breakfast|breakfast', case=False, na=False)
+                ] if 'category' in self.recipes_df.columns else pd.DataFrame()
+
+                lunch_dinner_recipes = self.recipes_df[
+                    ~self.recipes_df['category'].str.contains('Breakfast|breakfast', case=False, na=False)
+                ] if 'category' in self.recipes_df.columns and not breakfast_recipes.empty else self.recipes_df
+
+                # If no categorized recipes, use all recipes
+                if breakfast_recipes.empty:
+                    breakfast_recipes = self.recipes_df
+                if lunch_dinner_recipes.empty:
+                    lunch_dinner_recipes = self.recipes_df
+
+                for day in days:
+                    for meal_type in meal_types:
+                        # Choose appropriate recipe pool
+                        if meal_type == 'Breakfast' and not breakfast_recipes.empty:
+                            recipe_pool = breakfast_recipes
+                        else:
+                            recipe_pool = lunch_dinner_recipes
+
+                        # Randomly select a recipe
+                        if not recipe_pool.empty:
+                            recipe = recipe_pool.sample(1).iloc[0]
+
+                            new_meal_plan.append({
+                                'day': day,
+                                'meal_type': meal_type,
+                                'recipe_id': recipe['recipe_id'],
+                                'recipe_name': recipe['recipe_name'],
+                                'servings': random.randint(1, 4),
+                                'prep_time': recipe['prep_time'],
+                                'cook_time': recipe['cook_time']
+                            })
+
+                # Update meal plan dataframe
+                self.meal_plan_df = pd.DataFrame(new_meal_plan)
+
+                # Save to CSV
+                self.meal_plan_df.to_csv('data/meal_plan.csv', index=False)
+
+                # Update data dictionary
+                self.data['meal_plan'] = self.meal_plan_df
+
+                # Refresh display
+                self.setup_meal_plan_tab()
+
+                QMessageBox.information(self, "Success", f"Auto-generated meal plan with {len(new_meal_plan)} meals!")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to generate meal plan: {str(e)}")
+
     def setup_recipe_tab(self):
         # Create layout for the tab
         layout = QVBoxLayout(self.recipe_tab)
@@ -481,7 +962,7 @@ class MealPlanningWidget(QWidget):
         search_layout.addWidget(self.recipe_search)
         left_layout.addLayout(search_layout)
         
-        # Recipe list table
+        # Recipe list table with enhanced functionality
         self.recipe_table = QTableWidget()
         self.recipe_table.setColumnCount(3)
         self.recipe_table.setHorizontalHeaderLabels(["Recipe Name", "Prep Time", "Cook Time"])
@@ -489,6 +970,14 @@ class MealPlanningWidget(QWidget):
         self.recipe_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.recipe_table.setSelectionMode(QTableWidget.SingleSelection)
         self.recipe_table.itemSelectionChanged.connect(self.show_recipe_details)
+
+        # Enable context menu for right-click actions
+        self.recipe_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.recipe_table.customContextMenuRequested.connect(self.show_recipe_context_menu)
+
+        # Enable double-click to edit
+        self.recipe_table.itemDoubleClicked.connect(self.show_edit_recipe_dialog)
+
         left_layout.addWidget(self.recipe_table)
 
         # Recipe management buttons
@@ -551,10 +1040,58 @@ class MealPlanningWidget(QWidget):
         
         right_layout.addWidget(instructions_group)
         
-        # Add recipe button
-        self.add_recipe_button = QPushButton("Add New Recipe")
+        # Recipe action buttons
+        recipe_actions_layout = QHBoxLayout()
+
+        self.add_recipe_button = QPushButton("➕ Add New Recipe")
+        self.add_recipe_button.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #229954;
+            }
+        """)
         self.add_recipe_button.clicked.connect(self.show_add_recipe_dialog)
-        right_layout.addWidget(self.add_recipe_button)
+        recipe_actions_layout.addWidget(self.add_recipe_button)
+
+        # Edit recipe button (initially disabled)
+        self.edit_recipe_detail_btn = QPushButton("✏️ Edit This Recipe")
+        self.edit_recipe_detail_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #5dade2;
+            }
+            QPushButton:pressed {
+                background-color: #2980b9;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+            }
+        """)
+        self.edit_recipe_detail_btn.clicked.connect(self.show_edit_recipe_dialog)
+        self.edit_recipe_detail_btn.setEnabled(False)  # Disabled until a recipe is selected
+        recipe_actions_layout.addWidget(self.edit_recipe_detail_btn)
+
+        right_layout.addLayout(recipe_actions_layout)
         
         # Add widgets to splitter
         splitter.addWidget(left_widget)
@@ -607,11 +1144,15 @@ class MealPlanningWidget(QWidget):
             # Disable edit and delete buttons when no recipe is selected
             self.edit_recipe_btn.setEnabled(False)
             self.delete_recipe_btn.setEnabled(False)
+            if hasattr(self, 'edit_recipe_detail_btn'):
+                self.edit_recipe_detail_btn.setEnabled(False)
             return
 
         # Enable edit and delete buttons when a recipe is selected
         self.edit_recipe_btn.setEnabled(True)
         self.delete_recipe_btn.setEnabled(True)
+        if hasattr(self, 'edit_recipe_detail_btn'):
+            self.edit_recipe_detail_btn.setEnabled(True)
         
         # Get the recipe name from the first column
         recipe_name = self.recipe_table.item(selected_items[0].row(), 0).text()
@@ -707,14 +1248,23 @@ class MealPlanningWidget(QWidget):
                 self.ingredients_table.setItem(i, 3, in_stock_item)
     
     def show_add_recipe_dialog(self):
-        # Create a dialog for adding a new recipe
+        # Create a dialog for adding a new recipe with improved layout
         dialog = QDialog(self)
         dialog.setWindowTitle("Add New Recipe")
-        dialog.setMinimumWidth(600)
-        dialog.setMinimumHeight(600)
-        
+        dialog.setMinimumWidth(1100)  # Increased width for 2-column layout
+        dialog.setMinimumHeight(800)  # Increased height for better ingredients visibility
+        dialog.resize(1100, 800)  # Set initial size
+
         # Main layout
         layout = QVBoxLayout(dialog)
+
+        # Create main content splitter for 2-column layout
+        main_splitter = QSplitter(Qt.Horizontal)
+        layout.addWidget(main_splitter)
+
+        # Left column - Recipe details and instructions
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
         
         # Recipe details form
         form_group = QGroupBox("Recipe Details")
@@ -745,37 +1295,91 @@ class MealPlanningWidget(QWidget):
         servings_spin.setValue(1)
         form_layout.addRow("Servings (per recipe):", servings_spin)
         
-        # Add the form to the layout
-        layout.addWidget(form_group)
-        
-        # Ingredients section
+        # Add the form to the left layout
+        left_layout.addWidget(form_group)
+
+        # Instructions section (moved to left column)
+        instructions_group = QGroupBox("Cooking Instructions")
+        instructions_layout = QVBoxLayout(instructions_group)
+
+        # Text area for instructions
+        instructions_text = QTextEdit()
+        instructions_text.setMinimumHeight(200)  # Set minimum height
+        instructions_layout.addWidget(instructions_text)
+
+        left_layout.addWidget(instructions_group)
+
+        # Add left widget to splitter
+        main_splitter.addWidget(left_widget)
+
+        # Right column - Ingredients section with expanded space
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+
+        # Ingredients section with more space
         ingredients_group = QGroupBox("Ingredients (quantities are per serving)")
         ingredients_layout = QVBoxLayout(ingredients_group)
-        
-        # Table for ingredients
+
+        # Table for ingredients with improved styling and height
         ingredients_table = QTableWidget()
         ingredients_table.setColumnCount(4)
         ingredients_table.setHorizontalHeaderLabels(["Item", "Quantity", "Unit", "Auto-added to Inventory"])
         ingredients_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        ingredients_table.setMinimumHeight(350)  # Set minimum height to show multiple rows
+        ingredients_table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+                gridline-color: #bdc3c7;
+                selection-background-color: #3498db;
+                selection-color: white;
+                font-size: 12px;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #ecf0f1;
+                min-height: 20px;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 8px;
+                border: none;
+                font-weight: bold;
+                font-size: 12px;
+            }
+        """)
         ingredients_layout.addWidget(ingredients_table)
         
-        # Add row button for ingredients
-        add_ingredient_btn = QPushButton("Add Ingredient")
+        # Add row button for ingredients with better styling
+        add_ingredient_btn = QPushButton("➕ Add Ingredient")
+        add_ingredient_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #229954;
+            }
+        """)
         ingredients_layout.addWidget(add_ingredient_btn)
-        
-        # Add the ingredients section to the layout
-        layout.addWidget(ingredients_group)
-        
-        # Instructions section
-        instructions_group = QGroupBox("Cooking Instructions")
-        instructions_layout = QVBoxLayout(instructions_group)
-        
-        # Text area for instructions
-        instructions_text = QTextEdit()
-        instructions_layout.addWidget(instructions_text)
-        
-        # Add the instructions section to the layout
-        layout.addWidget(instructions_group)
+
+        # Add the ingredients section to the right layout
+        right_layout.addWidget(ingredients_group)
+
+        # Add right widget to splitter
+        main_splitter.addWidget(right_widget)
+
+        # Set splitter proportions (45% left, 55% right for ingredients)
+        main_splitter.setSizes([495, 605])  # Based on 1100px total width
         
         # Buttons
         buttons_layout = QHBoxLayout()
@@ -917,7 +1521,7 @@ class MealPlanningWidget(QWidget):
         dialog.exec_()
 
     def show_edit_recipe_dialog(self):
-        """Show dialog to edit the selected recipe"""
+        """Show enhanced dialog to edit the selected recipe with improved validation and features"""
         selected_items = self.recipe_table.selectedItems()
         if not selected_items:
             QMessageBox.warning(self, "No Selection", "Please select a recipe to edit.")
@@ -927,59 +1531,238 @@ class MealPlanningWidget(QWidget):
         recipe_name = self.recipe_table.item(selected_items[0].row(), 0).text()
         recipe = self.recipes_df[self.recipes_df['recipe_name'] == recipe_name].iloc[0]
 
-        # Create edit dialog (similar to add dialog but pre-filled)
+        # Create enhanced edit dialog with larger size for better visibility
         dialog = QDialog(self)
         dialog.setWindowTitle(f"Edit Recipe: {recipe_name}")
-        dialog.setMinimumWidth(600)
-        dialog.setMinimumHeight(600)
+        dialog.setMinimumWidth(1400)  # Further increased width for better 2-column layout
+        dialog.setMinimumHeight(1000)  # Increased height for better ingredients visibility
+        dialog.resize(1400, 1000)  # Set initial size for optimal viewing
+        dialog.setModal(True)
 
         # Main layout
         layout = QVBoxLayout(dialog)
 
-        # Recipe details form
+        # Add header with recipe info
+        header_layout = QHBoxLayout()
+        header_label = QLabel(f"Editing Recipe: {recipe_name}")
+        header_label.setFont(QFont("Arial", 14, QFont.Bold))
+        header_label.setStyleSheet("color: #2c3e50; padding: 10px;")
+        header_layout.addWidget(header_label)
+        header_layout.addStretch()
+
+        # Add last modified info if available
+        if 'date_added' in recipe and pd.notna(recipe['date_added']):
+            last_modified = QLabel(f"Created: {recipe['date_added']}")
+            last_modified.setStyleSheet("color: #7f8c8d; font-size: 10px;")
+            header_layout.addWidget(last_modified)
+
+        layout.addLayout(header_layout)
+
+        # Create main content splitter for 2-column layout with enhanced styling
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #bdc3c7;
+                width: 3px;
+                margin: 2px;
+                border-radius: 1px;
+            }
+            QSplitter::handle:hover {
+                background-color: #3498db;
+            }
+        """)
+        main_splitter.setHandleWidth(5)  # Make splitter handle more visible
+        layout.addWidget(main_splitter)
+
+        # Left column - Recipe details and instructions
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+
+        # Recipe details form with enhanced styling
         form_group = QGroupBox("Recipe Details")
+        form_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+        """)
         form_layout = QFormLayout(form_group)
 
-        # Recipe name (pre-filled)
+        # Recipe name (pre-filled) with validation styling
         recipe_name_input = QLineEdit()
         recipe_name_input.setText(recipe['recipe_name'])
-        form_layout.addRow("Recipe Name:", recipe_name_input)
+        recipe_name_input.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border-color: #3498db;
+            }
+        """)
+        form_layout.addRow("Recipe Name*:", recipe_name_input)
 
-        # Prep time (pre-filled)
+        # Category selection (new feature)
+        category_combo = QComboBox()
+        category_combo.setEditable(True)
+        categories = ["Main Course", "Appetizer", "Dessert", "Beverage", "Snack", "Side Dish", "Breakfast", "Lunch", "Dinner"]
+        category_combo.addItems(categories)
+        if 'category' in recipe and pd.notna(recipe['category']):
+            category_combo.setCurrentText(recipe['category'])
+        else:
+            category_combo.setCurrentText("Main Course")
+        category_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+            }
+        """)
+        form_layout.addRow("Category:", category_combo)
+
+        # Prep time (pre-filled) with better styling
         prep_time_spin = QSpinBox()
         prep_time_spin.setMinimum(1)
         prep_time_spin.setMaximum(240)
         prep_time_spin.setValue(int(recipe['prep_time']))
-        form_layout.addRow("Prep Time (minutes):", prep_time_spin)
+        prep_time_spin.setSuffix(" minutes")
+        prep_time_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 8px;
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+            }
+        """)
+        form_layout.addRow("Prep Time*:", prep_time_spin)
 
-        # Cook time (pre-filled)
+        # Cook time (pre-filled) with better styling
         cook_time_spin = QSpinBox()
-        cook_time_spin.setMinimum(1)
+        cook_time_spin.setMinimum(0)
         cook_time_spin.setMaximum(480)
         cook_time_spin.setValue(int(recipe['cook_time']))
-        form_layout.addRow("Cook Time (minutes):", cook_time_spin)
+        cook_time_spin.setSuffix(" minutes")
+        cook_time_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 8px;
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+            }
+        """)
+        form_layout.addRow("Cook Time*:", cook_time_spin)
 
-        layout.addWidget(form_group)
+        # Servings (enhanced)
+        servings_spin = QSpinBox()
+        servings_spin.setMinimum(1)
+        servings_spin.setMaximum(20)
+        if 'servings' in recipe and pd.notna(recipe['servings']):
+            servings_spin.setValue(int(recipe['servings']))
+        else:
+            servings_spin.setValue(1)
+        servings_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 8px;
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+            }
+        """)
+        form_layout.addRow("Servings:", servings_spin)
 
-        # Instructions (pre-filled)
-        instructions_group = QGroupBox("Instructions")
+        left_layout.addWidget(form_group)
+
+        # Instructions (pre-filled) with enhanced styling
+        instructions_group = QGroupBox("Cooking Instructions")
+        instructions_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+        """)
         instructions_layout = QVBoxLayout(instructions_group)
 
         instructions_text = QTextEdit()
         instructions_text.setPlainText(recipe.get('instructions', ''))
+        instructions_text.setStyleSheet("""
+            QTextEdit {
+                border: 2px solid #ecf0f1;
+                border-radius: 4px;
+                padding: 8px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            QTextEdit:focus {
+                border-color: #3498db;
+            }
+        """)
+        instructions_text.setPlaceholderText("Enter detailed cooking instructions here...")
         instructions_layout.addWidget(instructions_text)
 
-        layout.addWidget(instructions_group)
+        left_layout.addWidget(instructions_group)
 
-        # Ingredients section (pre-filled)
-        ingredients_group = QGroupBox("Ingredients")
+        # Add left widget to splitter
+        main_splitter.addWidget(left_widget)
+
+        # Right column - Ingredients section with expanded space
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+
+        # Enhanced Ingredients section with better management and more space
+        ingredients_group = QGroupBox("Recipe Ingredients")
+        ingredients_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+        """)
         ingredients_layout = QVBoxLayout(ingredients_group)
 
-        # Get existing ingredients for this recipe
+        # Get existing ingredients for this recipe with enhanced parsing
         recipe_ingredients_df = self.data.get('recipe_ingredients', pd.DataFrame())
         existing_ingredients = []
 
-        if not recipe_ingredients_df.empty:
+        # Try to get ingredients from structured format first
+        if 'recipe_ingredients' in recipe and pd.notna(recipe['recipe_ingredients']):
+            try:
+                import json
+                structured_ingredients = json.loads(recipe['recipe_ingredients'])
+                for ingredient in structured_ingredients:
+                    existing_ingredients.append({
+                        'item_name': ingredient.get('item_name', ''),
+                        'quantity': ingredient.get('quantity', 1.0),
+                        'unit': ingredient.get('unit', 'units'),
+                        'notes': ingredient.get('notes', '')
+                    })
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+        # Fallback to recipe_ingredients table if structured format not available
+        if not existing_ingredients and not recipe_ingredients_df.empty:
             recipe_ingredients = recipe_ingredients_df[
                 recipe_ingredients_df['recipe_id'] == recipe['recipe_id']
             ]
@@ -991,96 +1774,478 @@ class MealPlanningWidget(QWidget):
                     'notes': ingredient.get('notes', '')
                 })
 
-        # Ingredients table
+        # Enhanced ingredients table with better styling and expanded height
         ingredients_table = QTableWidget()
-        ingredients_table.setColumnCount(4)
-        ingredients_table.setHorizontalHeaderLabels(["Ingredient", "Quantity", "Unit", "Notes"])
-        ingredients_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        ingredients_table.setColumnCount(5)
+        ingredients_table.setHorizontalHeaderLabels(["Ingredient*", "Quantity*", "Unit", "Notes", "In Stock"])
 
-        # Populate with existing ingredients
+        # Set column resize modes for better visibility
+        header = ingredients_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)  # Ingredient name - flexible
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Quantity - fit content
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Unit - fit content
+        header.setSectionResizeMode(3, QHeaderView.Stretch)  # Notes - flexible
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # In Stock - fit content
+        ingredients_table.setMinimumHeight(500)  # Increased height to show more rows clearly
+        ingredients_table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid #ecf0f1;
+                border-radius: 6px;
+                gridline-color: #bdc3c7;
+                selection-background-color: #3498db;
+                selection-color: white;
+                font-size: 13px;
+                background-color: white;
+                alternate-background-color: #f8f9fa;
+            }
+            QTableWidget::item {
+                padding: 12px 8px;
+                border-bottom: 1px solid #ecf0f1;
+                min-height: 30px;
+                border-right: 1px solid #ecf0f1;
+            }
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #2c3e50;
+                color: white;
+                padding: 12px 8px;
+                border: none;
+                font-weight: bold;
+                font-size: 13px;
+                border-right: 1px solid #34495e;
+            }
+            QHeaderView::section:last {
+                border-right: none;
+            }
+        """)
+
+        # Populate with existing ingredients and check inventory status
         ingredients_table.setRowCount(len(existing_ingredients))
+        inventory_df = self.data.get('inventory', pd.DataFrame())
+
         for i, ingredient in enumerate(existing_ingredients):
+            # Ingredient name
             ingredients_table.setItem(i, 0, QTableWidgetItem(ingredient['item_name']))
+
+            # Quantity
             ingredients_table.setItem(i, 1, QTableWidgetItem(str(ingredient['quantity'])))
+
+            # Unit
             ingredients_table.setItem(i, 2, QTableWidgetItem(ingredient['unit']))
+
+            # Notes
             ingredients_table.setItem(i, 3, QTableWidgetItem(ingredient['notes']))
+
+            # Check inventory status
+            in_stock_status = "Unknown"
+            if not inventory_df.empty and 'item_name' in inventory_df.columns:
+                matching_items = inventory_df[inventory_df['item_name'].str.lower() == ingredient['item_name'].lower()]
+                if not matching_items.empty:
+                    stock_qty = matching_items.iloc[0].get('quantity', 0)
+                    if stock_qty > 0:
+                        in_stock_status = f"Yes ({stock_qty})"
+                    else:
+                        in_stock_status = "Out of Stock"
+                else:
+                    in_stock_status = "Not in Inventory"
+
+            stock_item = QTableWidgetItem(in_stock_status)
+            if "Yes" in in_stock_status:
+                stock_item.setBackground(QColor(200, 255, 200))  # Light green
+            elif "Out of Stock" in in_stock_status:
+                stock_item.setBackground(QColor(255, 200, 200))  # Light red
+            else:
+                stock_item.setBackground(QColor(255, 255, 200))  # Light yellow
+            ingredients_table.setItem(i, 4, stock_item)
 
         ingredients_layout.addWidget(ingredients_table)
 
-        # Ingredient management buttons
+        # Enhanced ingredient management buttons with better styling
         ingredient_buttons = QHBoxLayout()
 
-        add_ingredient_btn = QPushButton("Add Ingredient")
-        edit_ingredient_btn = QPushButton("Edit Ingredient")
-        remove_ingredient_btn = QPushButton("Remove Ingredient")
+        add_ingredient_btn = QPushButton("➕ Add Ingredient")
+        add_ingredient_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #229954;
+            }
+        """)
+
+        edit_ingredient_btn = QPushButton("✏️ Edit Selected")
+        edit_ingredient_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #5dade2;
+            }
+            QPushButton:pressed {
+                background-color: #2980b9;
+            }
+        """)
+
+        remove_ingredient_btn = QPushButton("🗑️ Remove Selected")
+        remove_ingredient_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #ec7063;
+            }
+            QPushButton:pressed {
+                background-color: #c0392b;
+            }
+        """)
+
+        # Add validation button
+        validate_ingredients_btn = QPushButton("🔍 Validate Ingredients")
+        validate_ingredients_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f39c12;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #f7dc6f;
+                color: #2c3e50;
+            }
+            QPushButton:pressed {
+                background-color: #d68910;
+            }
+        """)
 
         ingredient_buttons.addWidget(add_ingredient_btn)
         ingredient_buttons.addWidget(edit_ingredient_btn)
         ingredient_buttons.addWidget(remove_ingredient_btn)
+        ingredient_buttons.addWidget(validate_ingredients_btn)
         ingredient_buttons.addStretch()
 
         ingredients_layout.addLayout(ingredient_buttons)
-        layout.addWidget(ingredients_group)
+        right_layout.addWidget(ingredients_group)
 
-        # Dialog buttons
+        # Add right widget to splitter
+        main_splitter.addWidget(right_widget)
+
+        # Set splitter proportions (35% left, 65% right for ingredients)
+        main_splitter.setSizes([490, 910])  # Based on 1400px total width - more space for ingredients
+
+        # Enhanced dialog buttons with better styling and confirmation
         button_layout = QHBoxLayout()
-        save_btn = QPushButton("Save Changes")
-        cancel_btn = QPushButton("Cancel")
+        button_layout.addStretch()
 
-        button_layout.addWidget(save_btn)
+        # Cancel button
+        cancel_btn = QPushButton("❌ Cancel")
+        cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #95a5a6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: bold;
+                font-size: 12px;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #bdc3c7;
+            }
+            QPushButton:pressed {
+                background-color: #7f8c8d;
+            }
+        """)
+
+        # Save button
+        save_btn = QPushButton("💾 Save Changes")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: bold;
+                font-size: 12px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+            QPushButton:pressed {
+                background-color: #229954;
+            }
+        """)
+
+        # Preview button (new feature)
+        preview_btn = QPushButton("👁️ Preview Recipe")
+        preview_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #8e44ad;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: bold;
+                font-size: 12px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #a569bd;
+            }
+            QPushButton:pressed {
+                background-color: #7d3c98;
+            }
+        """)
+
+        button_layout.addWidget(preview_btn)
         button_layout.addWidget(cancel_btn)
+        button_layout.addWidget(save_btn)
         layout.addLayout(button_layout)
 
-        # Connect cancel button
-        cancel_btn.clicked.connect(dialog.reject)
+        # Connect cancel button with confirmation if changes were made
+        def confirm_cancel():
+            reply = QMessageBox.question(
+                dialog,
+                "Confirm Cancel",
+                "Are you sure you want to cancel? Any unsaved changes will be lost.",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                dialog.reject()
 
-        # Ingredient management functions
+        cancel_btn.clicked.connect(confirm_cancel)
+
+        # Enhanced ingredient management functions with better UX
         def add_ingredient():
             row = ingredients_table.rowCount()
             ingredients_table.insertRow(row)
+
+            # Create combo box for ingredient selection
+            ingredient_combo = QComboBox()
+            ingredient_combo.setEditable(True)
+
+            # Populate with inventory items
+            if not inventory_df.empty and 'item_name' in inventory_df.columns:
+                items = sorted(set(inventory_df['item_name'].dropna().unique()))
+                ingredient_combo.addItems(items)
+
+            # Set default values
             ingredients_table.setItem(row, 0, QTableWidgetItem(""))
-            ingredients_table.setItem(row, 1, QTableWidgetItem("1"))
+            ingredients_table.setItem(row, 1, QTableWidgetItem("1.0"))
             ingredients_table.setItem(row, 2, QTableWidgetItem("units"))
             ingredients_table.setItem(row, 3, QTableWidgetItem(""))
+            ingredients_table.setItem(row, 4, QTableWidgetItem("Unknown"))
+
+            # Focus on the new row for immediate editing
+            ingredients_table.setCurrentCell(row, 0)
+            ingredients_table.editItem(ingredients_table.item(row, 0))
 
         def edit_ingredient():
             current_row = ingredients_table.currentRow()
             if current_row >= 0:
                 ingredients_table.editItem(ingredients_table.item(current_row, 0))
+            else:
+                QMessageBox.information(dialog, "No Selection", "Please select an ingredient row to edit.")
 
         def remove_ingredient():
             current_row = ingredients_table.currentRow()
             if current_row >= 0:
-                ingredients_table.removeRow(current_row)
+                ingredient_name = ingredients_table.item(current_row, 0).text()
+                reply = QMessageBox.question(
+                    dialog,
+                    "Confirm Removal",
+                    f"Are you sure you want to remove '{ingredient_name}' from this recipe?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    ingredients_table.removeRow(current_row)
+            else:
+                QMessageBox.information(dialog, "No Selection", "Please select an ingredient row to remove.")
+
+        def validate_ingredients():
+            """Validate all ingredients against inventory and show status"""
+            missing_ingredients = []
+            available_ingredients = []
+
+            for row in range(ingredients_table.rowCount()):
+                ingredient_name = ingredients_table.item(row, 0).text().strip()
+                if ingredient_name:
+                    # Check inventory status
+                    if not inventory_df.empty and 'item_name' in inventory_df.columns:
+                        matching_items = inventory_df[inventory_df['item_name'].str.lower() == ingredient_name.lower()]
+                        if matching_items.empty:
+                            missing_ingredients.append(ingredient_name)
+                        else:
+                            stock_qty = matching_items.iloc[0].get('quantity', 0)
+                            if stock_qty > 0:
+                                available_ingredients.append(f"{ingredient_name} ({stock_qty} available)")
+                            else:
+                                missing_ingredients.append(f"{ingredient_name} (out of stock)")
+
+            # Show validation results
+            message = "Ingredient Validation Results:\n\n"
+            if available_ingredients:
+                message += "✅ Available Ingredients:\n" + "\n".join(available_ingredients) + "\n\n"
+            if missing_ingredients:
+                message += "❌ Missing/Out of Stock:\n" + "\n".join(missing_ingredients)
+
+            QMessageBox.information(dialog, "Ingredient Validation", message)
+
+        def preview_recipe():
+            """Show a preview of how the recipe will look"""
+            preview_text = f"Recipe: {recipe_name_input.text()}\n"
+            preview_text += f"Category: {category_combo.currentText()}\n"
+            preview_text += f"Prep Time: {prep_time_spin.value()} minutes\n"
+            preview_text += f"Cook Time: {cook_time_spin.value()} minutes\n"
+            preview_text += f"Servings: {servings_spin.value()}\n\n"
+
+            preview_text += "Ingredients:\n"
+            for row in range(ingredients_table.rowCount()):
+                ingredient = ingredients_table.item(row, 0).text()
+                quantity = ingredients_table.item(row, 1).text()
+                unit = ingredients_table.item(row, 2).text()
+                if ingredient.strip():
+                    preview_text += f"• {quantity} {unit} {ingredient}\n"
+
+            preview_text += f"\nInstructions:\n{instructions_text.toPlainText()}"
+
+            preview_dialog = QDialog(dialog)
+            preview_dialog.setWindowTitle("Recipe Preview")
+            preview_dialog.setMinimumWidth(500)
+            preview_dialog.setMinimumHeight(400)
+
+            preview_layout = QVBoxLayout(preview_dialog)
+            preview_display = QTextEdit()
+            preview_display.setPlainText(preview_text)
+            preview_display.setReadOnly(True)
+            preview_layout.addWidget(preview_display)
+
+            close_btn = QPushButton("Close Preview")
+            close_btn.clicked.connect(preview_dialog.accept)
+            preview_layout.addWidget(close_btn)
+
+            preview_dialog.exec_()
 
         # Connect ingredient buttons
         add_ingredient_btn.clicked.connect(add_ingredient)
         edit_ingredient_btn.clicked.connect(edit_ingredient)
         remove_ingredient_btn.clicked.connect(remove_ingredient)
+        validate_ingredients_btn.clicked.connect(validate_ingredients)
+        preview_btn.clicked.connect(preview_recipe)
 
-        # Save recipe function
+        # Enhanced save recipe function with comprehensive validation
         def save_recipe_changes():
-            # Validate inputs
+            # Comprehensive input validation
+            validation_errors = []
+
             if not recipe_name_input.text().strip():
-                QMessageBox.warning(dialog, "Input Error", "Recipe name is required.")
+                validation_errors.append("• Recipe name is required")
+
+            if prep_time_spin.value() <= 0:
+                validation_errors.append("• Prep time must be greater than 0")
+
+            if cook_time_spin.value() < 0:
+                validation_errors.append("• Cook time cannot be negative")
+
+            # Validate ingredients
+            ingredient_count = 0
+            for row in range(ingredients_table.rowCount()):
+                ingredient_name = ingredients_table.item(row, 0).text().strip()
+                if ingredient_name:
+                    ingredient_count += 1
+                    try:
+                        quantity = float(ingredients_table.item(row, 1).text())
+                        if quantity <= 0:
+                            validation_errors.append(f"• Quantity for '{ingredient_name}' must be greater than 0")
+                    except ValueError:
+                        validation_errors.append(f"• Invalid quantity for '{ingredient_name}'")
+
+            if ingredient_count == 0:
+                validation_errors.append("• At least one ingredient is required")
+
+            if not instructions_text.toPlainText().strip():
+                validation_errors.append("• Cooking instructions are required")
+
+            # Show validation errors if any
+            if validation_errors:
+                error_message = "Please fix the following errors:\n\n" + "\n".join(validation_errors)
+                QMessageBox.warning(dialog, "Validation Errors", error_message)
                 return
 
+            # Check for duplicate recipe name (excluding current recipe)
+            new_recipe_name = recipe_name_input.text().strip()
+            existing_recipes = self.recipes_df[
+                (self.recipes_df['recipe_name'].str.lower() == new_recipe_name.lower()) &
+                (self.recipes_df['recipe_id'] != recipe['recipe_id'])
+            ]
+            if not existing_recipes.empty:
+                reply = QMessageBox.question(
+                    dialog,
+                    "Duplicate Recipe Name",
+                    f"A recipe named '{new_recipe_name}' already exists. Do you want to continue anyway?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.No:
+                    return
+
             try:
+                # Show progress indicator
+                progress_msg = QMessageBox(dialog)
+                progress_msg.setWindowTitle("Saving Recipe")
+                progress_msg.setText("Saving recipe changes...")
+                progress_msg.setStandardButtons(QMessageBox.NoButton)
+                progress_msg.show()
+                QApplication.processEvents()
+
                 # Update recipe in dataframe
                 recipe_id = recipe['recipe_id']
-                new_recipe_name = recipe_name_input.text().strip()
+                new_category = category_combo.currentText()
                 new_prep_time = prep_time_spin.value()
                 new_cook_time = cook_time_spin.value()
+                new_servings = servings_spin.value()
                 new_instructions = instructions_text.toPlainText().strip()
 
-                # Update recipe data
+                # Update recipe data with all fields
                 self.recipes_df.loc[
                     self.recipes_df['recipe_id'] == recipe_id,
-                    ['recipe_name', 'prep_time', 'cook_time', 'instructions']
-                ] = [new_recipe_name, new_prep_time, new_cook_time, new_instructions]
+                    ['recipe_name', 'category', 'prep_time', 'cook_time', 'servings', 'instructions']
+                ] = [new_recipe_name, new_category, new_prep_time, new_cook_time, new_servings, new_instructions]
 
-                # Update ingredients
+                # Update ingredients with enhanced structure
                 recipe_ingredients_df = self.data.get('recipe_ingredients', pd.DataFrame())
+                ingredients_list = []
 
                 # Remove existing ingredients for this recipe
                 if not recipe_ingredients_df.empty:
@@ -1088,7 +2253,7 @@ class MealPlanningWidget(QWidget):
                         recipe_ingredients_df['recipe_id'] != recipe_id
                     ]
 
-                # Add updated ingredients
+                # Process updated ingredients
                 for row in range(ingredients_table.rowCount()):
                     item_name = ingredients_table.item(row, 0).text().strip()
                     if item_name:  # Only add non-empty ingredients
@@ -1097,12 +2262,21 @@ class MealPlanningWidget(QWidget):
                         except ValueError:
                             quantity = 1.0
 
-                        unit = ingredients_table.item(row, 2).text().strip()
+                        unit = ingredients_table.item(row, 2).text().strip() or "units"
                         notes = ingredients_table.item(row, 3).text().strip()
 
+                        # Add to structured ingredients list
+                        ingredients_list.append({
+                            'item_name': item_name,
+                            'quantity': quantity,
+                            'unit': unit,
+                            'notes': notes
+                        })
+
+                        # Add to recipe_ingredients table for backward compatibility
                         new_ingredient = pd.DataFrame([{
                             'recipe_id': recipe_id,
-                            'ingredient_id': len(recipe_ingredients_df) + 1,
+                            'ingredient_id': len(recipe_ingredients_df) + row + 1,
                             'item_name': item_name,
                             'quantity': quantity,
                             'unit': unit,
@@ -1111,31 +2285,243 @@ class MealPlanningWidget(QWidget):
 
                         recipe_ingredients_df = pd.concat([recipe_ingredients_df, new_ingredient], ignore_index=True)
 
-                # Save to CSV files
-                self.recipes_df.to_csv('data/recipes.csv', index=False)
-                recipe_ingredients_df.to_csv('data/recipe_ingredients.csv', index=False)
+                # Update structured ingredients in recipe
+                import json
+                structured_ingredients = json.dumps(ingredients_list)
+                self.recipes_df.loc[
+                    self.recipes_df['recipe_id'] == recipe_id,
+                    'recipe_ingredients'
+                ] = structured_ingredients
+
+                # Update legacy ingredients format for backward compatibility
+                legacy_ingredients = ", ".join([f"{item['quantity']} {item['unit']} {item['item_name']}" for item in ingredients_list])
+                self.recipes_df.loc[
+                    self.recipes_df['recipe_id'] == recipe_id,
+                    'ingredients'
+                ] = legacy_ingredients
+
+                # Update last modified date
+                from datetime import datetime
+                self.recipes_df.loc[
+                    self.recipes_df['recipe_id'] == recipe_id,
+                    'date_modified'
+                ] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                # Save to CSV files with error handling
+                try:
+                    self.recipes_df.to_csv('data/recipes.csv', index=False)
+                    recipe_ingredients_df.to_csv('data/recipe_ingredients.csv', index=False)
+                except Exception as save_error:
+                    progress_msg.hide()
+                    QMessageBox.critical(dialog, "Save Error", f"Failed to save files: {str(save_error)}")
+                    return
 
                 # Update data dictionary
                 self.data['recipes'] = self.recipes_df
                 self.data['recipe_ingredients'] = recipe_ingredients_df
 
-                # Refresh recipe table
+                # Hide progress message
+                progress_msg.hide()
+
+                # Refresh recipe table and details
                 self.populate_recipe_table()
 
-                # Show success message
-                QMessageBox.information(dialog, "Success", f"Recipe '{new_recipe_name}' updated successfully!")
+                # Update the recipe details view if this recipe is currently selected
+                if hasattr(self, 'recipe_name_label') and self.recipe_name_label.text() == recipe['recipe_name']:
+                    self.show_recipe_details()
+
+                # Show success message with details
+                success_message = f"Recipe '{new_recipe_name}' updated successfully!\n\n"
+                success_message += f"• {len(ingredients_list)} ingredients\n"
+                success_message += f"• Prep time: {new_prep_time} minutes\n"
+                success_message += f"• Cook time: {new_cook_time} minutes\n"
+                success_message += f"• Category: {new_category}"
+
+                QMessageBox.information(dialog, "Recipe Updated", success_message)
 
                 # Close dialog
                 dialog.accept()
 
             except Exception as e:
+                # Hide progress message if it's still showing
+                if 'progress_msg' in locals():
+                    progress_msg.hide()
                 QMessageBox.critical(dialog, "Error", f"Failed to update recipe: {str(e)}")
 
         # Connect save button
         save_btn.clicked.connect(save_recipe_changes)
 
+        # Add keyboard shortcuts for better UX
+        from PySide6.QtGui import QKeySequence
+        from PySide6.QtWidgets import QShortcut
+
+        # Ctrl+S to save
+        save_shortcut = QShortcut(QKeySequence("Ctrl+S"), dialog)
+        save_shortcut.activated.connect(save_recipe_changes)
+
+        # Escape to cancel
+        cancel_shortcut = QShortcut(QKeySequence("Escape"), dialog)
+        cancel_shortcut.activated.connect(confirm_cancel)
+
+        # Set focus to recipe name for immediate editing
+        recipe_name_input.setFocus()
+        recipe_name_input.selectAll()
+
         # Show the dialog
         dialog.exec_()
+
+    def show_recipe_context_menu(self, position):
+        """Show context menu for recipe table with edit, delete, and other options"""
+        if self.recipe_table.itemAt(position) is None:
+            return
+
+        from PySide6.QtWidgets import QMenu
+        from PySide6.QtGui import QAction
+
+        context_menu = QMenu(self)
+
+        # Edit recipe action
+        edit_action = QAction("✏️ Edit Recipe", self)
+        edit_action.triggered.connect(self.show_edit_recipe_dialog)
+        context_menu.addAction(edit_action)
+
+        # Duplicate recipe action
+        duplicate_action = QAction("📋 Duplicate Recipe", self)
+        duplicate_action.triggered.connect(self.duplicate_selected_recipe)
+        context_menu.addAction(duplicate_action)
+
+        context_menu.addSeparator()
+
+        # Delete recipe action
+        delete_action = QAction("🗑️ Delete Recipe", self)
+        delete_action.triggered.connect(self.delete_recipe)
+        context_menu.addAction(delete_action)
+
+        context_menu.addSeparator()
+
+        # Export recipe action
+        export_action = QAction("📤 Export Recipe", self)
+        export_action.triggered.connect(self.export_selected_recipe)
+        context_menu.addAction(export_action)
+
+        # Show the context menu
+        context_menu.exec_(self.recipe_table.mapToGlobal(position))
+
+    def duplicate_selected_recipe(self):
+        """Duplicate the selected recipe with a new name"""
+        selected_items = self.recipe_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a recipe to duplicate.")
+            return
+
+        # Get the selected recipe
+        recipe_name = self.recipe_table.item(selected_items[0].row(), 0).text()
+        recipe = self.recipes_df[self.recipes_df['recipe_name'] == recipe_name].iloc[0]
+
+        # Ask for new recipe name
+        from PySide6.QtWidgets import QInputDialog
+        new_name, ok = QInputDialog.getText(
+            self,
+            "Duplicate Recipe",
+            f"Enter name for duplicated recipe:",
+            text=f"{recipe_name} (Copy)"
+        )
+
+        if ok and new_name.strip():
+            try:
+                # Generate new recipe ID
+                new_recipe_id = self.recipes_df['recipe_id'].max() + 1 if len(self.recipes_df) > 0 else 1
+
+                # Create duplicate recipe
+                new_recipe = recipe.copy()
+                new_recipe['recipe_id'] = new_recipe_id
+                new_recipe['recipe_name'] = new_name.strip()
+                new_recipe['date_added'] = datetime.now().strftime('%Y-%m-%d')
+
+                # Add to dataframe
+                self.recipes_df = pd.concat([self.recipes_df, pd.DataFrame([new_recipe])], ignore_index=True)
+
+                # Duplicate ingredients if they exist
+                recipe_ingredients_df = self.data.get('recipe_ingredients', pd.DataFrame())
+                if not recipe_ingredients_df.empty:
+                    original_ingredients = recipe_ingredients_df[
+                        recipe_ingredients_df['recipe_id'] == recipe['recipe_id']
+                    ]
+
+                    if not original_ingredients.empty:
+                        # Create new ingredients with new recipe ID
+                        new_ingredients = original_ingredients.copy()
+                        new_ingredients['recipe_id'] = new_recipe_id
+                        new_ingredients['ingredient_id'] = range(
+                            len(recipe_ingredients_df) + 1,
+                            len(recipe_ingredients_df) + len(new_ingredients) + 1
+                        )
+
+                        # Add to ingredients dataframe
+                        recipe_ingredients_df = pd.concat([recipe_ingredients_df, new_ingredients], ignore_index=True)
+                        self.data['recipe_ingredients'] = recipe_ingredients_df
+                        recipe_ingredients_df.to_csv('data/recipe_ingredients.csv', index=False)
+
+                # Save recipes
+                self.recipes_df.to_csv('data/recipes.csv', index=False)
+                self.data['recipes'] = self.recipes_df
+
+                # Refresh table
+                self.populate_recipe_table()
+
+                QMessageBox.information(self, "Success", f"Recipe '{new_name}' created successfully!")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to duplicate recipe: {str(e)}")
+
+    def export_selected_recipe(self):
+        """Export the selected recipe to a text file"""
+        selected_items = self.recipe_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a recipe to export.")
+            return
+
+        # Get the selected recipe
+        recipe_name = self.recipe_table.item(selected_items[0].row(), 0).text()
+        recipe = self.recipes_df[self.recipes_df['recipe_name'] == recipe_name].iloc[0]
+
+        # Create export content
+        export_content = f"Recipe: {recipe['recipe_name']}\n"
+        export_content += f"Category: {recipe.get('category', 'N/A')}\n"
+        export_content += f"Prep Time: {recipe['prep_time']} minutes\n"
+        export_content += f"Cook Time: {recipe['cook_time']} minutes\n"
+        export_content += f"Servings: {recipe.get('servings', 1)}\n\n"
+
+        export_content += "Ingredients:\n"
+        if 'recipe_ingredients' in recipe and pd.notna(recipe['recipe_ingredients']):
+            try:
+                import json
+                ingredients = json.loads(recipe['recipe_ingredients'])
+                for ingredient in ingredients:
+                    export_content += f"• {ingredient['quantity']} {ingredient['unit']} {ingredient['item_name']}\n"
+            except:
+                export_content += f"• {recipe.get('ingredients', 'No ingredients listed')}\n"
+        else:
+            export_content += f"• {recipe.get('ingredients', 'No ingredients listed')}\n"
+
+        export_content += f"\nInstructions:\n{recipe.get('instructions', 'No instructions provided')}\n"
+
+        # Save to file
+        from PySide6.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Recipe",
+            f"{recipe_name.replace(' ', '_')}_recipe.txt",
+            "Text Files (*.txt);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(export_content)
+                QMessageBox.information(self, "Success", f"Recipe exported to {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export recipe: {str(e)}")
 
     def delete_recipe(self):
         """Delete the selected recipe"""
@@ -1416,7 +2802,13 @@ class MealPlanningWidget(QWidget):
         self.populate_current_shopping_list()
     
     def populate_current_shopping_list(self):
-        # Get shopping list data
+        # Get shopping list data - create empty if doesn't exist
+        if 'shopping_list' not in self.data:
+            self.data['shopping_list'] = pd.DataFrame(columns=[
+                'item_id', 'item_name', 'category', 'quantity', 'unit', 'priority',
+                'estimated_cost', 'location', 'notes', 'status', 'date_added'
+            ])
+
         shopping_df = self.data['shopping_list'].copy()
         
         # Clear the table
@@ -1558,8 +2950,14 @@ class MealPlanningWidget(QWidget):
         if not hasattr(self, 'generated_shopping_list'):
             QMessageBox.warning(self, "Warning", "Please generate a shopping list first.")
             return
-        
-        # Get existing shopping list
+
+        # Get existing shopping list - create empty if doesn't exist
+        if 'shopping_list' not in self.data:
+            self.data['shopping_list'] = pd.DataFrame(columns=[
+                'item_id', 'item_name', 'category', 'quantity', 'unit', 'priority',
+                'estimated_cost', 'store', 'notes', 'status'
+            ])
+
         existing_shopping = self.data['shopping_list'].copy()
         
         # Add new items

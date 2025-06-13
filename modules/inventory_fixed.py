@@ -82,6 +82,27 @@ class InventoryWidget(QWidget):
         refresh_button.clicked.connect(self.refresh_data)
         title_layout.addWidget(refresh_button)
 
+        # Add Check Missing Ingredients button
+        check_missing_btn = QPushButton("🔍 Check Missing Ingredients")
+        check_missing_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #17a2b8;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #138496;
+            }
+            QPushButton:pressed {
+                background-color: #117a8b;
+            }
+        """)
+        check_missing_btn.clicked.connect(self.check_missing_ingredients)
+        title_layout.addWidget(check_missing_btn)
+
         self.layout.addLayout(title_layout)
     
         # Create tab widget
@@ -3570,3 +3591,158 @@ class InventoryWidget(QWidget):
             QMessageBox.critical(self, "Refresh Error",
                 f"Failed to refresh inventory data:\n{str(e)}")
             print(f"[ERROR] Error refreshing inventory data: {e}")
+
+    def check_missing_ingredients(self):
+        """Check for missing ingredients from recipes"""
+        try:
+            # Import the smart ingredient manager
+            from modules.smart_ingredient_manager import SmartIngredientManager
+
+            # Create smart ingredient manager instance
+            smart_manager = SmartIngredientManager(self.data)
+
+            # Perform manual ingredient check
+            success = smart_manager.manual_ingredient_check()
+
+            if success:
+                QMessageBox.information(self, "Missing Ingredients Check",
+                    "Missing ingredients check completed successfully!\nCheck the notification bell for results.")
+            else:
+                QMessageBox.warning(self, "Check Failed",
+                    "Failed to check for missing ingredients. Please try again.")
+
+        except ImportError:
+            # Fallback to basic missing ingredients check
+            self.basic_missing_ingredients_check()
+        except Exception as e:
+            print(f"❌ Error checking missing ingredients: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to check missing ingredients: {str(e)}")
+
+    def basic_missing_ingredients_check(self):
+        """Basic missing ingredients check without smart manager"""
+        try:
+            missing_items = []
+
+            # Check if we have recipes data
+            if 'recipes' not in self.data or len(self.data['recipes']) == 0:
+                QMessageBox.information(self, "No Recipes", "No recipes found to check for missing ingredients.")
+                return
+
+            # Get current inventory items
+            inventory_items = set()
+            if len(self.inventory_df) > 0 and 'item_name' in self.inventory_df.columns:
+                inventory_items = set(self.inventory_df['item_name'].str.lower())
+
+            # Check recipe ingredients
+            if 'recipe_ingredients' in self.data and not self.data['recipe_ingredients'].empty:
+                for _, ingredient in self.data['recipe_ingredients'].iterrows():
+                    ingredient_name = ingredient.get('item_name', '').strip()
+                    if ingredient_name and ingredient_name.lower() not in inventory_items:
+                        if ingredient_name not in [item['name'] for item in missing_items]:
+                            missing_items.append({
+                                'name': ingredient_name,
+                                'recipe': ingredient.get('recipe_id', 'Unknown')
+                            })
+
+            if missing_items:
+                # Show missing items dialog
+                self.show_missing_items_dialog(missing_items)
+            else:
+                QMessageBox.information(self, "All Good!", "All recipe ingredients are available in inventory!")
+
+        except Exception as e:
+            print(f"❌ Error in basic missing ingredients check: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to check missing ingredients: {str(e)}")
+
+    def show_missing_items_dialog(self, missing_items):
+        """Show dialog with missing items"""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Missing Ingredients Found")
+        dialog.setMinimumSize(400, 300)
+
+        layout = QVBoxLayout(dialog)
+
+        # Title
+        title_label = QLabel(f"Found {len(missing_items)} missing ingredients:")
+        title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #dc3545; margin-bottom: 10px;")
+        layout.addWidget(title_label)
+
+        # List of missing items
+        missing_list = QListWidget()
+        for item in missing_items:
+            list_item = QListWidgetItem(f"• {item['name']} (from recipe {item['recipe']})")
+            missing_list.addItem(list_item)
+        layout.addWidget(missing_list)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+
+        add_to_shopping_btn = QPushButton("Add to Shopping List")
+        add_to_shopping_btn.setStyleSheet("background-color: #28a745; color: white; padding: 8px 16px; border-radius: 4px;")
+        add_to_shopping_btn.clicked.connect(lambda: self.add_missing_to_shopping(missing_items, dialog))
+        button_layout.addWidget(add_to_shopping_btn)
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_btn)
+
+        layout.addLayout(button_layout)
+
+        dialog.exec()
+
+    def add_missing_to_shopping(self, missing_items, dialog):
+        """Add missing items to shopping list"""
+        try:
+            # Initialize shopping list if it doesn't exist
+            if 'shopping_list' not in self.data:
+                self.data['shopping_list'] = pd.DataFrame(columns=[
+                    'item_id', 'item_name', 'category', 'quantity', 'unit', 'priority',
+                    'last_price', 'current_price', 'avg_price', 'location', 'notes', 'status', 'date_added'
+                ])
+
+            shopping_df = self.data['shopping_list']
+            added_count = 0
+
+            for item in missing_items:
+                item_name = item['name']
+
+                # Check if item already exists in shopping list
+                if not shopping_df.empty and 'item_name' in shopping_df.columns:
+                    existing = shopping_df[shopping_df['item_name'].str.lower() == item_name.lower()]
+                    if not existing.empty:
+                        continue  # Skip if already in shopping list
+
+                # Add to shopping list
+                new_item = pd.DataFrame({
+                    'item_id': [len(shopping_df) + 1],
+                    'item_name': [item_name],
+                    'category': ['Ingredients'],
+                    'quantity': [1],
+                    'unit': ['piece'],
+                    'priority': ['Medium'],
+                    'last_price': [0],
+                    'current_price': [0],
+                    'avg_price': [0],
+                    'location': [''],
+                    'notes': [f"Added from missing ingredients check - Recipe {item['recipe']}"],
+                    'status': ['Pending'],
+                    'date_added': [datetime.now().strftime('%Y-%m-%d')]
+                })
+
+                shopping_df = pd.concat([shopping_df, new_item], ignore_index=True)
+                added_count += 1
+
+            # Save updated shopping list
+            self.data['shopping_list'] = shopping_df
+            shopping_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                       'data', 'shopping_list.csv')
+            shopping_df.to_csv(shopping_file, index=False)
+
+            dialog.accept()
+            QMessageBox.information(self, "Success", f"Added {added_count} items to shopping list!")
+
+        except Exception as e:
+            print(f"❌ Error adding to shopping list: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add items to shopping list: {str(e)}")

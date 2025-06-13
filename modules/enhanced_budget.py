@@ -495,13 +495,127 @@ class EnhancedBudgetWidget(QWidget):
     
     def populate_expense_table(self):
         """Populate expense tracking table"""
-        # This will be populated with shopping data and manual expenses
-        pass
+        try:
+            # Clear existing data
+            self.expense_table.setRowCount(0)
+
+            # Get expenses from shopping data and manual expenses
+            expenses = []
+
+            # Add shopping expenses
+            if 'shopping_list' in self.data and not self.data['shopping_list'].empty:
+                shopping_df = self.data['shopping_list']
+                for _, item in shopping_df.iterrows():
+                    if item.get('status', '').lower() == 'purchased':
+                        expense = {
+                            'date': item.get('date_purchased', item.get('date_added', '')),
+                            'category': item.get('category', 'Shopping'),
+                            'description': f"Shopping: {item.get('item_name', 'Unknown')}",
+                            'amount': item.get('current_price', 0),
+                            'source': 'Shopping',
+                            'receipt': '',
+                            'notes': item.get('notes', '')
+                        }
+                        expenses.append(expense)
+
+            # Add manual expenses
+            if 'manual_expenses' in self.data and not self.data['manual_expenses'].empty:
+                manual_df = self.data['manual_expenses']
+                for _, expense in manual_df.iterrows():
+                    expense_data = {
+                        'date': expense.get('date', ''),
+                        'category': expense.get('category', 'Manual'),
+                        'description': expense.get('description', ''),
+                        'amount': expense.get('amount', 0),
+                        'source': 'Manual Entry',
+                        'receipt': expense.get('receipt', ''),
+                        'notes': expense.get('notes', '')
+                    }
+                    expenses.append(expense_data)
+
+            # Add gas purchases
+            if 'gas_purchases' in self.data and not self.data['gas_purchases'].empty:
+                gas_df = self.data['gas_purchases']
+                for _, purchase in gas_df.iterrows():
+                    expense = {
+                        'date': purchase.get('purchase_date', ''),
+                        'category': 'Gas',
+                        'description': f"Gas Cylinder - {purchase.get('supplier', 'Unknown')}",
+                        'amount': purchase.get('total_cost', 0),
+                        'source': 'Gas Management',
+                        'receipt': '',
+                        'notes': purchase.get('notes', '')
+                    }
+                    expenses.append(expense)
+
+            # Add packing materials purchases
+            if 'packing_materials' in self.data and not self.data['packing_materials'].empty:
+                packing_df = self.data['packing_materials']
+                for _, material in packing_df.iterrows():
+                    # Only include if there's a purchase record
+                    if material.get('last_purchase_date'):
+                        expense = {
+                            'date': material.get('last_purchase_date', ''),
+                            'category': 'Packing Materials',
+                            'description': f"Packing: {material.get('material_name', 'Unknown')}",
+                            'amount': material.get('cost_per_unit', 0) * material.get('current_stock', 0),
+                            'source': 'Stock Management',
+                            'receipt': '',
+                            'notes': material.get('notes', '')
+                        }
+                        expenses.append(expense)
+
+            # Sort expenses by date (newest first)
+            expenses.sort(key=lambda x: x.get('date', ''), reverse=True)
+
+            # Populate table
+            self.expense_table.setRowCount(len(expenses))
+            for row, expense in enumerate(expenses):
+                self.expense_table.setItem(row, 0, QTableWidgetItem(str(expense.get('date', ''))))
+                self.expense_table.setItem(row, 1, QTableWidgetItem(str(expense.get('category', ''))))
+                self.expense_table.setItem(row, 2, QTableWidgetItem(str(expense.get('description', ''))))
+                self.expense_table.setItem(row, 3, QTableWidgetItem(f"₹{expense.get('amount', 0):.2f}"))
+                self.expense_table.setItem(row, 4, QTableWidgetItem(str(expense.get('source', ''))))
+                self.expense_table.setItem(row, 5, QTableWidgetItem(str(expense.get('receipt', ''))))
+                self.expense_table.setItem(row, 6, QTableWidgetItem(str(expense.get('notes', ''))))
+
+        except Exception as e:
+            self.logger.error(f"Error populating expense table: {e}")
     
     def populate_category_mapping(self):
         """Populate category mapping table"""
-        # This will show mapping between shopping categories and budget categories
-        pass
+        try:
+            # Get unique categories from different sources
+            shopping_categories = set()
+            budget_categories = set()
+
+            if 'shopping_list' in self.data and not self.data['shopping_list'].empty:
+                shopping_categories = set(self.data['shopping_list']['category'].dropna().unique())
+
+            if 'budget' in self.data and not self.data['budget'].empty:
+                budget_categories = set(self.data['budget']['category'].dropna().unique())
+
+            # Create mapping pairs
+            all_categories = shopping_categories.union(budget_categories)
+            mappings = []
+
+            for cat in all_categories:
+                mappings.append({
+                    'shopping_category': cat,
+                    'budget_category': cat  # Default to same name
+                })
+
+            # Populate table
+            self.mapping_table.setRowCount(len(mappings))
+            for row, mapping in enumerate(mappings):
+                shopping_item = QTableWidgetItem(mapping['shopping_category'])
+                budget_item = QTableWidgetItem(mapping['budget_category'])
+
+                self.mapping_table.setItem(row, 0, shopping_item)
+                self.mapping_table.setItem(row, 1, budget_item)
+
+        except Exception as e:
+            self.logger.error(f"Error populating category mapping: {e}")
     
     def sync_shopping_expenses(self):
         """Sync expenses from shopping list to budget tracking"""
@@ -545,11 +659,232 @@ class EnhancedBudgetWidget(QWidget):
     
     def add_budget_category(self):
         """Add a new budget category"""
-        notify_info("Add Category", "Add budget category dialog coming soon", parent=self)
+        try:
+            from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Add Budget Category")
+            dialog.setMinimumSize(350, 250)
+
+            layout = QFormLayout(dialog)
+
+            # Category name input
+            category_input = QLineEdit()
+            layout.addRow("Category Name:", category_input)
+
+            # Budget amount input
+            amount_input = QDoubleSpinBox()
+            amount_input.setRange(0.01, 999999.99)
+            amount_input.setDecimals(2)
+            amount_input.setPrefix("₹")
+            amount_input.setValue(1000.00)
+            layout.addRow("Budget Amount:", amount_input)
+
+            # Period input
+            period_input = QComboBox()
+            period_input.addItems(["Monthly", "Weekly", "Quarterly", "Yearly"])
+            layout.addRow("Period:", period_input)
+
+            # Notes input
+            notes_input = QTextEdit()
+            notes_input.setMaximumHeight(80)
+            layout.addRow("Notes:", notes_input)
+
+            # Buttons
+            buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addRow(buttons)
+
+            if dialog.exec() == QDialog.Accepted:
+                category_name = category_input.text().strip()
+                if not category_name:
+                    QMessageBox.warning(self, "Invalid Input", "Please enter a category name.")
+                    return
+
+                # Save the budget category
+                self.save_budget_category(
+                    category_name,
+                    amount_input.value(),
+                    period_input.currentText(),
+                    notes_input.toPlainText()
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error adding budget category: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add budget category: {str(e)}")
+
+    def save_budget_category(self, category, amount, period, notes):
+        """Save new budget category to data"""
+        try:
+            # Initialize budget dataframe if it doesn't exist
+            if 'budget' not in self.data:
+                self.data['budget'] = pd.DataFrame(columns=[
+                    'budget_id', 'category', 'budget_amount', 'actual_amount', 'period', 'notes'
+                ])
+
+            # Check if category already exists
+            if not self.data['budget'].empty:
+                existing = self.data['budget'][self.data['budget']['category'] == category]
+                if not existing.empty:
+                    QMessageBox.warning(self, "Category Exists", f"Budget category '{category}' already exists.")
+                    return
+
+            # Create new budget entry
+            new_budget = pd.DataFrame({
+                'budget_id': [len(self.data['budget']) + 1],
+                'category': [category],
+                'budget_amount': [amount],
+                'actual_amount': [0.0],
+                'period': [period],
+                'notes': [notes]
+            })
+
+            # Add to dataframe
+            self.data['budget'] = pd.concat([self.data['budget'], new_budget], ignore_index=True)
+
+            # Save to CSV
+            budget_file = os.path.join('data', 'budget.csv')
+            self.data['budget'].to_csv(budget_file, index=False)
+
+            # Refresh displays
+            self.load_data()
+
+            QMessageBox.information(self, "Success", f"Budget category '{category}' with ₹{amount:.2f} budget added successfully!")
+
+        except Exception as e:
+            self.logger.error(f"Error saving budget category: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to save budget category: {str(e)}")
     
     def add_manual_expense(self):
-        """Add a manual expense entry"""
-        notify_info("Add Expense", "Add manual expense dialog coming soon", parent=self)
+        """Add manual expense entry"""
+        try:
+            from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Add Manual Expense")
+            dialog.setMinimumSize(400, 300)
+
+            layout = QFormLayout(dialog)
+
+            # Date input
+            date_input = QDateEdit()
+            date_input.setDate(QDate.currentDate())
+            layout.addRow("Date:", date_input)
+
+            # Category input
+            category_input = QComboBox()
+            category_input.setEditable(True)
+            # Get existing categories from budget
+            categories = ['General', 'Food', 'Gas', 'Packing Materials', 'Utilities', 'Maintenance']
+            if 'budget' in self.data and not self.data['budget'].empty:
+                existing_categories = self.data['budget']['category'].unique().tolist()
+                categories.extend([cat for cat in existing_categories if cat not in categories])
+            category_input.addItems(categories)
+            layout.addRow("Category:", category_input)
+
+            # Description input
+            description_input = QLineEdit()
+            layout.addRow("Description:", description_input)
+
+            # Amount input
+            amount_input = QDoubleSpinBox()
+            amount_input.setRange(0.01, 999999.99)
+            amount_input.setDecimals(2)
+            amount_input.setPrefix("₹")
+            layout.addRow("Amount:", amount_input)
+
+            # Receipt input
+            receipt_input = QLineEdit()
+            layout.addRow("Receipt/Reference:", receipt_input)
+
+            # Notes input
+            notes_input = QTextEdit()
+            notes_input.setMaximumHeight(80)
+            layout.addRow("Notes:", notes_input)
+
+            # Buttons
+            buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addRow(buttons)
+
+            if dialog.exec() == QDialog.Accepted:
+                # Save the expense
+                self.save_manual_expense(
+                    date_input.date().toString("yyyy-MM-dd"),
+                    category_input.currentText(),
+                    description_input.text(),
+                    amount_input.value(),
+                    receipt_input.text(),
+                    notes_input.toPlainText()
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error adding manual expense: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add manual expense: {str(e)}")
+
+    def save_manual_expense(self, date, category, description, amount, receipt, notes):
+        """Save manual expense to data"""
+        try:
+            # Initialize manual expenses dataframe if it doesn't exist
+            if 'manual_expenses' not in self.data:
+                self.data['manual_expenses'] = pd.DataFrame(columns=[
+                    'expense_id', 'date', 'category', 'description', 'amount', 'receipt', 'notes'
+                ])
+
+            # Create new expense entry
+            new_expense = pd.DataFrame({
+                'expense_id': [len(self.data['manual_expenses']) + 1],
+                'date': [date],
+                'category': [category],
+                'description': [description],
+                'amount': [amount],
+                'receipt': [receipt],
+                'notes': [notes]
+            })
+
+            # Add to dataframe
+            self.data['manual_expenses'] = pd.concat([self.data['manual_expenses'], new_expense], ignore_index=True)
+
+            # Save to CSV
+            manual_expenses_file = os.path.join('data', 'manual_expenses.csv')
+            self.data['manual_expenses'].to_csv(manual_expenses_file, index=False)
+
+            # Update budget tracking
+            self.update_budget_with_expense(category, amount)
+
+            # Refresh displays
+            self.load_data()
+
+            QMessageBox.information(self, "Success", f"Manual expense of ₹{amount:.2f} added successfully!")
+
+        except Exception as e:
+            self.logger.error(f"Error saving manual expense: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to save manual expense: {str(e)}")
+
+    def update_budget_with_expense(self, category, amount):
+        """Update budget tracking with new expense"""
+        try:
+            if 'budget' not in self.data:
+                return
+
+            # Find matching budget category
+            budget_df = self.data['budget']
+            matching_budget = budget_df[budget_df['category'] == category]
+
+            if not matching_budget.empty:
+                # Update actual amount
+                idx = matching_budget.index[0]
+                current_actual = budget_df.loc[idx, 'actual_amount'] if 'actual_amount' in budget_df.columns else 0
+                budget_df.loc[idx, 'actual_amount'] = current_actual + amount
+
+                # Save updated budget
+                budget_file = os.path.join('data', 'budget.csv')
+                budget_df.to_csv(budget_file, index=False)
+
+        except Exception as e:
+            self.logger.error(f"Error updating budget with expense: {e}")
     
     def save_budget_data(self):
         """Save budget data to file"""

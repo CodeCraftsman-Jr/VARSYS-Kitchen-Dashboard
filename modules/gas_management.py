@@ -174,18 +174,36 @@ class GasManagementWidget(QWidget):
         
         # Usage input section
         usage_input_layout = QHBoxLayout()
-        
+
         usage_input_layout.addWidget(QLabel("Today's Usage (kg):"))
         self.daily_usage_input = QDoubleSpinBox()
         self.daily_usage_input.setRange(0.0, 5.0)
         self.daily_usage_input.setSingleStep(0.1)
         self.daily_usage_input.setDecimals(2)
         usage_input_layout.addWidget(self.daily_usage_input)
-        
+
         update_usage_btn = QPushButton("Update Usage")
         update_usage_btn.clicked.connect(self.update_daily_usage)
         usage_input_layout.addWidget(update_usage_btn)
-        
+
+        # Add manual home usage button
+        home_usage_btn = QPushButton("Add Home Usage")
+        home_usage_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #8b5cf6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #7c3aed;
+            }
+        """)
+        home_usage_btn.clicked.connect(self.add_home_usage)
+        usage_input_layout.addWidget(home_usage_btn)
+
         usage_input_layout.addStretch()
         usage_layout.addLayout(usage_input_layout)
         
@@ -278,8 +296,10 @@ class GasManagementWidget(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
-        # New order section
+        # New order section - Make it collapsible
         order_group = QGroupBox("Place New Gas Order")
+        order_group.setCheckable(True)
+        order_group.setChecked(False)  # Start collapsed to save space
         order_layout = QFormLayout(order_group)
 
         self.supplier_combo = QComboBox()
@@ -1043,3 +1063,143 @@ class GasManagementWidget(QWidget):
         except Exception as e:
             self.logger.error(f"Error saving settings: {e}")
             QMessageBox.critical(self, "Error", f"Failed to save settings: {str(e)}")
+
+    def add_home_usage(self):
+        """Add manual home usage entry"""
+        try:
+            from PySide6.QtWidgets import QDialog, QFormLayout, QDialogButtonBox, QLineEdit
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Add Home Gas Usage")
+            dialog.setMinimumSize(300, 200)
+
+            layout = QFormLayout(dialog)
+
+            # Usage amount input
+            usage_input = QDoubleSpinBox()
+            usage_input.setRange(0.01, 5.0)
+            usage_input.setSingleStep(0.1)
+            usage_input.setDecimals(2)
+            usage_input.setSuffix(" kg")
+            layout.addRow("Usage Amount:", usage_input)
+
+            # Purpose input
+            purpose_input = QLineEdit()
+            purpose_input.setPlaceholderText("e.g., Home cooking, heating water")
+            layout.addRow("Purpose:", purpose_input)
+
+            # Date input
+            date_input = QDateEdit()
+            date_input.setDate(QDate.currentDate())
+            layout.addRow("Date:", date_input)
+
+            # Buttons
+            buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addRow(buttons)
+
+            if dialog.exec() == QDialog.Accepted:
+                self.save_home_usage(
+                    usage_input.value(),
+                    purpose_input.text(),
+                    date_input.date().toString("yyyy-MM-dd")
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error adding home usage: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add home usage: {str(e)}")
+
+    def save_home_usage(self, usage_amount, purpose, date):
+        """Save home usage to data"""
+        try:
+            # Initialize gas usage dataframe if it doesn't exist
+            if 'gas_usage' not in self.data:
+                self.data['gas_usage'] = pd.DataFrame(columns=[
+                    'usage_id', 'date', 'usage_kg', 'purpose', 'type', 'notes'
+                ])
+
+            # Create new usage entry
+            new_usage = pd.DataFrame({
+                'usage_id': [len(self.data['gas_usage']) + 1],
+                'date': [date],
+                'usage_kg': [usage_amount],
+                'purpose': [purpose],
+                'type': ['Home Usage'],
+                'notes': ['Manual entry for home usage']
+            })
+
+            # Add to dataframe
+            self.data['gas_usage'] = pd.concat([self.data['gas_usage'], new_usage], ignore_index=True)
+
+            # Save to CSV
+            gas_usage_file = os.path.join('data', 'gas_usage.csv')
+            self.data['gas_usage'].to_csv(gas_usage_file, index=False)
+
+            # Update displays
+            self.load_gas_data()
+
+            QMessageBox.information(self, "Success", f"Home gas usage of {usage_amount} kg added successfully!")
+
+        except Exception as e:
+            self.logger.error(f"Error saving home usage: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to save home usage: {str(e)}")
+
+    def update_gas_usage_from_sale(self, recipe_data, cooking_time_minutes):
+        """Update gas usage when a sale is made based on cooking time"""
+        try:
+            # Calculate gas usage based on cooking time
+            # Assume average gas consumption of 0.2 kg per hour of cooking
+            gas_usage_per_hour = 0.2
+            cooking_time_hours = cooking_time_minutes / 60.0
+            estimated_gas_usage = gas_usage_per_hour * cooking_time_hours
+
+            # Initialize gas usage dataframe if it doesn't exist
+            if 'gas_usage' not in self.data:
+                self.data['gas_usage'] = pd.DataFrame(columns=[
+                    'usage_id', 'date', 'usage_kg', 'purpose', 'type', 'notes'
+                ])
+
+            # Create new usage entry
+            new_usage = pd.DataFrame({
+                'usage_id': [len(self.data['gas_usage']) + 1],
+                'date': [datetime.now().strftime('%Y-%m-%d')],
+                'usage_kg': [estimated_gas_usage],
+                'purpose': [f"Cooking: {recipe_data.get('recipe_name', 'Unknown Recipe')}"],
+                'type': ['Cooking'],
+                'notes': [f"Auto-calculated from sale. Cooking time: {cooking_time_minutes} minutes"]
+            })
+
+            # Add to dataframe
+            self.data['gas_usage'] = pd.concat([self.data['gas_usage'], new_usage], ignore_index=True)
+
+            # Save to CSV
+            gas_usage_file = os.path.join('data', 'gas_usage.csv')
+            self.data['gas_usage'].to_csv(gas_usage_file, index=False)
+
+            self.logger.info(f"Gas usage updated: {estimated_gas_usage:.3f} kg for cooking {recipe_data.get('recipe_name', 'Unknown')}")
+
+        except Exception as e:
+            self.logger.error(f"Error updating gas usage from sale: {e}")
+
+    def update_daily_usage(self):
+        """Update daily gas usage"""
+        try:
+            usage_amount = self.daily_usage_input.value()
+            if usage_amount <= 0:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a valid usage amount.")
+                return
+
+            # Save the usage
+            self.save_home_usage(
+                usage_amount,
+                "Daily usage update",
+                datetime.now().strftime('%Y-%m-%d')
+            )
+
+            # Clear the input
+            self.daily_usage_input.setValue(0.0)
+
+        except Exception as e:
+            self.logger.error(f"Error updating daily usage: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to update daily usage: {str(e)}")

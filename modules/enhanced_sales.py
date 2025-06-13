@@ -836,6 +836,19 @@ class AddSaleDialog(QDialog):
             sales_file = os.path.join(data_dir, 'sales.csv')
             self.data['sales'].to_csv(sales_file, index=False)
 
+            # Use inventory integration system for comprehensive updates
+            try:
+                from modules.inventory_integration import InventoryIntegration
+
+                integration = InventoryIntegration(self.data)
+                integration_result = integration.process_sale_completion(new_sale)
+
+                if not integration_result['success']:
+                    print(f"Integration warnings: {integration_result['errors']}")
+
+            except Exception as e:
+                print(f"Integration error: {e}")
+
             super().accept()
 
         except Exception as e:

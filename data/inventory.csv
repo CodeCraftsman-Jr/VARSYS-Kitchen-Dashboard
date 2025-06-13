@@ -1,6 +1,6 @@
 item_id,item_name,category,quantity,unit,price_per_unit,location,expiry_date,reorder_level,total_value,price,qty_purchased,qty_used,avg_price,description,default_cost,purchase_count,total_spent,last_purchase_date,last_purchase_price
 1,Oil,Oils,3000.0,ml,0.146,Local Market,2025-07-09,10,328719.0,219.0,3000.0,0,219.0,Added from shopping list purchase,219.0,2,328719.0,2025-06-09,0.146
-2,Fish Kolambu(Parai Fish),Prepared Foods,3200.0,grams,0.08875,Local Market,,10,227342.0,142.0,3200.0,0,142.0,Added from shopping list purchase,142.0,2,227342.0,2025-06-09,0.08875
+2,Fish Kolambu(Parai Fish),Prepared Foods,3200.0,grams,0.08875,Local Market,2025-07-14,10,454400.0,142.0,3200.0,0,142.0,Added from shopping list purchase,142.0,2,227342.0,2025-06-09,0.08875
 3,Dosa batter,Prepared Foods,14000.0,grams,0.0285714285714285,Local Market,,10,1400200.0,200.0,14000.0,0,200.0,Added from shopping list purchase,200.0,2,1400200.0,2025-06-09,0.0285714285714285
 4,Eggs,Eggs,4.0,units,7.0,Local Market,,10,42.0,14.0,4.0,0,14.0,Added from shopping list purchase,14.0,2,42.0,2025-06-09,7.0
 5,Pepper,Spices,200.0,grams,0.7,Local Market,,10,7070.0,70.0,200.0,0,70.0,Added from shopping list purchase,70.0,2,7070.0,2025-06-09,0.7
@@ -62,9 +62,9 @@ item_id,item_name,category,quantity,unit,price_per_unit,location,expiry_date,reo
 61,Cumin Powder(seraga Thool),Spices,100.0,grams,0.2,Local Market,,10,510.0,10.0,100.0,0,10.0,Added from shopping list purchase,10.0,2,510.0,2025-06-09,0.2
 62,Idli podi,Spices,50.0,grams,0.12,Local Market,,10,78.0,3.0,50.0,0,3.0,Added from shopping list purchase,3.0,2,78.0,2025-06-09,0.12
 63,bread,Bread & Bakery,28.0,grams,2.857142857142857,Local Market,,10,600.0,40.0,28.0,0,40.0,Added from shopping list purchase,40.0,2,600.0,2025-06-09,2.857142857142857
-64,perugayam(asafoetida),Unknown,100.0,grams,30.0,Local Market,,10,3000.0,30.0,100.0,0,30.0,Added from shopping list purchase,30.0,1,1500.0,2025-06-12,30.0
-65,sambhar podi,Unknown,80.0,grams,8.0,Local Market,,10,640.0,8.0,80.0,0,8.0,Added from shopping list purchase,8.0,1,320.0,2025-06-12,8.0
-66,Pasiparupu(algae lenthils),Unknown,222.0,grams,16.0,Local Market,,10,3552.0,16.0,222.0,0,16.0,Added from shopping list purchase,16.0,1,1776.0,2025-06-12,16.0
-67,Bringal,Unknown,500.0,grams,20.0,Local Market,,10,10000.0,20.0,500.0,0,20.0,Added from shopping list purchase,20.0,1,5000.0,2025-06-12,20.0
-68,vellam(jaggery),Unknown,1000.0,grams,40.0,Local Market,,10,40000.0,40.0,1000.0,0,40.0,Added from shopping list purchase,40.0,1,20000.0,2025-06-12,40.0
-69,Dry Chilli,Unknown,144.0,grams,9.0,Local Market,,10,1296.0,9.0,144.0,0,9.0,Added from shopping list purchase,9.0,1,648.0,2025-06-12,9.0
+64,perugayam(asafoetida),Spices,100.0,grams,30.0,Local Market,2025-07-14,10,3000.0,30.0,100.0,0,30.0,Added from shopping list purchase,30.0,1,1500.0,2025-06-12,30.0
+65,sambhar podi,Prepared Foods,80.0,grams,8.0,Local Market,2025-07-14,10,640.0,8.0,80.0,0,8.0,Added from shopping list purchase,8.0,1,320.0,2025-06-12,8.0
+66,Pasiparupu(algae lenthils),Spices,222.0,grams,16.0,Local Market,2025-07-14,10,3552.0,16.0,222.0,0,16.0,Added from shopping list purchase,16.0,1,1776.0,2025-06-12,16.0
+67,Bringal,Vegetables,500.0,grams,20.0,Local Market,2025-07-14,10,10000.0,20.0,500.0,0,20.0,Added from shopping list purchase,20.0,1,5000.0,2025-06-12,20.0
+68,vellam(jaggery),Spices,1000.0,grams,40.0,Local Market,2025-07-14,10,40000.0,40.0,1000.0,0,40.0,Added from shopping list purchase,40.0,1,20000.0,2025-06-12,40.0
+69,Dry Chilli,Spices,144.0,grams,9.0,Local Market,2025-07-14,10,1296.0,9.0,144.0,0,9.0,Added from shopping list purchase,9.0,1,648.0,2025-06-12,9.0

@@ -632,6 +632,9 @@ class KitchenDashboardApp(QMainWindow):
             self.responsive_manager.device_type_changed.connect(self.handle_device_type_change)
             self.responsive_manager.layout_mode_changed.connect(self.handle_layout_mode_change)
 
+        # Synchronize categories across all modules
+        QTimer.singleShot(3000, self.synchronize_categories)
+
     def force_layout_update(self):
         """Force layout update to ensure proper sizing"""
         try:
@@ -739,6 +742,40 @@ class KitchenDashboardApp(QMainWindow):
 
         except Exception as e:
             self.logger.error(f"Error in resize event: {e}")
+
+    def synchronize_categories(self):
+        """Synchronize categories across all modules"""
+        try:
+            from modules.category_manager import CategoryManager
+
+            category_manager = CategoryManager(self.data)
+            result = category_manager.synchronize_categories()
+
+            if result['success']:
+                self.logger.info(f"Categories synchronized successfully across {len(result['synchronized_modules'])} modules")
+                self.logger.info(f"Added {result['categories_added']} new category entries")
+
+                # Add notification about category synchronization
+                self.add_notification(
+                    "Category Sync Complete",
+                    f"Categories synchronized across {len(result['synchronized_modules'])} modules. {result['categories_added']} entries added.",
+                    "success"
+                )
+            else:
+                self.logger.warning(f"Category synchronization had issues: {result['errors']}")
+                self.add_notification(
+                    "Category Sync Issues",
+                    f"Some issues occurred during category synchronization: {', '.join(result['errors'][:2])}",
+                    "warning"
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error synchronizing categories: {e}")
+            self.add_notification(
+                "Category Sync Error",
+                f"Failed to synchronize categories: {str(e)}",
+                "error"
+            )
 
     def create_content_header(self, parent_layout):
         """Create the content header with bell icon and proper alignment"""
@@ -1887,33 +1924,7 @@ class KitchenDashboardApp(QMainWindow):
         self.nav_buttons.append(self.logs_button)
 
         # Firebase functionality moved to Settings tab
-
-        # Mobile button
-        self.mobile_button = QPushButton(" Mobile")
-        self.mobile_button.setIcon(self.create_icon("📱"))
-        self.mobile_button.setIconSize(QSize(18, 18))
-        self.mobile_button.setCheckable(True)
-        self.mobile_button.clicked.connect(lambda: self.handle_nav_button(self.mobile_button, self.show_mobile_settings_page))
-        self.nav_buttons_layout.addWidget(self.mobile_button)
-        self.nav_buttons.append(self.mobile_button)
-
-        # AI & ML button
-        self.ai_button = QPushButton(" AI & ML")
-        self.ai_button.setIcon(self.create_icon("🤖"))
-        self.ai_button.setIconSize(QSize(18, 18))
-        self.ai_button.setCheckable(True)
-        self.ai_button.clicked.connect(lambda: self.handle_nav_button(self.ai_button, self.show_ai_ml_page))
-        self.nav_buttons_layout.addWidget(self.ai_button)
-        self.nav_buttons.append(self.ai_button)
-
-        # Enterprise button
-        self.enterprise_button = QPushButton(" Enterprise")
-        self.enterprise_button.setIcon(self.create_icon("🏢"))
-        self.enterprise_button.setIconSize(QSize(18, 18))
-        self.enterprise_button.setCheckable(True)
-        self.enterprise_button.clicked.connect(lambda: self.handle_nav_button(self.enterprise_button, self.show_enterprise_page))
-        self.nav_buttons_layout.addWidget(self.enterprise_button)
-        self.nav_buttons.append(self.enterprise_button)
+        # Mobile, AI/ML, and Enterprise functionality moved to Settings tab
 
         # Settings button
         self.settings_button = QPushButton(" Settings")
@@ -3429,10 +3440,118 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
 
         settings_tabs.addTab(data_container, "📊 Data Management")
 
+        # Mobile & PWA Settings Tab
+        try:
+            mobile_container = QWidget()
+            mobile_layout = QVBoxLayout(mobile_container)
+            mobile_layout.setContentsMargins(20, 20, 20, 20)
+
+            # Create mobile settings sub-tabs
+            mobile_subtabs = QTabWidget()
+
+            # Responsive design tab
+            if self.responsive_manager:
+                responsive_widget = self.create_responsive_settings_widget()
+                mobile_subtabs.addTab(responsive_widget, "📱 Responsive Design")
+
+            # PWA settings tab
+            if self.pwa_manager:
+                from modules.pwa_manager import PWAStatusWidget
+                pwa_widget = PWAStatusWidget(self.pwa_manager)
+                mobile_subtabs.addTab(pwa_widget, "📲 PWA & Offline")
+
+            # Mobile navigation tab
+            if self.mobile_navigation:
+                navigation_widget = self.create_navigation_settings_widget()
+                mobile_subtabs.addTab(navigation_widget, "🧭 Navigation")
+
+            mobile_layout.addWidget(mobile_subtabs)
+            settings_tabs.addTab(mobile_container, "📱 Mobile")
+
+            self.logger.info("Mobile settings integrated into Settings tab")
+
+        except Exception as e:
+            self.logger.warning(f"Mobile settings not available: {e}")
+            mobile_placeholder = QLabel("Mobile settings not available.\nPlease check mobile modules.")
+            mobile_placeholder.setAlignment(Qt.AlignCenter)
+            mobile_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
+            settings_tabs.addTab(mobile_placeholder, "📱 Mobile")
+
+        # AI & ML Settings Tab
+        try:
+            ai_container = QWidget()
+            ai_layout = QVBoxLayout(ai_container)
+            ai_layout.setContentsMargins(20, 20, 20, 20)
+
+            # AI Provider Selection
+            self.create_ai_provider_selector_for_settings(ai_layout)
+
+            # Create AI settings sub-tabs
+            ai_subtabs = QTabWidget()
+
+            # AI Insights tab
+            if self.multi_ai_engine and self.multi_ai_engine.is_available():
+                insights_widget = self.create_multi_ai_insights_widget()
+                ai_subtabs.addTab(insights_widget, "🧠 AI Insights")
+
+                # Provider Status tab
+                status_widget = self.create_provider_status_widget()
+                ai_subtabs.addTab(status_widget, "📊 Provider Status")
+
+                # API Usage tab
+                usage_widget = self.create_api_usage_widget()
+                ai_subtabs.addTab(usage_widget, "📈 API Usage")
+
+            ai_layout.addWidget(ai_subtabs)
+            settings_tabs.addTab(ai_container, "🤖 AI & ML")
+
+            self.logger.info("AI & ML settings integrated into Settings tab")
+
+        except Exception as e:
+            self.logger.warning(f"AI & ML settings not available: {e}")
+            ai_placeholder = QLabel("AI & ML settings not available.\nPlease check AI modules.")
+            ai_placeholder.setAlignment(Qt.AlignCenter)
+            ai_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
+            settings_tabs.addTab(ai_placeholder, "🤖 AI & ML")
+
+        # Enterprise Settings Tab
+        try:
+            enterprise_container = QWidget()
+            enterprise_layout = QVBoxLayout(enterprise_container)
+            enterprise_layout.setContentsMargins(20, 20, 20, 20)
+
+            # Create enterprise settings sub-tabs
+            enterprise_subtabs = QTabWidget()
+
+            # User Management tab
+            if self.enterprise_manager:
+                users_widget = self.create_user_management_widget()
+                enterprise_subtabs.addTab(users_widget, "👥 User Management")
+
+                # Security & Audit tab
+                security_widget = self.create_security_audit_widget()
+                enterprise_subtabs.addTab(security_widget, "🔒 Security & Audit")
+
+                # API Management tab
+                api_widget = self.create_api_management_widget()
+                enterprise_subtabs.addTab(api_widget, "🔌 API Management")
+
+            enterprise_layout.addWidget(enterprise_subtabs)
+            settings_tabs.addTab(enterprise_container, "🏢 Enterprise")
+
+            self.logger.info("Enterprise settings integrated into Settings tab")
+
+        except Exception as e:
+            self.logger.warning(f"Enterprise settings not available: {e}")
+            enterprise_placeholder = QLabel("Enterprise settings not available.\nPlease check enterprise modules.")
+            enterprise_placeholder.setAlignment(Qt.AlignCenter)
+            enterprise_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
+            settings_tabs.addTab(enterprise_placeholder, "🏢 Enterprise")
+
         self.content_layout.addWidget(settings_tabs)
 
         # Log the action
-        self.logger.info("Enhanced Settings page with Firebase integration displayed")
+        self.logger.info("Enhanced Settings page with Mobile, AI/ML, and Enterprise tabs displayed")
     
     def show_logs_page(self):
         """Display the logs viewer page with missing items tab"""
@@ -3968,6 +4087,34 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
                     self.logger.error(f"Failed to switch to {provider}")
         except Exception as e:
             self.logger.error(f"Error selecting provider {provider}: {e}")
+
+    def create_ai_provider_selector_for_settings(self, parent_layout):
+        """Create AI provider selector for settings tab"""
+        try:
+            # Title
+            provider_title = QLabel("AI Provider Selection")
+            provider_title.setFont(QFont("Arial", 16, QFont.Bold))
+            provider_title.setStyleSheet("color: #1e293b; margin-bottom: 15px;")
+            parent_layout.addWidget(provider_title)
+
+            # Description
+            provider_desc = QLabel("Select your preferred AI provider for intelligent features:")
+            provider_desc.setStyleSheet("color: #64748b; margin-bottom: 20px;")
+            parent_layout.addWidget(provider_desc)
+
+            # Provider selection (simplified for settings)
+            if hasattr(self, 'multi_ai_engine') and self.multi_ai_engine:
+                current_provider = self.multi_ai_engine.get_current_provider()
+                provider_info = QLabel(f"Current Provider: {current_provider}")
+                provider_info.setStyleSheet("color: #059669; font-weight: 500; padding: 10px; background-color: #f0fdf4; border-radius: 6px;")
+                parent_layout.addWidget(provider_info)
+            else:
+                no_provider = QLabel("No AI provider configured")
+                no_provider.setStyleSheet("color: #dc2626; font-weight: 500; padding: 10px; background-color: #fef2f2; border-radius: 6px;")
+                parent_layout.addWidget(no_provider)
+
+        except Exception as e:
+            self.logger.error(f"Error creating AI provider selector for settings: {e}")
 
     def create_responsive_settings_widget(self):
         """Create responsive design settings widget"""
@@ -4885,13 +5032,7 @@ Generated: {timestamp[:19]}
                     self.show_reports_page()
                 elif button_index == 13:  # Logs
                     self.show_logs_page()
-                elif button_index == 14:  # Mobile
-                    self.show_mobile_settings_page()
-                elif button_index == 15:  # AI & ML
-                    self.show_ai_ml_page()
-                elif button_index == 16:  # Enterprise
-                    self.show_enterprise_page()
-                elif button_index == 17:  # Settings
+                elif button_index == 14:  # Settings (Mobile, AI/ML, Enterprise moved inside)
                     self.show_settings_page()
             else:
                 # Default to home page if no button is active

@@ -577,12 +577,45 @@ class SalesWidget(QWidget):
         # Save to CSV
         self.sales_df.to_csv('data/sales.csv', index=False)
 
-        # Update inventory based on recipe ingredients
+        # Update inventory based on recipe ingredients using new integration system
         self.update_inventory_for_sale(recipe_name, quantity)
 
-        # Show success message
-        QMessageBox.information(
-            self, "Success", f"Sale of {quantity} {recipe_name} recorded successfully!")
+        # Use new inventory integration system for comprehensive updates
+        try:
+            from modules.inventory_integration import InventoryIntegration
+
+            integration = InventoryIntegration(self.data)
+            sale_data = {
+                'recipe_name': recipe_name,
+                'quantity': quantity,
+                'total_amount': total_amount,
+                'date': date
+            }
+
+            integration_result = integration.process_sale_completion(sale_data)
+
+            if integration_result['success']:
+                success_msg = f"Sale of {quantity} {recipe_name} recorded successfully!"
+                if integration_result['gas_updated']:
+                    success_msg += "\n✅ Gas usage automatically updated"
+                if integration_result['packing_updated']:
+                    success_msg += "\n✅ Packing materials updated"
+                if integration_result['budget_updated']:
+                    success_msg += "\n✅ Budget tracking updated"
+
+                QMessageBox.information(self, "Success", success_msg)
+            else:
+                error_msg = f"Sale recorded but some integrations failed:\n" + "\n".join(integration_result['errors'])
+                QMessageBox.warning(self, "Partial Success", error_msg)
+
+        except ImportError:
+            # Fallback to original message if integration module not available
+            QMessageBox.information(
+                self, "Success", f"Sale of {quantity} {recipe_name} recorded successfully!")
+        except Exception as e:
+            print(f"Integration error: {e}")
+            QMessageBox.information(
+                self, "Success", f"Sale of {quantity} {recipe_name} recorded successfully!\n(Some automatic updates may have failed)")
 
         # Reset form
         self.sale_date.setDate(QDate.currentDate())
