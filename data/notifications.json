@@ -5,6 +5,126 @@
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
       "type": "info",
+      "timestamp": "2025-06-14T02:01:49.879074",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T02:01:46.867112",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T02:01:41.865891",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-14T01:57:57.288386",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T01:57:54.294062",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T01:57:49.298568",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-14T01:51:50.726083",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T01:51:47.728531",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T01:51:42.726217",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-14T01:45:01.714483",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T01:44:58.710942",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T01:44:53.711857",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-14T01:41:16.449212",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T01:41:13.447018",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T01:41:08.448803",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
       "timestamp": "2025-06-14T01:36:13.047747",
       "read": false
     },
@@ -679,127 +799,7 @@
       "type": "success",
       "timestamp": "2025-06-12T00:25:41.441278",
       "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-12T00:18:57.214841",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-12T00:18:54.213884",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-12T00:18:49.217308",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-12T00:12:35.347008",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-12T00:12:32.351036",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-12T00:12:27.338227",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-11T17:24:33.560540",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-11T17:24:28.563066",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-11T17:22:26.984570",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-11T17:22:23.967624",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-11T17:22:18.966766",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-11T17:08:39.765705",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-11T17:08:36.777273",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-11T17:08:31.762202",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-11T17:05:37.626575",
-      "read": false
     }
   ],
-  "last_updated": "2025-06-14T01:37:02.601663"
+  "last_updated": "2025-06-14T02:01:49.879074"
 }

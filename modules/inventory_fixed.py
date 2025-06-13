@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, 
                              QFormLayout, QSpinBox, QDoubleSpinBox, QDateEdit, QGroupBox,
                              QMessageBox, QHeaderView, QSplitter, QDialog, QScrollArea,
                              QCheckBox, QFrame)
-from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import Qt, QDate, QTimer, Signal
+from PySide6.QtGui import QColor, QFont, QCursor
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -410,6 +410,64 @@ class InventoryWidget(QWidget):
         self.autofit_button.clicked.connect(self.auto_fit_columns)
         self.autofit_button.setToolTip("Automatically resize columns to fit screen width")
 
+        # Column width adjustment buttons
+        # Make columns wider button
+        self.wider_button = QPushButton("🔍 Wider")
+        self.wider_button.setFixedHeight(40)
+        self.wider_button.setStyleSheet("""
+            QPushButton {
+                background-color: #fd7e14;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: bold;
+                padding: 8px 12px;
+            }
+            QPushButton:hover {
+                background-color: #e8590c;
+            }
+        """)
+        self.wider_button.clicked.connect(self.make_columns_wider)
+        self.wider_button.setToolTip("Make all columns wider for better data visibility")
+
+        # Make columns narrower button
+        self.narrower_button = QPushButton("🔎 Narrower")
+        self.narrower_button.setFixedHeight(40)
+        self.narrower_button.setStyleSheet("""
+            QPushButton {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: bold;
+                padding: 8px 12px;
+            }
+            QPushButton:hover {
+                background-color: #5a6268;
+            }
+        """)
+        self.narrower_button.clicked.connect(self.make_columns_narrower)
+        self.narrower_button.setToolTip("Make all columns narrower to fit more on screen")
+
+        # Reset column widths button
+        self.reset_widths_button = QPushButton("↩️ Reset")
+        self.reset_widths_button.setFixedHeight(40)
+        self.reset_widths_button.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: bold;
+                padding: 8px 12px;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+        """)
+        self.reset_widths_button.clicked.connect(self.reset_column_widths)
+        self.reset_widths_button.setToolTip("Reset all columns to default widths")
+
         # Add buttons to layout with proper spacing
         buttons_layout.addWidget(self.edit_inventory_button)
         buttons_layout.addSpacing(10)  # Add space between buttons
@@ -418,6 +476,12 @@ class InventoryWidget(QWidget):
         buttons_layout.addWidget(self.show_all_button)
         buttons_layout.addSpacing(10)  # Add space between buttons
         buttons_layout.addWidget(self.autofit_button)
+        buttons_layout.addSpacing(15)  # Add more space before column width buttons
+        buttons_layout.addWidget(self.wider_button)
+        buttons_layout.addSpacing(5)
+        buttons_layout.addWidget(self.narrower_button)
+        buttons_layout.addSpacing(5)
+        buttons_layout.addWidget(self.reset_widths_button)
         buttons_layout.addStretch()  # Push buttons to the left
 
         # Add the fixed header to the layout
@@ -483,6 +547,18 @@ class InventoryWidget(QWidget):
         # Make ALL columns user-resizable and independent
         for col in range(17):
             header.setSectionResizeMode(col, QHeaderView.Interactive)
+
+        # Set tooltip for header to inform users about manual resizing
+        header.setToolTip("💡 Tip: You can manually resize any column by dragging the column borders!\n"
+                         "Move your mouse to the edge between column headers to see the resize cursor.\n"
+                         "Your column widths will be automatically saved and restored.")
+
+        # Enable proper resize behavior
+        header.setStretchLastSection(False)
+        header.setDefaultAlignment(Qt.AlignLeft)
+
+        # Connect resize events for saving settings
+        header.sectionResized.connect(self.on_column_resized)
 
         # Apply column widths (saved or default)
         for col in range(17):
@@ -882,6 +958,98 @@ class InventoryWidget(QWidget):
         except Exception as e:
             print(f"❌ Error auto-fitting columns: {e}")
             QMessageBox.warning(self, "Error", f"Failed to auto-fit columns: {str(e)}")
+
+    def make_columns_wider(self):
+        """Make all columns wider for better data visibility"""
+        try:
+            print("🔍 Making columns wider...")
+
+            # Increase all column widths by 20%
+            for col in range(17):
+                current_width = self.inventory_table.columnWidth(col)
+                new_width = int(current_width * 1.2)
+                # Set minimum width to ensure readability
+                new_width = max(new_width, 60)
+                self.inventory_table.setColumnWidth(col, new_width)
+                print(f"   📏 Column {col}: {current_width}px → {new_width}px")
+
+            # Save the new settings
+            self.save_column_settings()
+
+            print("✅ All columns made wider!")
+            QMessageBox.information(self, "Columns Widened",
+                                  "All columns have been made 20% wider for better data visibility.")
+
+        except Exception as e:
+            print(f"❌ Error making columns wider: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to make columns wider: {str(e)}")
+
+    def make_columns_narrower(self):
+        """Make all columns narrower to fit more on screen"""
+        try:
+            print("🔎 Making columns narrower...")
+
+            # Decrease all column widths by 15%
+            for col in range(17):
+                current_width = self.inventory_table.columnWidth(col)
+                new_width = int(current_width * 0.85)
+                # Set minimum width to ensure readability
+                new_width = max(new_width, 40)
+                self.inventory_table.setColumnWidth(col, new_width)
+                print(f"   📏 Column {col}: {current_width}px → {new_width}px")
+
+            # Save the new settings
+            self.save_column_settings()
+
+            print("✅ All columns made narrower!")
+            QMessageBox.information(self, "Columns Narrowed",
+                                  "All columns have been made 15% narrower to fit more on screen.")
+
+        except Exception as e:
+            print(f"❌ Error making columns narrower: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to make columns narrower: {str(e)}")
+
+    def reset_column_widths(self):
+        """Reset all columns to default widths"""
+        try:
+            print("↩️ Resetting column widths to defaults...")
+
+            # Define default column widths
+            default_widths = {
+                0: 50,   # ID
+                1: 150,  # Name
+                2: 100,  # Category
+                3: 80,   # Total Qty
+                4: 80,   # Used Qty
+                5: 100,  # Available Qty
+                6: 60,   # Unit
+                7: 90,   # Avg Price
+                8: 90,   # Price/Unit
+                9: 100,  # Total Value
+                10: 100, # Location
+                11: 90,  # Purchase Count
+                12: 100, # Total Spent
+                13: 120, # Last Purchase Date
+                14: 120, # Last Purchase Price
+                15: 100, # Expiry Date
+                16: 80   # Days Left
+            }
+
+            # Apply default widths
+            for col, width in default_widths.items():
+                self.inventory_table.setColumnWidth(col, width)
+                print(f"   📏 Column {col}: Reset to {width}px")
+
+            # Save the new settings
+            self.save_column_settings()
+
+            print("✅ Column widths reset to defaults!")
+            QMessageBox.information(self, "Widths Reset",
+                                  "All column widths have been reset to default values.")
+
+        except Exception as e:
+            print(f"❌ Error resetting column widths: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to reset column widths: {str(e)}")
 
     def edit_selected_inventory_item(self):
         """Edit the selected inventory item from the table"""
