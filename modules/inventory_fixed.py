@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor, QFont, QCursor
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import datetime
+from datetime import datetime
 import os
 import json
 
@@ -1175,10 +1175,10 @@ class InventoryWidget(QWidget):
                 if isinstance(item['expiry_date'], str):
                     # Try to parse the date string
                     try:
-                        date_obj = datetime.datetime.strptime(item['expiry_date'], '%Y-%m-%d').date()
+                        date_obj = datetime.strptime(item['expiry_date'], '%Y-%m-%d').date()
                     except ValueError:
                         try:
-                            date_obj = datetime.datetime.strptime(item['expiry_date'], '%d-%m-%Y').date()
+                            date_obj = datetime.strptime(item['expiry_date'], '%d-%m-%Y').date()
                         except ValueError:
                             date_obj = QDate.currentDate().addDays(30).toPython()
                     expiry_date_edit.setDate(QDate(date_obj))
@@ -1456,7 +1456,7 @@ class InventoryWidget(QWidget):
         self.inventory_table.setRowCount(0)
 
         # Calculate additional fields
-        today = datetime.datetime.now().date()
+        today = datetime.now().date()
 
         # Make sure total_value is calculated
         if 'price' in df.columns and 'quantity' in df.columns:
@@ -1667,7 +1667,7 @@ class InventoryWidget(QWidget):
 
                 for date_format, format_name in date_formats:
                     try:
-                        expiry_date = datetime.datetime.strptime(expiry_date_raw, date_format).date()
+                        expiry_date = datetime.strptime(expiry_date_raw, date_format).date()
                         parsed_format = format_name
                         break
                     except ValueError:
@@ -1683,7 +1683,7 @@ class InventoryWidget(QWidget):
                     expiry_date_str = f"{expiry_date.strftime('%d-%m-%Y')}"
 
                     # Calculate days left
-                    today = datetime.datetime.now().date()
+                    today = datetime.now().date()
                     days_left = (expiry_date - today).days
 
                     # Create table items
@@ -2187,21 +2187,7 @@ class InventoryWidget(QWidget):
             QMessageBox.warning(self, "Input Error", "Quantity used cannot be more than quantity purchased.")
             return
             
-        # Create new item dictionary
-        new_item = {
-            'item_id': len(self.inventory_df) + 1,
-            'item_name': item_name,
-            'category': category,
-            'quantity': qty_purchased - qty_used,  # For backward compatibility
-            'qty_purchased': qty_purchased,
-            'qty_used': qty_used,
-            'reorder_level': reorder_level,
-            'unit': unit,
-            'price': price,
-            'avg_price': price,  # Initialize avg_price with current price
-            'location': location,
-            'expiry_date': expiry_date
-        }
+
         
         # Check if this item exists in the items list
         item_exists = False
@@ -2225,19 +2211,22 @@ class InventoryWidget(QWidget):
             else:
                 return
         
+        # Calculate available quantity (purchased - used)
+        available_quantity = qty_purchased - qty_used
+
         # Check if item already exists in inventory
         if item_name in self.inventory_df['item_name'].values:
             # For existing items, we'll calculate a new average price
             existing_items = self.inventory_df[self.inventory_df['item_name'] == item_name]
-            
+
             # Calculate new average price
-            total_qty = existing_items['quantity'].sum() + quantity
-            
+            total_qty = existing_items['quantity'].sum() + available_quantity
+
             # Use the correct price field name
             price_field = 'price' if 'price' in existing_items.columns else 'price_per_unit'
-            total_value = (existing_items[price_field] * existing_items['quantity']).sum() + (price * quantity)
+            total_value = (existing_items[price_field] * existing_items['quantity']).sum() + (price * available_quantity)
             avg_price = total_value / total_qty if total_qty > 0 else price
-            
+
             # Confirm with user about adding quantity
             response = QMessageBox.question(
                 self,
@@ -2245,49 +2234,52 @@ class InventoryWidget(QWidget):
                 f"'{item_name}' already exists in inventory. Would you like to add to its quantity?",
                 QMessageBox.Yes | QMessageBox.No
             )
-            
+
             if response == QMessageBox.No:
                 return
         else:
             # For new items, the average price is the same as the current price
             avg_price = price
-        
+
         # Generate new item ID
         if 'item_id' in self.inventory_df.columns and len(self.inventory_df) > 0:
             new_item_id = self.inventory_df['item_id'].max() + 1
         else:
             new_item_id = 1
-        
+
         # Calculate total value
-        total_value = quantity * price
-        
+        total_value = available_quantity * price
+
         # Calculate price per gram if unit is weight-based
         price_per_g = None
         if unit.lower() in ['g', 'kg']:
-            qty_in_grams = quantity
+            qty_in_grams = available_quantity
             if unit.lower() == 'kg':
                 qty_in_grams *= 1000
-            
+
             if qty_in_grams > 0:
                 price_per_g = price / qty_in_grams
-        
+
         # Create new item record
-        new_item = pd.DataFrame({
+        new_item_df = pd.DataFrame({
             'item_id': [new_item_id],
             'item_name': [item_name],
             'category': [category],
-            'quantity': [quantity],
+            'quantity': [available_quantity],
+            'qty_purchased': [qty_purchased],
+            'qty_used': [qty_used],
             'unit': [unit],
             'price': [price],
             'avg_price': [avg_price],
             'price_per_g': [price_per_g] if price_per_g is not None else [None],
             'total_value': [total_value],
             'location': [location],
-            'expiry_date': [expiry_date]
+            'expiry_date': [expiry_date],
+            'reorder_level': [reorder_level]
         })
         
         # Add to inventory dataframe
-        self.inventory_df = pd.concat([self.inventory_df, new_item], ignore_index=True)
+        self.inventory_df = pd.concat([self.inventory_df, new_item_df], ignore_index=True)
         
         # Update the data dictionary
         self.data['inventory'] = self.inventory_df
@@ -2441,7 +2433,7 @@ class InventoryWidget(QWidget):
         sorted_df = working_df.sort_values('expiry_date')
         
         # Calculate days until expiry
-        today = pd.Timestamp(datetime.datetime.now().date())
+        today = pd.Timestamp(datetime.now().date())
         sorted_df['days_until_expiry'] = (sorted_df['expiry_date'] - today).dt.days
         
         # Filter to show all items with expiry dates, sorting by closest to expiry
@@ -3119,7 +3111,7 @@ class InventoryWidget(QWidget):
 
                     # Actions - Add a button to edit item
                     edit_btn = QPushButton("Edit")
-                    edit_btn.clicked.connect(lambda checked, item_name=item.get('item_name', ''): self.edit_item_from_category(item_name))
+                    edit_btn.clicked.connect(lambda checked=False, item_name=item.get('item_name', ''): self.edit_item_from_category(item_name))
                     self.category_items_table.setCellWidget(i, 3, edit_btn)
 
                 print(f"Loaded {len(category_items)} items for category '{category_name}'")
@@ -3572,7 +3564,12 @@ class InventoryWidget(QWidget):
                 # Refresh all displays
                 self.update_inventory_table(self.inventory_df)
                 self.apply_filters()
-                self.update_charts()
+
+                # Update charts if method exists
+                if hasattr(self, 'update_charts'):
+                    self.update_charts()
+                elif hasattr(self, 'load_data'):
+                    self.load_data()
 
                 # Show success message
                 QMessageBox.information(self, "Refresh Complete",

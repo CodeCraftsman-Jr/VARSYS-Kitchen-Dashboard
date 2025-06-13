@@ -10,10 +10,94 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTableWidget,
     QTableWidgetItem, QFrame, QSplitter, QGroupBox, QComboBox, QLineEdit,
     QHeaderView, QTabWidget, QScrollArea, QGridLayout, QProgressBar,
-    QCheckBox, QSpinBox, QDoubleSpinBox
+    QCheckBox, QSpinBox, QDoubleSpinBox, QLayout, QLayoutItem, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtCore import Qt, Signal, QTimer, QRect, QSize, QPoint
 from PySide6.QtGui import QFont, QColor, QPalette
+
+
+class FlowLayout(QLayout):
+    """A layout that arranges widgets in a flow, wrapping to the next line when needed"""
+
+    def __init__(self, parent=None, margin=0, spacing=-1):
+        super().__init__(parent)
+        if parent is not None:
+            self.setContentsMargins(margin, margin, margin, margin)
+        self.setSpacing(spacing)
+        self.item_list = []
+
+    def __del__(self):
+        item = self.takeAt(0)
+        while item:
+            item = self.takeAt(0)
+
+    def addItem(self, item):
+        self.item_list.append(item)
+
+    def count(self):
+        return len(self.item_list)
+
+    def itemAt(self, index):
+        if 0 <= index < len(self.item_list):
+            return self.item_list[index]
+        return None
+
+    def takeAt(self, index):
+        if 0 <= index < len(self.item_list):
+            return self.item_list.pop(index)
+        return None
+
+    def expandingDirections(self):
+        return Qt.Orientations(Qt.Orientation(0))
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        height = self.doLayout(QRect(0, 0, width, 0), True)
+        return height
+
+    def setGeometry(self, rect):
+        super().setGeometry(rect)
+        self.doLayout(rect, False)
+
+    def sizeHint(self):
+        return self.minimumSize()
+
+    def minimumSize(self):
+        size = QSize()
+        for item in self.item_list:
+            size = size.expandedTo(item.minimumSize())
+        size += QSize(2 * self.contentsMargins().top(), 2 * self.contentsMargins().top())
+        return size
+
+    def doLayout(self, rect, testOnly):
+        x = rect.x()
+        y = rect.y()
+        lineHeight = 0
+        spacing = self.spacing()
+
+        for item in self.item_list:
+            wid = item.widget()
+            spaceX = spacing + wid.style().layoutSpacing(
+                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Horizontal)
+            spaceY = spacing + wid.style().layoutSpacing(
+                QSizePolicy.PushButton, QSizePolicy.PushButton, Qt.Vertical)
+
+            nextX = x + item.sizeHint().width() + spaceX
+            if nextX - spaceX > rect.right() and lineHeight > 0:
+                x = rect.x()
+                y = y + lineHeight + spaceY
+                nextX = x + item.sizeHint().width() + spaceX
+                lineHeight = 0
+
+            if not testOnly:
+                item.setGeometry(QRect(QPoint(x, y), item.sizeHint()))
+
+            x = nextX
+            lineHeight = max(lineHeight, item.sizeHint().height())
+
+        return y + lineHeight - rect.y()
 
 
 class CostBreakdownCard(QFrame):
@@ -248,9 +332,9 @@ class EnhancedCostBreakdownPanel(QWidget):
         cards_title.setStyleSheet("font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px;")
         parent_layout.addWidget(cards_title)
 
-        # Cards container with vertical layout (straight line) as requested
+        # Cards container with responsive flow layout (wraps to next line if needed)
         self.cards_container = QWidget()
-        self.cards_layout = QVBoxLayout(self.cards_container)
+        self.cards_layout = FlowLayout(self.cards_container)
         self.cards_layout.setSpacing(12)
         self.cards_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -619,7 +703,7 @@ class EnhancedCostBreakdownPanel(QWidget):
             return {}
     
     def update_cost_cards(self, cost_breakdown):
-        """Update cost breakdown cards with vertical layout (straight line)"""
+        """Update cost breakdown cards with responsive flow layout (wraps to next line if needed)"""
         # Clear existing cards
         for i in reversed(range(self.cards_layout.count())):
             item = self.cards_layout.itemAt(i)
@@ -639,12 +723,12 @@ class EnhancedCostBreakdownPanel(QWidget):
             ('Overhead Cost', cost_breakdown['overhead_cost'], '#84cc16')
         ]
 
-        # Arrange cards in vertical layout (straight line) as requested
+        # Arrange cards in flow layout (wraps to next line if needed)
         for i, (name, amount, color) in enumerate(cost_components):
             percentage = (amount / total_cost * 100) if total_cost > 0 else 0
             card = CostBreakdownCard(name, amount, percentage, color)
 
-            # Add each card vertically in a straight line
+            # Add each card to flow layout (will wrap automatically)
             self.cards_layout.addWidget(card)
     
     def update_ingredient_table(self, ingredients):

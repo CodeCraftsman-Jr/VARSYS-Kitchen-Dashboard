@@ -2879,30 +2879,7 @@ class KitchenDashboardApp(QMainWindow):
 
             header_layout.addStretch()
 
-            # Smart ingredient check button
-            check_ingredients_btn = QPushButton("🔍 Check Missing Ingredients")
-            check_ingredients_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #17a2b8;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 10px 20px;
-                    font-size: 14px;
-                    font-weight: 500;
-                }
-                QPushButton:hover {
-                    background-color: #138496;
-                }
-                QPushButton:pressed {
-                    background-color: #117a8b;
-                }
-            """)
-            check_ingredients_btn.clicked.connect(self.manual_ingredient_check)
-            header_layout.addWidget(check_ingredients_btn)
-
-            self.content_layout.addWidget(header_widget)
-
+            
             # Import the inventory module with error handling
             try:
                 from modules.inventory_fixed import InventoryWidget
