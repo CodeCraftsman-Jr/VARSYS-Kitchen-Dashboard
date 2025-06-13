@@ -26,7 +26,5 @@
   ],
   "lang": "en",
   "scope": "/",
-  "prefer_related_applications": false,
-  "version": "1.0.4",
-  "last_updated": "2025-06-13T19:17:36.792096"
+  "prefer_related_applications": false
 }

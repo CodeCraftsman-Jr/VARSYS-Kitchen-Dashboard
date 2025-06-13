@@ -83,14 +83,9 @@ class KitchenDashboardApp(QMainWindow):
         # Apply modern window styling
         self.apply_modern_window_style()
 
-        # Initialize logger with comprehensive startup logging
+        # Initialize logger
         self.logger = get_logger()
-        self.logger.log_startup_info()
-        self.logger.info("🚀 Kitchen Dashboard application starting...")
-
-        # Log each major initialization step for debugging
-        self.logger.info("📋 Step 1: Application window and styling initialized")
-        self.logger.log_ui_action("Window created", f"Size: {self.size().width()}x{self.size().height()}")
+        self.logger.info("Kitchen Dashboard application starting")
 
         # Initialize notification system
         self.notification_manager = get_notification_manager(self)
@@ -114,37 +109,8 @@ class KitchenDashboardApp(QMainWindow):
         # Set default currency symbol
         self.currency_symbol = "₹"  # Indian Rupee by default
         
-        # Load data first with comprehensive error handling and logging
-        self.logger.info("📊 Step 2: Loading application data...")
-        try:
-            import time
-            start_time = time.time()
-            self.data = self.load_data()
-            load_time = time.time() - start_time
-
-            if self.data:
-                self.logger.log_performance("Data loading", load_time)
-                self.logger.log_data_loading("All data sources", True,
-                    f"Loaded {len(self.data)} data sources: {list(self.data.keys())}")
-
-                # Log details about each data source
-                for key, value in self.data.items():
-                    if hasattr(value, 'shape'):
-                        self.logger.info(f"   📋 {key}: {value.shape[0]} rows, {value.shape[1]} columns")
-                    elif hasattr(value, '__len__'):
-                        self.logger.info(f"   📋 {key}: {len(value)} items")
-                    else:
-                        self.logger.info(f"   📋 {key}: {type(value)}")
-            else:
-                self.logger.log_data_loading("Data sources", False, error="No data returned from load_data()")
-                self.data = {}
-
-        except Exception as e:
-            self.logger.log_exception(e, "Critical error during data loading")
-            self.logger.log_data_loading("Data sources", False, error=str(e))
-            # Initialize with empty data to prevent crashes
-            self.data = {}
-            self.logger.warning("⚠️ Initialized with empty data to prevent application crash")
+        # Load data first
+        self.data = self.load_data()
         
         # Initialize optimized Firebase
         self.firebase_user_id = "kitchen_dashboard_user" # Default user ID
@@ -1205,25 +1171,14 @@ class KitchenDashboardApp(QMainWindow):
 
     def load_data(self):
         """Load all data from CSV files or create empty dataframes if files don't exist"""
-        self.logger.info("🔄 Starting comprehensive data loading...")
+        self.logger.info("[LOADING] Starting comprehensive data loading...")
         data = {}
 
         try:
             # Check if data directory exists
             if not os.path.exists('data'):
                 os.makedirs('data')
-                self.logger.info("📁 Created data directory")
-
-            # Log current working directory and data path
-            self.logger.info(f"📂 Working directory: {os.getcwd()}")
-            self.logger.info(f"📂 Data directory: {os.path.abspath('data')}")
-
-            # List all files in data directory
-            if os.path.exists('data'):
-                data_files = os.listdir('data')
-                self.logger.info(f"📋 Files in data directory: {data_files}")
-            else:
-                self.logger.warning("⚠️ Data directory does not exist!")
+                self.logger.info("Created data directory")
 
             # Define empty dataframes for each data type with comprehensive columns
             empty_dataframes = {
@@ -1286,61 +1241,39 @@ class KitchenDashboardApp(QMainWindow):
                 'errors': []
             }
             
-            # Iterate over each data type with comprehensive logging
+            # Iterate over each data type
             for key, empty_df in empty_dataframes.items():
                 file_path = os.path.join('data', f'{key}.csv')
-                self.logger.info(f"🔍 Processing {key} data source...")
-
+                
                 if os.path.exists(file_path):
                     try:
                         # Performance optimization: Check file size and use chunked loading for large files
                         file_size = os.path.getsize(file_path)
-                        self.logger.info(f"  📄 File found: {file_path} ({file_size} bytes)")
-
                         if file_size > 5 * 1024 * 1024:  # 5MB threshold
                             # Load large files in chunks to avoid memory issues
-                            self.logger.info(f"  📊 Loading large file in chunks...")
                             chunks = []
-                            chunk_count = 0
                             for chunk in pd.read_csv(file_path, chunksize=1000):
                                 chunks.append(chunk)
-                                chunk_count += 1
                             data[key] = pd.concat(chunks, ignore_index=True) if chunks else empty_df
-                            self.logger.info(f"  ✅ Loaded {chunk_count} chunks from {file_path} ({file_size/1024/1024:.1f}MB)")
+                            self.logger.info(f"Loaded large file {file_path} ({file_size/1024/1024:.1f}MB) in chunks")
                         else:
                             # Load smaller files normally
                             data[key] = pd.read_csv(file_path, low_memory=False)
-                            self.logger.info(f"  ✅ Loaded {len(data[key])} rows from {file_path} ({file_size/1024:.1f}KB)")
-
-                        # Log data structure info
-                        if len(data[key]) > 0:
-                            self.logger.info(f"  📋 Columns: {list(data[key].columns)}")
-                            self.logger.info(f"  📊 Shape: {data[key].shape}")
-                        else:
-                            self.logger.warning(f"  ⚠️ File {file_path} is empty")
-
-                        loading_stats['files_found'] += 1
-                        loading_stats['files_loaded'] += 1
-
+                            self.logger.debug(f"Loaded data from {file_path} ({file_size/1024:.1f}KB)")
                     except Exception as e:
-                        error_msg = f"❌ Error loading {key} from {file_path}: {e}"
+                        error_msg = f"Error loading {key} from {file_path}: {e}"
                         print(error_msg)  # Keep for immediate console feedback
                         self.logger.error(error_msg)
-                        self.logger.log_exception(e, f"Loading {key} data")
                         data[key] = empty_df  # Use in-memory empty DataFrame
-                        self.logger.warning(f"  🔄 Used empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
-                        loading_stats['errors'].append(f"{key}: {str(e)}")
+                        self.logger.warning(f"Used in-memory empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
                 else:
-                    self.logger.warning(f"  📄 File not found: {file_path}")
                     data[key] = empty_df
                     # Save the empty dataframe to create the file if it doesn't exist
                     try:
                         empty_df.to_csv(file_path, index=False)
-                        self.logger.info(f"  ✅ Created new empty file for {key} at {file_path}")
-                        loading_stats['files_created'] += 1
+                        self.logger.info(f"Created new empty file for {key} at {file_path}")
                     except Exception as e:
-                        self.logger.error(f"  ❌ Error creating new empty file for {key} at {file_path}: {e}")
-                        loading_stats['errors'].append(f"Create {key}: {str(e)}")
+                        self.logger.error(f"Error creating new empty file for {key} at {file_path}: {e}")
             
             # Convert date columns to datetime (even for empty dataframes)
             for df_name in ['budget', 'sales', 'waste']:
@@ -1366,32 +1299,17 @@ class KitchenDashboardApp(QMainWindow):
                 else:
                     print(f"  {key}: {type(df)} (not a DataFrame)")
 
-            # Log comprehensive loading statistics
-            self.logger.info("📊 Data loading completed - Summary:")
-            self.logger.info(f"  📁 Files found: {loading_stats['files_found']}")
-            self.logger.info(f"  ✅ Files loaded: {loading_stats['files_loaded']}")
-            self.logger.info(f"  🆕 Files created: {loading_stats['files_created']}")
-            self.logger.info(f"  ❌ Errors: {len(loading_stats['errors'])}")
-
-            if loading_stats['errors']:
-                self.logger.error("  Error details:")
-                for error in loading_stats['errors']:
-                    self.logger.error(f"    - {error}")
+            self.logger.info("Data loading completed successfully")
 
             # Assign data to self.data immediately
             self.data = data
 
-            # Print final summary with enhanced details
-            print(f"\n✅ DATA LOADING COMPLETED SUCCESSFULLY!")
-            print(f"   📊 Total tables loaded: {len(data)}")
+            # Print final summary
+            print(f"\n[SUCCESS] DATA LOADING COMPLETED SUCCESSFULLY!")
+            print(f"   [INFO] Total tables loaded: {len(data)}")
             total_records = sum(len(df) for df in data.values() if hasattr(df, '__len__'))
-            print(f"   📋 Total records: {total_records}")
-            print(f"   📁 Files processed: {loading_stats['files_found']}")
-            print(f"   🆕 Files created: {loading_stats['files_created']}")
-            if loading_stats['errors']:
-                print(f"   ⚠️ Errors encountered: {len(loading_stats['errors'])}")
+            print(f"   [INFO] Total records: {total_records}")
 
-            self.logger.log_performance("Complete data loading", 0)  # Will be calculated by caller
             return data
         except Exception as e:
             error_msg = f"Error loading data: {e}"
@@ -1622,22 +1540,15 @@ class KitchenDashboardApp(QMainWindow):
                 background: #2563eb;
                 color: #ffffff;
                 border: 2px solid #ffffff;
-                /* Removed box-shadow - using Qt effects instead */
+                box-shadow: 0px 2px 8px rgba(37, 99, 235, 0.3);
             }
             QPushButton:pressed {
                 background: #1d4ed8;
                 color: #ffffff;
                 border: 2px solid #ffffff;
-                /* Removed box-shadow - using Qt effects instead */
+                box-shadow: 0px 1px 4px rgba(29, 78, 216, 0.5);
             }
         """)
-
-        # Apply Qt-native shadow effect instead of CSS box-shadow
-        try:
-            from utils.qt_effects import add_button_hover_shadow
-            add_button_hover_shadow(self.sidebar_toggle_button)
-        except Exception as e:
-            self.logger.debug(f"Could not apply button shadow effect: {e}")
         self.sidebar_toggle_button.setToolTip("Toggle Sidebar (Ctrl+B)")
         self.sidebar_toggle_button.clicked.connect(self.toggle_sidebar)
 
@@ -2851,95 +2762,64 @@ class KitchenDashboardApp(QMainWindow):
     
     def show_inventory_page(self):
         """Display the inventory management page"""
-        try:
-            self.logger.log_ui_action("Navigation", "Inventory page requested")
-            self.clear_content()
+        self.clear_content()
 
-            # Add header with smart ingredient check button
-            header_widget = QWidget()
-            header_layout = QHBoxLayout(header_widget)
-            header_layout.setContentsMargins(20, 10, 20, 10)
+        # Add header with smart ingredient check button
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(20, 10, 20, 10)
 
-            # Title
-            title_label = QLabel("Inventory Management")
-            title_label.setFont(self.title_font)
-            title_label.setStyleSheet("color: #2c3e50; font-weight: bold;")
-            header_layout.addWidget(title_label)
+        # Title
+        title_label = QLabel("Inventory Management")
+        title_label.setFont(self.title_font)
+        title_label.setStyleSheet("color: #2c3e50; font-weight: bold;")
+        header_layout.addWidget(title_label)
 
-            header_layout.addStretch()
+        header_layout.addStretch()
 
-            # Smart ingredient check button
-            check_ingredients_btn = QPushButton("🔍 Check Missing Ingredients")
-            check_ingredients_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #17a2b8;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 10px 20px;
-                    font-size: 14px;
-                    font-weight: 500;
-                }
-                QPushButton:hover {
-                    background-color: #138496;
-                }
-                QPushButton:pressed {
-                    background-color: #117a8b;
-                }
-            """)
-            check_ingredients_btn.clicked.connect(self.manual_ingredient_check)
-            header_layout.addWidget(check_ingredients_btn)
+        # Smart ingredient check button
+        check_ingredients_btn = QPushButton("🔍 Check Missing Ingredients")
+        check_ingredients_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #17a2b8;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 10px 20px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #138496;
+            }
+            QPushButton:pressed {
+                background-color: #117a8b;
+            }
+        """)
+        check_ingredients_btn.clicked.connect(self.manual_ingredient_check)
+        header_layout.addWidget(check_ingredients_btn)
 
-            self.content_layout.addWidget(header_widget)
+        self.content_layout.addWidget(header_widget)
 
-            # Import the inventory module with error handling
-            try:
-                from modules.inventory_fixed import InventoryWidget
-                self.logger.log_module_import("modules.inventory_fixed.InventoryWidget", True)
-            except ImportError as e:
-                self.logger.log_module_import("modules.inventory_fixed.InventoryWidget", False, e)
-                # Show error page instead of crashing
-                self.show_error_page("Inventory", f"Failed to import inventory module: {str(e)}")
-                return
+        # Import the inventory module
+        from modules.inventory_fixed import InventoryWidget
 
-            # Debug and log data before passing to inventory widget
-            self.logger.info("🔍 Inventory page data check:")
-            self.logger.info(f"  Available data keys: {list(self.data.keys()) if self.data else 'None'}")
+        # Create the inventory widget
+        # Always create a new instance to avoid issues with deleted C++ objects
 
-            if 'inventory' in self.data:
-                inventory_data = self.data['inventory']
-                self.logger.info(f"  ✅ Inventory data found: {inventory_data.shape}")
-                self.logger.info(f"  Columns: {list(inventory_data.columns)}")
-                if 'item_name' in inventory_data.columns:
-                    sample_items = list(inventory_data['item_name'].head(3))
-                    self.logger.info(f"  Sample items: {sample_items}")
-                else:
-                    self.logger.warning("  ⚠️ No 'item_name' column found")
-            else:
-                self.logger.error("  ❌ No 'inventory' key in self.data!")
-                # Show error page instead of crashing
-                self.show_error_page("Inventory", "No inventory data available. Please check your data files.")
-                return
+        # Debug: Check data before passing to inventory widget
+        print(f"🔍 MAIN APP DEBUG - show_inventory_page:")
+        print(f"  self.data keys: {list(self.data.keys()) if self.data else 'None'}")
+        if 'inventory' in self.data:
+            print(f"  inventory shape: {self.data['inventory'].shape}")
+            print(f"  inventory sample: {list(self.data['inventory']['item_name'].head(3)) if 'item_name' in self.data['inventory'].columns else 'No item_name'}")
+        else:
+            print(f"  ❌ No 'inventory' key in self.data!")
 
-            # Create the inventory widget with error handling
-            try:
-                import time
-                start_time = time.time()
-                self.inventory_widget = InventoryWidget(self.data)
-                creation_time = time.time() - start_time
-                self.logger.log_performance("Inventory widget creation", creation_time)
+        self.inventory_widget = InventoryWidget(self.data)
 
-                # Add the widget to the content layout
-                self.content_layout.addWidget(self.inventory_widget)
-                self.logger.info("✅ Inventory page loaded successfully")
-
-            except Exception as e:
-                self.logger.log_exception(e, "Error creating inventory widget")
-                self.show_error_page("Inventory", f"Error creating inventory interface: {str(e)}")
-
-        except Exception as e:
-            self.logger.log_exception(e, "Critical error in show_inventory_page")
-            self.show_error_page("Inventory", f"Critical error loading inventory page: {str(e)}")
+        # Add the widget to the content layout
+        self.content_layout.addWidget(self.inventory_widget)
 
     def manual_ingredient_check(self):
         """Manually trigger ingredient check"""
@@ -4977,103 +4857,6 @@ Generated: {timestamp[:19]}
                 "Restore Error",
                 f"An error occurred while restoring data: {str(e)}"
             )
-
-    def show_error_page(self, page_name, error_message):
-        """Display an enhanced error page when a module fails to load"""
-        self.logger.error(f"🚨 Showing error page for {page_name}: {error_message}")
-        self.clear_content()
-
-        # Create error container
-        error_widget = QWidget()
-        error_layout = QVBoxLayout(error_widget)
-        error_layout.setContentsMargins(40, 40, 40, 40)
-        error_layout.setSpacing(20)
-
-        # Error icon and title
-        title_container = QWidget()
-        title_layout = QHBoxLayout(title_container)
-        title_layout.setContentsMargins(0, 0, 0, 0)
-
-        error_icon = QLabel("⚠️")
-        error_icon.setFont(QFont("Segoe UI", 48))
-        error_icon.setAlignment(Qt.AlignCenter)
-        title_layout.addWidget(error_icon)
-
-        title_text = QLabel(f"Error Loading {page_name}")
-        title_text.setFont(QFont("Segoe UI", 24, QFont.Bold))
-        title_text.setStyleSheet("color: #e74c3c;")
-        title_text.setAlignment(Qt.AlignCenter)
-        title_layout.addWidget(title_text)
-
-        error_layout.addWidget(title_container)
-
-        # Error message
-        error_msg = QLabel(error_message)
-        error_msg.setFont(QFont("Segoe UI", 12))
-        error_msg.setStyleSheet("color: #7f8c8d; padding: 20px;")
-        error_msg.setAlignment(Qt.AlignCenter)
-        error_msg.setWordWrap(True)
-        error_layout.addWidget(error_msg)
-
-        # Suggestions
-        suggestions = QLabel("""
-        🔧 Possible solutions:
-        • Check the Logs tab for detailed error information
-        • Verify all required CSV files are present in the data directory
-        • Restart the application
-        • Check file permissions and disk space
-        • Contact support if the problem persists
-        """)
-        suggestions.setFont(QFont("Segoe UI", 10))
-        suggestions.setStyleSheet("color: #95a5a6; padding: 20px;")
-        suggestions.setAlignment(Qt.AlignLeft)
-        error_layout.addWidget(suggestions)
-
-        # Action buttons
-        button_container = QWidget()
-        button_layout = QHBoxLayout(button_container)
-
-        # View logs button
-        logs_btn = QPushButton("📋 View Logs")
-        logs_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #17a2b8;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #138496;
-            }
-        """)
-        logs_btn.clicked.connect(self.show_logs_page)
-        button_layout.addWidget(logs_btn)
-
-        # Home button
-        home_btn = QPushButton("🏠 Go Home")
-        home_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-        """)
-        home_btn.clicked.connect(self.show_home_page)
-        button_layout.addWidget(home_btn)
-
-        error_layout.addWidget(button_container, 0, Qt.AlignCenter)
-
-        self.content_layout.addWidget(error_widget)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

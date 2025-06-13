@@ -612,6 +612,13 @@ class InventoryWidget(QWidget):
         # Apply initial filters
         self.apply_filters()
 
+        # Auto-fit columns on initial load (with a small delay to ensure table is rendered)
+        from PySide6.QtCore import QTimer
+        self.initial_autofit_timer = QTimer()
+        self.initial_autofit_timer.setSingleShot(True)
+        self.initial_autofit_timer.timeout.connect(self.auto_fit_columns_on_load)
+        self.initial_autofit_timer.start(500)  # 500ms delay
+
     def on_column_resized(self, logical_index, old_size, new_size):
         """Handle column resize events and save settings"""
         try:
