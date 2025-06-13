@@ -157,16 +157,16 @@ class ResponsiveTableManager:
         # Show all columns
         for col_index in priorities.keys():
             table_widget.setColumnHidden(col_index, False)
-            
-        # Set appropriate resize modes
+
+        # Set appropriate resize modes - prefer Interactive for manual resizing
         for i in range(table_widget.columnCount()):
             priority = priorities.get(i, 3)
-            if i in stretch_columns:
+            if i in stretch_columns and len(stretch_columns) > 0:
+                # Only apply stretch if stretch_columns is not empty
                 header.setSectionResizeMode(i, QHeaderView.Stretch)
-            elif priority <= 2:  # High priority columns are interactive
+            else:
+                # Default to Interactive for manual resizing on desktop
                 header.setSectionResizeMode(i, QHeaderView.Interactive)
-            else:  # Others are fixed
-                header.setSectionResizeMode(i, QHeaderView.Fixed)
                 if i in widths:
                     table_widget.setColumnWidth(i, widths[i])
                     

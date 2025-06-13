@@ -97,9 +97,10 @@ def auto_resize_table_columns(table_widget: QTableWidget):
             header.resizeSection(i, 80)
 
 def apply_inventory_table_styling(table_widget: QTableWidget):
-    """Apply specific styling for inventory tables"""
-    apply_modern_table_styling(table_widget, row_height=55)
-    
+    """Apply specific styling for inventory tables with enhanced resizing"""
+    # Apply enhanced styling with resize cursor support
+    apply_enhanced_table_styling_with_resize_cursor(table_widget, row_height=55)
+
     # Inventory-specific column widths
     column_widths = {
         0: 180,  # Item Name
@@ -115,9 +116,10 @@ def apply_inventory_table_styling(table_widget: QTableWidget):
     set_table_column_widths(table_widget, column_widths)
 
 def apply_shopping_table_styling(table_widget: QTableWidget):
-    """Apply specific styling for shopping list tables"""
-    apply_modern_table_styling(table_widget, row_height=50)
-    
+    """Apply specific styling for shopping list tables with enhanced resizing"""
+    # Apply enhanced styling with resize cursor support
+    apply_enhanced_table_styling_with_resize_cursor(table_widget, row_height=50)
+
     # Shopping-specific column widths
     column_widths = {
         0: 180,  # Item Name
@@ -213,6 +215,130 @@ TABLE_COLORS = {
         'selection': '#e5e7eb'
     }
 }
+
+def enable_column_resizing_with_cursor(table_widget: QTableWidget):
+    """
+    Enable proper column resizing functionality with resize cursor
+
+    Args:
+        table_widget: The QTableWidget to enable resizing for
+    """
+
+    header = table_widget.horizontalHeader()
+
+    # Enable interactive resizing for all columns
+    for i in range(table_widget.columnCount()):
+        header.setSectionResizeMode(i, QHeaderView.Interactive)
+
+    # Set minimum section size to prevent columns from becoming too small
+    header.setMinimumSectionSize(30)
+
+    # Enable resize cursor on hover over column borders
+    header.setCursor(Qt.ArrowCursor)  # Default cursor
+
+    # Connect mouse events to handle cursor changes
+    def on_mouse_move(event):
+        """Handle mouse move events to show resize cursor"""
+        try:
+            # Get the logical index at the mouse position
+            logical_index = header.logicalIndexAt(event.pos())
+            if logical_index >= 0:
+                # Get the section position and size
+                section_pos = header.sectionPosition(logical_index)
+                section_size = header.sectionSize(logical_index)
+
+                # Check if mouse is near the right edge of the section (within 5 pixels)
+                mouse_x = event.pos().x()
+                right_edge = section_pos + section_size
+
+                if abs(mouse_x - right_edge) <= 5 and logical_index < table_widget.columnCount() - 1:
+                    # Mouse is near column border, show resize cursor
+                    header.setCursor(Qt.SizeHorCursor)
+                else:
+                    # Mouse is not near border, show default cursor
+                    header.setCursor(Qt.ArrowCursor)
+            else:
+                header.setCursor(Qt.ArrowCursor)
+        except Exception as e:
+            # Fallback to default cursor on any error
+            header.setCursor(Qt.ArrowCursor)
+
+    # Connect the mouse move event
+    header.mouseMoveEvent = on_mouse_move
+
+    # Set tooltip to inform users about resizing
+    header.setToolTip("💡 Tip: Hover over column borders to resize columns!\n"
+                     "Look for the ↔ cursor to drag and resize columns.")
+
+def apply_enhanced_table_styling_with_resize_cursor(table_widget: QTableWidget, row_height: int = 50):
+    """
+    Apply enhanced table styling with proper column resize cursor support
+
+    Args:
+        table_widget: The QTableWidget to style
+        row_height: Height for table rows (default: 50px)
+    """
+
+    # Apply base modern styling first
+    apply_modern_table_styling(table_widget, row_height)
+
+    # Enable column resizing with cursor support
+    enable_column_resizing_with_cursor(table_widget)
+
+    # Add enhanced CSS styling that includes cursor support
+    enhanced_style = f"""
+        QTableWidget {{
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            gridline-color: #f1f5f9;
+            selection-background-color: #fef2f2;
+            font-size: 13px;
+            alternate-background-color: #f8fafc;
+        }}
+        QTableWidget::item {{
+            padding: 12px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            min-height: {row_height - 10}px;
+        }}
+        QTableWidget::item:selected {{
+            background-color: #dbeafe;
+            color: #1e40af;
+        }}
+        QHeaderView {{
+            background-color: transparent;
+        }}
+        QHeaderView::section {{
+            background-color: #f8fafc;
+            border: none;
+            border-bottom: 2px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            padding: 12px 8px;
+            font-weight: 600;
+            color: #374151;
+            min-height: {row_height - 10}px;
+            font-size: 13px;
+        }}
+        QHeaderView::section:hover {{
+            background-color: #f1f5f9;
+        }}
+        QHeaderView::section:pressed {{
+            background-color: #e2e8f0;
+        }}
+    """
+
+    table_widget.setStyleSheet(enhanced_style)
+
+    # Configure table properties for optimal resizing
+    table_widget.setAlternatingRowColors(True)
+    table_widget.setSelectionBehavior(QTableWidget.SelectRows)
+    table_widget.setSelectionMode(QTableWidget.SingleSelection)
+    table_widget.verticalHeader().setDefaultSectionSize(row_height)
+    table_widget.verticalHeader().hide()
+    table_widget.setSortingEnabled(True)
+
+    # Enable horizontal scrolling when needed
+    table_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
 def apply_colored_table_styling(table_widget: QTableWidget, table_type: str, row_height: int = 50):
     """

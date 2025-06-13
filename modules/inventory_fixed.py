@@ -510,13 +510,6 @@ class InventoryWidget(QWidget):
         # Ensure the table shows horizontal scrollbar when content is wider than view
         self.inventory_table.setMinimumWidth(800)  # Minimum width to trigger horizontal scroll
 
-        # Set column resize modes - each column independently resizable
-        header = self.inventory_table.horizontalHeader()
-
-        # Set all columns to fixed width initially to prevent auto-resizing
-        for i in range(17):
-            header.setSectionResizeMode(i, QHeaderView.Fixed)
-
         # Optimized column widths to fit screen perfectly (total ~1100px)
         default_column_widths = {
             0: 35,   # ID - minimal space
@@ -538,24 +531,41 @@ class InventoryWidget(QWidget):
             16: 70   # Days Left - compact
         }
 
+        # SIMPLE AND DIRECT COLUMN RESIZING SETUP
+        print("🔧 Setting up BASIC column resizing...")
+
+        # Get the header
+        header = self.inventory_table.horizontalHeader()
+
+        # Apply column widths FIRST
+        print("🔧 Setting column widths...")
+        for col, width in default_column_widths.items():
+            self.inventory_table.setColumnWidth(col, width)
+            print(f"   Column {col}: {width}px")
+
+        # CRITICAL: Set ALL columns to Interactive mode for manual resizing
+        print("🔧 Enabling Interactive mode for all columns...")
+        for col in range(17):
+            header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Column {col}: Interactive")
+
+        # Basic header configuration
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(30)
+
+        # Test that resizing is actually enabled
+        print("🔧 Testing resize modes...")
+        for col in range(min(5, 17)):
+            mode = header.sectionResizeMode(col)
+            print(f"   Column {col} mode: {mode} (should be 1 for Interactive)")
+
+        print("✅ Basic column resizing setup complete!")
+
         # Load saved column settings or use defaults
         saved_settings = self.load_column_settings()
 
-        # Set global minimum section size to prevent columns from becoming too small
-        header.setMinimumSectionSize(30)
-
-        # Make ALL columns user-resizable and independent
-        for col in range(17):
-            header.setSectionResizeMode(col, QHeaderView.Interactive)
-
-        # Set tooltip for header to inform users about manual resizing
-        header.setToolTip("💡 Tip: You can manually resize any column by dragging the column borders!\n"
-                         "Move your mouse to the edge between column headers to see the resize cursor.\n"
-                         "Your column widths will be automatically saved and restored.")
-
-        # Enable proper resize behavior
-        header.setStretchLastSection(False)
-        header.setDefaultAlignment(Qt.AlignLeft)
+        # Get header reference for further configuration
+        header = self.inventory_table.horizontalHeader()
 
         # Connect resize events for saving settings
         header.sectionResized.connect(self.on_column_resized)
@@ -581,43 +591,26 @@ class InventoryWidget(QWidget):
         # Keep other columns fixed to prevent unwanted resizing
         # This ensures that resizing one column doesn't affect others
 
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # SKIP RESPONSIVE TABLE SETUP TO AVOID CONFLICTS
+        print("🔧 Skipping responsive table setup to ensure manual resizing works...")
 
-            # Define column priorities for responsive behavior
-            column_priorities = {
-                0: 5,   # ID - lowest priority (hide on mobile)
-                1: 1,   # Name - highest priority (always show)
-                2: 2,   # Category - high priority
-                3: 3,   # Total Qty - medium priority
-                4: 4,   # Used Qty - low priority
-                5: 2,   # Available Qty - high priority
-                6: 3,   # Unit - medium priority
-                7: 4,   # Avg Price - low priority
-                8: 3,   # Price/Unit - medium priority
-                9: 2,   # Total Value - high priority
-                10: 3,  # Location - medium priority
-                11: 5,  # Purchase Count - lowest priority
-                12: 4,  # Total Spent - low priority
-                13: 5,  # Last Purchase Date - lowest priority
-                14: 5,  # Last Purchase Price - lowest priority
-                15: 3,  # Expiry Date - medium priority
-                16: 3   # Days Left - medium priority
-            }
+        # FINAL CHECK: Ensure ALL columns are still Interactive after any other setup
+        header = self.inventory_table.horizontalHeader()
+        print("🔧 FINAL CHECK - Ensuring all columns are Interactive...")
+        for col in range(17):
+            current_mode = header.sectionResizeMode(col)
+            if current_mode != QHeaderView.Interactive:
+                header.setSectionResizeMode(col, QHeaderView.Interactive)
+                print(f"   Column {col}: {current_mode} → Interactive (FIXED)")
+            else:
+                print(f"   Column {col}: Interactive (OK)")
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'widths': default_column_widths,
-                'stretch_columns': [1, 2, 5, 9]  # Name, Category, Available Qty, Total Value
-            }
+        # Final configuration
+        header.setStretchLastSection(False)
+        header.setDefaultAlignment(Qt.AlignLeft)
+        header.setMinimumSectionSize(30)
 
-            make_table_responsive(self.inventory_table, column_config)
-            print("✅ Applied responsive table functionality")
-
-        except ImportError:
-            print("⚠️ Responsive table utilities not available, using standard styling")
+        print("✅ ALL COLUMNS ARE NOW MANUALLY RESIZABLE!")
 
         # Apply modern table styling
         if apply_inventory_table_styling:
