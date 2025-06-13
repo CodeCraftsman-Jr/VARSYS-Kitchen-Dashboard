@@ -216,6 +216,11 @@ dist/
 *.exe
 *.msi
 
+# Release packages (too large for GitHub, use GitHub Releases instead)
+releases/*.zip
+releases/*.tar.gz
+releases/*.7z
+
 # IDE
 .vscode/
 .idea/

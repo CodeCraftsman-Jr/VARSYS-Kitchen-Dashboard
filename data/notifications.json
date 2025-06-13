@@ -2,6 +2,38 @@
   "notifications": [
     {
       "id": 101,
+      "title": "Feature Unavailable",
+      "message": "Smart ingredient manager is not available",
+      "type": "warning",
+      "timestamp": "2025-06-13T18:26:05.301937",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-13T18:25:35.728374",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-13T18:25:32.747853",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-13T18:25:27.732880",
+      "read": false
+    },
+    {
+      "id": 101,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
       "type": "info",
@@ -767,39 +799,7 @@
       "type": "info",
       "timestamp": "2025-06-11T17:01:13.824635",
       "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-11T17:01:08.558310",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Recipe Scaling",
-      "message": "Recipe scaling feature is now available in Pricing tab",
-      "type": "info",
-      "timestamp": "2025-06-11T16:54:10.668623",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-11T16:54:07.669738",
-      "read": false
-    },
-    {
-      "id": 101,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-11T16:54:02.669107",
-      "read": false
     }
   ],
-  "last_updated": "2025-06-12T05:07:55.684407"
+  "last_updated": "2025-06-13T18:26:25.343803"
 }

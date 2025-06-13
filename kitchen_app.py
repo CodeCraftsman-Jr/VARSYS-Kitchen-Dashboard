@@ -47,41 +47,6 @@ from modules.notification_system import get_notification_manager
 # Import modern theme
 from modules.modern_theme import ModernTheme
 
-# Import version and update checker
-try:
-    from version import get_full_version
-    from update_checker import auto_check_updates, create_update_menu_action
-    UPDATE_CHECKER_AVAILABLE = True
-except ImportError:
-    UPDATE_CHECKER_AVAILABLE = False
-    def auto_check_updates(*args, **kwargs): pass
-    def create_update_menu_action(*args, **kwargs): return lambda: None
-
-# Import license management
-try:
-    from license_manager import license_manager, require_license, check_license_on_startup
-    from license_dialog import show_license_dialog
-    LICENSE_SYSTEM_AVAILABLE = True
-except ImportError:
-    LICENSE_SYSTEM_AVAILABLE = False
-    def require_license(*args, **kwargs):
-        def decorator(func): return func
-        return decorator
-    def check_license_on_startup(): return True
-    def show_license_dialog(*args, **kwargs): return True
-
-# Import protected Firebase system
-try:
-    from firebase_protection import get_protected_firebase_manager, require_firebase_access
-    from firebase_installer import install_firebase_on_startup, get_firebase_status
-    PROTECTED_FIREBASE_AVAILABLE = True
-except ImportError:
-    PROTECTED_FIREBASE_AVAILABLE = False
-    def get_protected_firebase_manager(): return None
-    def require_firebase_access(func): return func
-    def install_firebase_on_startup(): return True
-    def get_firebase_status(): return {}
-
 # Import activity tracker
 try:
     from modules.activity_tracker import get_activity_tracker, track_user_action, track_navigation, track_system_event
@@ -97,26 +62,10 @@ class KitchenDashboardApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Check license before initializing application
-        if LICENSE_SYSTEM_AVAILABLE:
-            if not self.check_and_handle_license():
-                sys.exit(1)  # Exit if license is invalid
-
-        # Install protected Firebase configuration
-        if PROTECTED_FIREBASE_AVAILABLE:
-            self.setup_protected_firebase()
-
         # Load environment variables from .env file
         self.load_env_file()
 
-        # Set window title with version info
-        if UPDATE_CHECKER_AVAILABLE:
-            self.setWindowTitle(f"VARSYS Kitchen Dashboard - {get_full_version()}")
-        else:
-            self.setWindowTitle("VARSYS Kitchen Dashboard - Modern Edition")
-
-        # Create menu bar with update checking
-        self.create_menu_bar()
+        self.setWindowTitle("Kitchen Dashboard - Modern Edition")
         self.resize(1600, 1000)
         self.setMinimumSize(1400, 900)
 
@@ -134,9 +83,14 @@ class KitchenDashboardApp(QMainWindow):
         # Apply modern window styling
         self.apply_modern_window_style()
 
-        # Initialize logger
+        # Initialize logger with comprehensive startup logging
         self.logger = get_logger()
-        self.logger.info("Kitchen Dashboard application starting")
+        self.logger.log_startup_info()
+        self.logger.info("🚀 Kitchen Dashboard application starting...")
+
+        # Log each major initialization step for debugging
+        self.logger.info("📋 Step 1: Application window and styling initialized")
+        self.logger.log_ui_action("Window created", f"Size: {self.size().width()}x{self.size().height()}")
 
         # Initialize notification system
         self.notification_manager = get_notification_manager(self)
@@ -160,8 +114,37 @@ class KitchenDashboardApp(QMainWindow):
         # Set default currency symbol
         self.currency_symbol = "₹"  # Indian Rupee by default
         
-        # Load data first
-        self.data = self.load_data()
+        # Load data first with comprehensive error handling and logging
+        self.logger.info("📊 Step 2: Loading application data...")
+        try:
+            import time
+            start_time = time.time()
+            self.data = self.load_data()
+            load_time = time.time() - start_time
+
+            if self.data:
+                self.logger.log_performance("Data loading", load_time)
+                self.logger.log_data_loading("All data sources", True,
+                    f"Loaded {len(self.data)} data sources: {list(self.data.keys())}")
+
+                # Log details about each data source
+                for key, value in self.data.items():
+                    if hasattr(value, 'shape'):
+                        self.logger.info(f"   📋 {key}: {value.shape[0]} rows, {value.shape[1]} columns")
+                    elif hasattr(value, '__len__'):
+                        self.logger.info(f"   📋 {key}: {len(value)} items")
+                    else:
+                        self.logger.info(f"   📋 {key}: {type(value)}")
+            else:
+                self.logger.log_data_loading("Data sources", False, error="No data returned from load_data()")
+                self.data = {}
+
+        except Exception as e:
+            self.logger.log_exception(e, "Critical error during data loading")
+            self.logger.log_data_loading("Data sources", False, error=str(e))
+            # Initialize with empty data to prevent crashes
+            self.data = {}
+            self.logger.warning("⚠️ Initialized with empty data to prevent application crash")
         
         # Initialize optimized Firebase
         self.firebase_user_id = "kitchen_dashboard_user" # Default user ID
@@ -266,185 +249,6 @@ class KitchenDashboardApp(QMainWindow):
 
         # Perform daily sync check after UI is initialized
         # self._check_and_perform_daily_sync() # Will be called at the end of initialize_ui
-
-    def check_and_handle_license(self) -> bool:
-        """Check license and show activation dialog if needed"""
-        try:
-            # Check if license is valid
-            valid, message, license_data = license_manager.verify_license()
-
-            if valid:
-                self.logger.info(f"License valid: {message}")
-                return True
-            else:
-                self.logger.warning(f"License invalid: {message}")
-
-                # Show license dialog
-                if show_license_dialog(self):
-                    return True
-                else:
-                    # User cancelled or license activation failed
-                    from PySide6.QtWidgets import QMessageBox
-                    QMessageBox.critical(
-                        None,
-                        "License Required",
-                        "A valid license is required to use VARSYS Kitchen Dashboard.\n\n"
-                        "Please contact sales@varsys.com to purchase a license."
-                    )
-                    return False
-
-        except Exception as e:
-            self.logger.error(f"License check error: {e}")
-            # In case of error, allow application to run (graceful degradation)
-            return True
-
-    def setup_protected_firebase(self):
-        """Setup protected Firebase system"""
-        try:
-            # Install Firebase configuration securely
-            firebase_installed = install_firebase_on_startup()
-
-            if firebase_installed:
-                self.logger.info("Protected Firebase system initialized")
-
-                # Get protected Firebase manager
-                self.protected_firebase = get_protected_firebase_manager()
-
-                # Initialize Firebase connection
-                success, message = self.protected_firebase.initialize_firebase()
-                if success:
-                    self.logger.info(f"Firebase connected: {message}")
-                else:
-                    self.logger.warning(f"Firebase connection failed: {message}")
-            else:
-                self.logger.warning("Protected Firebase installation failed")
-                self.protected_firebase = None
-
-        except Exception as e:
-            self.logger.error(f"Error setting up protected Firebase: {e}")
-            self.protected_firebase = None
-
-    def create_menu_bar(self):
-        """Create menu bar with update checking and other options"""
-        try:
-            from PySide6.QtWidgets import QMenuBar
-            from PySide6.QtGui import QAction
-
-            menubar = self.menuBar()
-
-            # License menu
-            if LICENSE_SYSTEM_AVAILABLE:
-                license_menu = menubar.addMenu('License')
-
-                # License info action
-                license_info_action = QAction('License Information', self)
-                license_info_action.triggered.connect(self.show_license_info)
-                license_menu.addAction(license_info_action)
-
-                # Activate license action
-                activate_action = QAction('Activate License', self)
-                activate_action.triggered.connect(lambda: show_license_dialog(self))
-                license_menu.addAction(activate_action)
-
-            # Help menu
-            help_menu = menubar.addMenu('Help')
-
-            # About action
-            about_action = QAction('About VARSYS Kitchen Dashboard', self)
-            about_action.triggered.connect(self.show_about_dialog)
-            help_menu.addAction(about_action)
-
-            # Check for updates action
-            if UPDATE_CHECKER_AVAILABLE:
-                update_action = QAction('Check for Updates', self)
-                update_action.triggered.connect(create_update_menu_action(self))
-                help_menu.addAction(update_action)
-
-                help_menu.addSeparator()
-
-                # Version info action
-                version_action = QAction(f'Version {get_full_version()}', self)
-                version_action.setEnabled(False)  # Make it non-clickable
-                help_menu.addAction(version_action)
-
-        except Exception as e:
-            self.logger.error(f"Error creating menu bar: {e}")
-
-    def show_license_info(self):
-        """Show license information dialog"""
-        try:
-            from PySide6.QtWidgets import QMessageBox
-
-            if LICENSE_SYSTEM_AVAILABLE:
-                license_info = license_manager.get_license_info()
-                if license_info:
-                    info_text = f"""
-                    <h3>🔐 License Information</h3>
-                    <p><b>Status:</b> ✅ Active</p>
-                    <p><b>Email:</b> {license_info.get('email', 'N/A')}</p>
-                    <p><b>License Type:</b> {license_info.get('license_type', 'N/A').title()}</p>
-                    <p><b>Expires:</b> {license_info.get('expires_at', 'N/A')[:10]}</p>
-                    <p><b>Days Remaining:</b> {license_info.get('days_remaining', 'N/A')}</p>
-                    <p><b>Features:</b> {', '.join(license_info.get('features', []))}</p>
-                    """
-                else:
-                    info_text = """
-                    <h3>🔐 License Information</h3>
-                    <p><b>Status:</b> ❌ No Valid License</p>
-                    <p>Please activate your license to access all features.</p>
-                    """
-            else:
-                info_text = """
-                <h3>🔐 License Information</h3>
-                <p><b>Status:</b> ⚠️ License System Not Available</p>
-                """
-
-            msg = QMessageBox(self)
-            msg.setWindowTitle("License Information")
-            msg.setText(info_text)
-            msg.setIcon(QMessageBox.Information)
-            msg.exec()
-
-        except Exception as e:
-            self.logger.error(f"Error showing license info: {e}")
-
-    def show_about_dialog(self):
-        """Show about dialog"""
-        try:
-            from PySide6.QtWidgets import QMessageBox
-
-            about_text = """
-            <h2>🍳 VARSYS Kitchen Dashboard</h2>
-            <p><b>Professional Kitchen Management System</b></p>
-            """
-
-            if UPDATE_CHECKER_AVAILABLE:
-                about_text += f"<p><b>Version:</b> {get_full_version()}</p>"
-
-            about_text += """
-            <p><b>Features:</b></p>
-            <ul>
-            <li>📦 Inventory Management</li>
-            <li>💰 Budget & Expense Tracking</li>
-            <li>📊 Sales Analytics</li>
-            <li>📈 Business Intelligence</li>
-            <li>🔄 Automatic Updates</li>
-            </ul>
-
-            <p><b>Built with:</b> Python, PySide6, pandas, matplotlib</p>
-            <p><b>License:</b> MIT License</p>
-
-            <p>© 2025 VARSYS Team</p>
-            """
-
-            msg = QMessageBox(self)
-            msg.setWindowTitle("About VARSYS Kitchen Dashboard")
-            msg.setText(about_text)
-            msg.setIcon(QMessageBox.Information)
-            msg.exec()
-
-        except Exception as e:
-            self.logger.error(f"Error showing about dialog: {e}")
 
     def create_window_icon(self):
         """Create a custom window icon for the kitchen dashboard"""
@@ -567,29 +371,8 @@ class KitchenDashboardApp(QMainWindow):
             # self.update_ui_with_loaded_data() # Call if you have a method to refresh UI from self.data
             pass
 
-    @require_license('firebase_sync')
-    @require_firebase_access
     def trigger_manual_full_sync(self):
-        """Trigger manual Firebase sync with protection"""
-        try:
-            if hasattr(self, 'protected_firebase') and self.protected_firebase:
-                # Use protected Firebase for sync
-                success, message = self.protected_firebase.sync_data_to_firebase(self.data)
-                if success:
-                    self.logger.info(f"Manual sync successful: {message}")
-                    self.show_notification("Sync Complete", "Data synchronized successfully", "success")
-                else:
-                    self.logger.error(f"Manual sync failed: {message}")
-                    self.show_notification("Sync Failed", f"Sync failed: {message}", "error")
-            else:
-                self.logger.warning("Protected Firebase not available")
-                self.show_notification("Sync Unavailable", "Firebase sync not available", "warning")
-        except PermissionError as e:
-            self.logger.error(f"Firebase access denied: {e}")
-            self.show_notification("Access Denied", "Valid license required for Firebase sync", "error")
-        except Exception as e:
-            self.logger.error(f"Manual sync error: {e}")
-            self.show_notification("Sync Error", f"Sync error: {str(e)}", "error")
+        self.logger.info("Manual full sync triggered.")
         progress_dialog = QMessageBox(self)
         progress_dialog.setWindowTitle("Synchronization")
         progress_dialog.setText("Manual sync in progress... Please wait.")
@@ -843,10 +626,6 @@ class KitchenDashboardApp(QMainWindow):
 
         # Add welcome notification
         QTimer.singleShot(2000, self.show_welcome_notification)
-
-        # Check for updates automatically after startup
-        if UPDATE_CHECKER_AVAILABLE:
-            QTimer.singleShot(5000, lambda: auto_check_updates(self, delay_seconds=0))
 
         # Connect responsive manager to handle layout changes
         if self.responsive_manager:
@@ -1420,14 +1199,25 @@ class KitchenDashboardApp(QMainWindow):
 
     def load_data(self):
         """Load all data from CSV files or create empty dataframes if files don't exist"""
-        self.logger.info("[LOADING] Starting comprehensive data loading...")
+        self.logger.info("🔄 Starting comprehensive data loading...")
         data = {}
 
         try:
             # Check if data directory exists
             if not os.path.exists('data'):
                 os.makedirs('data')
-                self.logger.info("Created data directory")
+                self.logger.info("📁 Created data directory")
+
+            # Log current working directory and data path
+            self.logger.info(f"📂 Working directory: {os.getcwd()}")
+            self.logger.info(f"📂 Data directory: {os.path.abspath('data')}")
+
+            # List all files in data directory
+            if os.path.exists('data'):
+                data_files = os.listdir('data')
+                self.logger.info(f"📋 Files in data directory: {data_files}")
+            else:
+                self.logger.warning("⚠️ Data directory does not exist!")
 
             # Define empty dataframes for each data type with comprehensive columns
             empty_dataframes = {
@@ -1490,39 +1280,61 @@ class KitchenDashboardApp(QMainWindow):
                 'errors': []
             }
             
-            # Iterate over each data type
+            # Iterate over each data type with comprehensive logging
             for key, empty_df in empty_dataframes.items():
                 file_path = os.path.join('data', f'{key}.csv')
-                
+                self.logger.info(f"🔍 Processing {key} data source...")
+
                 if os.path.exists(file_path):
                     try:
                         # Performance optimization: Check file size and use chunked loading for large files
                         file_size = os.path.getsize(file_path)
+                        self.logger.info(f"  📄 File found: {file_path} ({file_size} bytes)")
+
                         if file_size > 5 * 1024 * 1024:  # 5MB threshold
                             # Load large files in chunks to avoid memory issues
+                            self.logger.info(f"  📊 Loading large file in chunks...")
                             chunks = []
+                            chunk_count = 0
                             for chunk in pd.read_csv(file_path, chunksize=1000):
                                 chunks.append(chunk)
+                                chunk_count += 1
                             data[key] = pd.concat(chunks, ignore_index=True) if chunks else empty_df
-                            self.logger.info(f"Loaded large file {file_path} ({file_size/1024/1024:.1f}MB) in chunks")
+                            self.logger.info(f"  ✅ Loaded {chunk_count} chunks from {file_path} ({file_size/1024/1024:.1f}MB)")
                         else:
                             # Load smaller files normally
                             data[key] = pd.read_csv(file_path, low_memory=False)
-                            self.logger.debug(f"Loaded data from {file_path} ({file_size/1024:.1f}KB)")
+                            self.logger.info(f"  ✅ Loaded {len(data[key])} rows from {file_path} ({file_size/1024:.1f}KB)")
+
+                        # Log data structure info
+                        if len(data[key]) > 0:
+                            self.logger.info(f"  📋 Columns: {list(data[key].columns)}")
+                            self.logger.info(f"  📊 Shape: {data[key].shape}")
+                        else:
+                            self.logger.warning(f"  ⚠️ File {file_path} is empty")
+
+                        loading_stats['files_found'] += 1
+                        loading_stats['files_loaded'] += 1
+
                     except Exception as e:
-                        error_msg = f"Error loading {key} from {file_path}: {e}"
+                        error_msg = f"❌ Error loading {key} from {file_path}: {e}"
                         print(error_msg)  # Keep for immediate console feedback
                         self.logger.error(error_msg)
+                        self.logger.log_exception(e, f"Loading {key} data")
                         data[key] = empty_df  # Use in-memory empty DataFrame
-                        self.logger.warning(f"Used in-memory empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
+                        self.logger.warning(f"  🔄 Used empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
+                        loading_stats['errors'].append(f"{key}: {str(e)}")
                 else:
+                    self.logger.warning(f"  📄 File not found: {file_path}")
                     data[key] = empty_df
                     # Save the empty dataframe to create the file if it doesn't exist
                     try:
                         empty_df.to_csv(file_path, index=False)
-                        self.logger.info(f"Created new empty file for {key} at {file_path}")
+                        self.logger.info(f"  ✅ Created new empty file for {key} at {file_path}")
+                        loading_stats['files_created'] += 1
                     except Exception as e:
-                        self.logger.error(f"Error creating new empty file for {key} at {file_path}: {e}")
+                        self.logger.error(f"  ❌ Error creating new empty file for {key} at {file_path}: {e}")
+                        loading_stats['errors'].append(f"Create {key}: {str(e)}")
             
             # Convert date columns to datetime (even for empty dataframes)
             for df_name in ['budget', 'sales', 'waste']:
@@ -1548,17 +1360,32 @@ class KitchenDashboardApp(QMainWindow):
                 else:
                     print(f"  {key}: {type(df)} (not a DataFrame)")
 
-            self.logger.info("Data loading completed successfully")
+            # Log comprehensive loading statistics
+            self.logger.info("📊 Data loading completed - Summary:")
+            self.logger.info(f"  📁 Files found: {loading_stats['files_found']}")
+            self.logger.info(f"  ✅ Files loaded: {loading_stats['files_loaded']}")
+            self.logger.info(f"  🆕 Files created: {loading_stats['files_created']}")
+            self.logger.info(f"  ❌ Errors: {len(loading_stats['errors'])}")
+
+            if loading_stats['errors']:
+                self.logger.error("  Error details:")
+                for error in loading_stats['errors']:
+                    self.logger.error(f"    - {error}")
 
             # Assign data to self.data immediately
             self.data = data
 
-            # Print final summary
-            print(f"\n[SUCCESS] DATA LOADING COMPLETED SUCCESSFULLY!")
-            print(f"   [INFO] Total tables loaded: {len(data)}")
+            # Print final summary with enhanced details
+            print(f"\n✅ DATA LOADING COMPLETED SUCCESSFULLY!")
+            print(f"   📊 Total tables loaded: {len(data)}")
             total_records = sum(len(df) for df in data.values() if hasattr(df, '__len__'))
-            print(f"   [INFO] Total records: {total_records}")
+            print(f"   📋 Total records: {total_records}")
+            print(f"   📁 Files processed: {loading_stats['files_found']}")
+            print(f"   🆕 Files created: {loading_stats['files_created']}")
+            if loading_stats['errors']:
+                print(f"   ⚠️ Errors encountered: {len(loading_stats['errors'])}")
 
+            self.logger.log_performance("Complete data loading", 0)  # Will be calculated by caller
             return data
         except Exception as e:
             error_msg = f"Error loading data: {e}"
@@ -3011,64 +2838,95 @@ class KitchenDashboardApp(QMainWindow):
     
     def show_inventory_page(self):
         """Display the inventory management page"""
-        self.clear_content()
+        try:
+            self.logger.log_ui_action("Navigation", "Inventory page requested")
+            self.clear_content()
 
-        # Add header with smart ingredient check button
-        header_widget = QWidget()
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(20, 10, 20, 10)
+            # Add header with smart ingredient check button
+            header_widget = QWidget()
+            header_layout = QHBoxLayout(header_widget)
+            header_layout.setContentsMargins(20, 10, 20, 10)
 
-        # Title
-        title_label = QLabel("Inventory Management")
-        title_label.setFont(self.title_font)
-        title_label.setStyleSheet("color: #2c3e50; font-weight: bold;")
-        header_layout.addWidget(title_label)
+            # Title
+            title_label = QLabel("Inventory Management")
+            title_label.setFont(self.title_font)
+            title_label.setStyleSheet("color: #2c3e50; font-weight: bold;")
+            header_layout.addWidget(title_label)
 
-        header_layout.addStretch()
+            header_layout.addStretch()
 
-        # Smart ingredient check button
-        check_ingredients_btn = QPushButton("🔍 Check Missing Ingredients")
-        check_ingredients_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #17a2b8;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 10px 20px;
-                font-size: 14px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #138496;
-            }
-            QPushButton:pressed {
-                background-color: #117a8b;
-            }
-        """)
-        check_ingredients_btn.clicked.connect(self.manual_ingredient_check)
-        header_layout.addWidget(check_ingredients_btn)
+            # Smart ingredient check button
+            check_ingredients_btn = QPushButton("🔍 Check Missing Ingredients")
+            check_ingredients_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #17a2b8;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 10px 20px;
+                    font-size: 14px;
+                    font-weight: 500;
+                }
+                QPushButton:hover {
+                    background-color: #138496;
+                }
+                QPushButton:pressed {
+                    background-color: #117a8b;
+                }
+            """)
+            check_ingredients_btn.clicked.connect(self.manual_ingredient_check)
+            header_layout.addWidget(check_ingredients_btn)
 
-        self.content_layout.addWidget(header_widget)
+            self.content_layout.addWidget(header_widget)
 
-        # Import the inventory module
-        from modules.inventory_fixed import InventoryWidget
+            # Import the inventory module with error handling
+            try:
+                from modules.inventory_fixed import InventoryWidget
+                self.logger.log_module_import("modules.inventory_fixed.InventoryWidget", True)
+            except ImportError as e:
+                self.logger.log_module_import("modules.inventory_fixed.InventoryWidget", False, e)
+                # Show error page instead of crashing
+                self.show_error_page("Inventory", f"Failed to import inventory module: {str(e)}")
+                return
 
-        # Create the inventory widget
-        # Always create a new instance to avoid issues with deleted C++ objects
+            # Debug and log data before passing to inventory widget
+            self.logger.info("🔍 Inventory page data check:")
+            self.logger.info(f"  Available data keys: {list(self.data.keys()) if self.data else 'None'}")
 
-        # Debug: Check data before passing to inventory widget
-        print(f"🔍 MAIN APP DEBUG - show_inventory_page:")
-        print(f"  self.data keys: {list(self.data.keys()) if self.data else 'None'}")
-        if 'inventory' in self.data:
-            print(f"  inventory shape: {self.data['inventory'].shape}")
-            print(f"  inventory sample: {list(self.data['inventory']['item_name'].head(3)) if 'item_name' in self.data['inventory'].columns else 'No item_name'}")
-        else:
-            print(f"  ❌ No 'inventory' key in self.data!")
+            if 'inventory' in self.data:
+                inventory_data = self.data['inventory']
+                self.logger.info(f"  ✅ Inventory data found: {inventory_data.shape}")
+                self.logger.info(f"  Columns: {list(inventory_data.columns)}")
+                if 'item_name' in inventory_data.columns:
+                    sample_items = list(inventory_data['item_name'].head(3))
+                    self.logger.info(f"  Sample items: {sample_items}")
+                else:
+                    self.logger.warning("  ⚠️ No 'item_name' column found")
+            else:
+                self.logger.error("  ❌ No 'inventory' key in self.data!")
+                # Show error page instead of crashing
+                self.show_error_page("Inventory", "No inventory data available. Please check your data files.")
+                return
 
-        self.inventory_widget = InventoryWidget(self.data)
+            # Create the inventory widget with error handling
+            try:
+                import time
+                start_time = time.time()
+                self.inventory_widget = InventoryWidget(self.data)
+                creation_time = time.time() - start_time
+                self.logger.log_performance("Inventory widget creation", creation_time)
 
-        # Add the widget to the content layout
-        self.content_layout.addWidget(self.inventory_widget)
+                # Add the widget to the content layout
+                self.content_layout.addWidget(self.inventory_widget)
+                self.logger.info("✅ Inventory page loaded successfully")
+
+            except Exception as e:
+                self.logger.log_exception(e, "Error creating inventory widget")
+                self.show_error_page("Inventory", f"Error creating inventory interface: {str(e)}")
+
+        except Exception as e:
+            self.logger.log_exception(e, "Critical error in show_inventory_page")
+            self.show_error_page("Inventory", f"Critical error loading inventory page: {str(e)}")
 
     def manual_ingredient_check(self):
         """Manually trigger ingredient check"""
@@ -5106,6 +4964,103 @@ Generated: {timestamp[:19]}
                 "Restore Error",
                 f"An error occurred while restoring data: {str(e)}"
             )
+
+    def show_error_page(self, page_name, error_message):
+        """Display an enhanced error page when a module fails to load"""
+        self.logger.error(f"🚨 Showing error page for {page_name}: {error_message}")
+        self.clear_content()
+
+        # Create error container
+        error_widget = QWidget()
+        error_layout = QVBoxLayout(error_widget)
+        error_layout.setContentsMargins(40, 40, 40, 40)
+        error_layout.setSpacing(20)
+
+        # Error icon and title
+        title_container = QWidget()
+        title_layout = QHBoxLayout(title_container)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+
+        error_icon = QLabel("⚠️")
+        error_icon.setFont(QFont("Segoe UI", 48))
+        error_icon.setAlignment(Qt.AlignCenter)
+        title_layout.addWidget(error_icon)
+
+        title_text = QLabel(f"Error Loading {page_name}")
+        title_text.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        title_text.setStyleSheet("color: #e74c3c;")
+        title_text.setAlignment(Qt.AlignCenter)
+        title_layout.addWidget(title_text)
+
+        error_layout.addWidget(title_container)
+
+        # Error message
+        error_msg = QLabel(error_message)
+        error_msg.setFont(QFont("Segoe UI", 12))
+        error_msg.setStyleSheet("color: #7f8c8d; padding: 20px;")
+        error_msg.setAlignment(Qt.AlignCenter)
+        error_msg.setWordWrap(True)
+        error_layout.addWidget(error_msg)
+
+        # Suggestions
+        suggestions = QLabel("""
+        🔧 Possible solutions:
+        • Check the Logs tab for detailed error information
+        • Verify all required CSV files are present in the data directory
+        • Restart the application
+        • Check file permissions and disk space
+        • Contact support if the problem persists
+        """)
+        suggestions.setFont(QFont("Segoe UI", 10))
+        suggestions.setStyleSheet("color: #95a5a6; padding: 20px;")
+        suggestions.setAlignment(Qt.AlignLeft)
+        error_layout.addWidget(suggestions)
+
+        # Action buttons
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+
+        # View logs button
+        logs_btn = QPushButton("📋 View Logs")
+        logs_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #17a2b8;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #138496;
+            }
+        """)
+        logs_btn.clicked.connect(self.show_logs_page)
+        button_layout.addWidget(logs_btn)
+
+        # Home button
+        home_btn = QPushButton("🏠 Go Home")
+        home_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
+        home_btn.clicked.connect(self.show_home_page)
+        button_layout.addWidget(home_btn)
+
+        error_layout.addWidget(button_container, 0, Qt.AlignCenter)
+
+        self.content_layout.addWidget(error_widget)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
