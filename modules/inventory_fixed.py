@@ -738,8 +738,79 @@ class InventoryWidget(QWidget):
             print(f"❌ Error showing all items: {e}")
             QMessageBox.warning(self, "Error", f"Failed to show all items: {str(e)}")
 
+    def auto_fit_columns_on_load(self):
+        """Automatically resize columns to fit screen width on initial load (silent)"""
+        try:
+            print("📐 Auto-fitting columns on initial load...")
+
+            # Get available width (table width minus scrollbar and margins)
+            table_width = self.inventory_table.width()
+            scrollbar_width = 20  # Approximate scrollbar width
+            margin_width = 40     # Margins and borders
+            available_width = table_width - scrollbar_width - margin_width
+
+            print(f"   📊 Table width: {table_width}px")
+            print(f"   📊 Available width: {available_width}px")
+
+            if available_width < 500:  # Minimum reasonable width
+                print("   ⚠️ Available width too small, using minimum widths")
+                available_width = 1200  # Use a reasonable default
+
+            # Define column priorities and minimum widths
+            column_info = {
+                0: {"name": "ID", "min_width": 40, "priority": 1},
+                1: {"name": "Name", "min_width": 100, "priority": 5},
+                2: {"name": "Category", "min_width": 70, "priority": 4},
+                3: {"name": "Total Qty", "min_width": 60, "priority": 3},
+                4: {"name": "Used Qty", "min_width": 60, "priority": 3},
+                5: {"name": "Available Qty", "min_width": 70, "priority": 4},
+                6: {"name": "Unit", "min_width": 40, "priority": 2},
+                7: {"name": "Avg Price", "min_width": 70, "priority": 3},
+                8: {"name": "Price/Unit", "min_width": 75, "priority": 3},
+                9: {"name": "Total Value", "min_width": 80, "priority": 4},
+                10: {"name": "Location", "min_width": 80, "priority": 4},
+                11: {"name": "Purchase Count", "min_width": 70, "priority": 2},
+                12: {"name": "Total Spent", "min_width": 80, "priority": 3},
+                13: {"name": "Last Purchase Date", "min_width": 100, "priority": 2},
+                14: {"name": "Last Purchase Price", "min_width": 100, "priority": 2},
+                15: {"name": "Expiry Date", "min_width": 90, "priority": 3},
+                16: {"name": "Days Left", "min_width": 70, "priority": 3}
+            }
+
+            # Calculate minimum total width needed
+            min_total_width = sum(info["min_width"] for info in column_info.values())
+
+            if available_width >= min_total_width:
+                # Distribute extra space proportionally based on priority
+                extra_space = available_width - min_total_width
+
+                # Calculate total priority weight
+                total_priority = sum(info["priority"] for info in column_info.values())
+
+                # Distribute widths
+                for col, info in column_info.items():
+                    base_width = info["min_width"]
+                    extra_width = int((extra_space * info["priority"]) / total_priority)
+                    final_width = base_width + extra_width
+
+                    self.inventory_table.setColumnWidth(col, final_width)
+                    print(f"   📏 Column {col} ({info['name']}): {final_width}px")
+            else:
+                # Use minimum widths if screen is too small
+                for col, info in column_info.items():
+                    self.inventory_table.setColumnWidth(col, info["min_width"])
+                    print(f"   📏 Column {col} ({info['name']}): {info['min_width']}px (minimum)")
+
+            # Save the new column settings
+            self.save_column_settings()
+
+            print("✅ Columns auto-fitted to screen width on initial load!")
+
+        except Exception as e:
+            print(f"❌ Error auto-fitting columns on load: {e}")
+
     def auto_fit_columns(self):
-        """Automatically resize columns to fit the available screen width"""
+        """Manually resize columns to fit the available screen width (with user notification)"""
         try:
             print("📐 Auto-fitting columns to screen width...")
 
