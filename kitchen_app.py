@@ -1,11 +1,8 @@
 import sys
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from datetime import datetime, timedelta
-import calendar
+from datetime import datetime
 
 # Firebase integration
 try:
@@ -21,17 +18,13 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton, QLabel,
                              QVBoxLayout, QHBoxLayout, QGridLayout, QTabWidget,
-                             QFrame, QTableWidget, QTableWidgetItem, QComboBox,
-                             QLineEdit, QScrollArea, QMessageBox, QSplitter,
-                             QFileDialog, QHeaderView, QGroupBox, QFormLayout,
-                             QStyleFactory, QSizePolicy, QStackedWidget, QRadioButton,
-                             QDialog, QTextEdit)
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, QTimer
-from PySide6.QtGui import QFont, QColor, QIcon, QLinearGradient, QPalette, QBrush, QPainter, QPen, QPixmap
+                             QFrame, QScrollArea, QMessageBox, QSplitter,
+                             QGroupBox, QFormLayout, QStyleFactory, QSizePolicy,
+                             QRadioButton, QDialog, QCheckBox, QButtonGroup)
+from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtGui import QFont, QColor, QIcon, QPalette, QPainter, QPen, QPixmap
 
 # Import modules
-from modules.inventory_fixed import InventoryWidget
-from modules.cleaning_fixed import CleaningWidget
 from modules.settings_fixed import SettingsWidget
 from modules.shopping_fixed import ShoppingWidget
 from modules.logs_viewer import LogsViewerWidget
@@ -52,9 +45,9 @@ try:
     from modules.activity_tracker import get_activity_tracker, track_user_action, track_navigation, track_system_event
 except ImportError:
     get_activity_tracker = None
-    def track_user_action(*args, **kwargs): pass
-    def track_navigation(*args, **kwargs): pass
-    def track_system_event(*args, **kwargs): pass
+    def track_user_action(*_args, **_kwargs): pass  # Fallback function
+    def track_navigation(*_args, **_kwargs): pass  # Fallback function
+    def track_system_event(*_args, **_kwargs): pass  # Fallback function
 
 # Simple fix for category dropdowns has been integrated into the inventory module
 
@@ -86,10 +79,10 @@ class KitchenDashboardApp(QMainWindow):
         # Initialize logger with comprehensive startup logging
         self.logger = get_logger()
         self.logger.log_startup_info()
-        self.logger.info("🚀 Kitchen Dashboard application starting...")
+        self.logger.info("[START] Kitchen Dashboard application starting...")
 
         # Log each major initialization step for debugging
-        self.logger.info("📋 Step 1: Application window and styling initialized")
+        self.logger.info("[LIST] Step 1: Application window and styling initialized")
         self.logger.log_ui_action("Window created", f"Size: {self.size().width()}x{self.size().height()}")
 
         # Initialize notification system
@@ -115,7 +108,7 @@ class KitchenDashboardApp(QMainWindow):
         self.currency_symbol = "₹"  # Indian Rupee by default
         
         # Load data first with comprehensive error handling and logging
-        self.logger.info("📊 Step 2: Loading application data...")
+        self.logger.info("[DATA] Step 2: Loading application data...")
         try:
             import time
             start_time = time.time()
@@ -130,11 +123,11 @@ class KitchenDashboardApp(QMainWindow):
                 # Log details about each data source
                 for key, value in self.data.items():
                     if hasattr(value, 'shape'):
-                        self.logger.info(f"   📋 {key}: {value.shape[0]} rows, {value.shape[1]} columns")
+                        self.logger.info(f"   [LIST] {key}: {value.shape[0]} rows, {value.shape[1]} columns")
                     elif hasattr(value, '__len__'):
-                        self.logger.info(f"   📋 {key}: {len(value)} items")
+                        self.logger.info(f"   [LIST] {key}: {len(value)} items")
                     else:
-                        self.logger.info(f"   📋 {key}: {type(value)}")
+                        self.logger.info(f"   [LIST] {key}: {type(value)}")
             else:
                 self.logger.log_data_loading("Data sources", False, error="No data returned from load_data()")
                 self.data = {}
@@ -144,11 +137,11 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.log_data_loading("Data sources", False, error=str(e))
             # Initialize with empty data to prevent crashes
             self.data = {}
-            self.logger.warning("⚠️ Initialized with empty data to prevent application crash")
+            self.logger.warning("[WARNING] Initialized with empty data to prevent application crash")
         
         # Initialize optimized Firebase
         self.firebase_user_id = "kitchen_dashboard_user" # Default user ID
-        self.logger.info("Initializing optimized Firebase manager")
+        self.logger.log_section_header("Firebase Initialization")
         try:
             from modules.optimized_firebase_manager import get_optimized_firebase_manager
             self.firebase_manager = get_optimized_firebase_manager()
@@ -167,10 +160,10 @@ class KitchenDashboardApp(QMainWindow):
             self.firebase_sync = None
 
         # Firebase login and sync are now managed by the optimized manager
-        self.logger.info("Firebase services initialized with enhanced authentication.")
+        self.logger.log_section_footer("Firebase Initialization", True, "Firebase services initialized with enhanced authentication")
 
         # Initialize responsive design and PWA features
-        self.logger.info("Initializing responsive design and PWA features")
+        self.logger.log_section_header("Responsive Design & PWA")
         try:
             from modules.responsive_design_manager import get_responsive_manager
             from modules.pwa_manager import get_pwa_manager
@@ -186,9 +179,9 @@ class KitchenDashboardApp(QMainWindow):
             self.responsive_chart_manager = get_responsive_chart_manager()
             self.responsive_dialog_manager = get_responsive_dialog_manager()
 
-            self.logger.info("Responsive design and PWA features initialized successfully")
+            self.logger.log_section_footer("Responsive Design & PWA", True, "All responsive features loaded successfully")
         except Exception as e:
-            self.logger.error(f"Failed to initialize responsive design and PWA features: {e}")
+            self.logger.log_section_footer("Responsive Design & PWA", False, f"Failed to initialize: {e}")
             self.responsive_manager = None
             self.pwa_manager = None
             self.mobile_navigation = None
@@ -197,7 +190,7 @@ class KitchenDashboardApp(QMainWindow):
             self.responsive_dialog_manager = None
 
         # Initialize Multi-AI Engine and Enterprise features
-        self.logger.info("Initializing Multi-AI Engine and Enterprise features")
+        self.logger.log_section_header("Enterprise Features")
         try:
             from modules.multi_ai_engine import get_multi_ai_engine
             from modules.enterprise_features import get_enterprise_manager
@@ -205,41 +198,19 @@ class KitchenDashboardApp(QMainWindow):
             self.multi_ai_engine = get_multi_ai_engine(self.data)
             self.enterprise_manager = get_enterprise_manager()
 
-            self.logger.info("Multi-AI Engine and Enterprise features initialized successfully")
+            self.logger.log_section_footer("Enterprise Features", True, "Multi-AI Engine and Enterprise features loaded")
         except Exception as e:
-            self.logger.error(f"Failed to initialize Multi-AI Engine and Enterprise features: {e}")
+            self.logger.log_section_footer("Enterprise Features", False, f"Failed to initialize: {e}")
             self.multi_ai_engine = None
             self.enterprise_manager = None
 
-        # Initialize performance and CSS optimizers
-        self.logger.info("Initializing performance and CSS optimizers")
-        try:
-            from modules.css_optimizer import get_css_optimizer, get_optimized_stylesheet
-            from modules.performance_optimizer import get_performance_optimizer
-            from modules.performance_enhancer import get_performance_enhancer
-
-            self.css_optimizer = get_css_optimizer()
-            self.performance_optimizer = get_performance_optimizer()
-            self.performance_enhancer = get_performance_enhancer()
-
-            # Apply optimized stylesheet
-            optimized_css = get_optimized_stylesheet()
-            self.setStyleSheet(optimized_css)
-
-            # Optimize application performance
-            self.performance_optimizer.optimize_application_performance(QApplication.instance())
-
-            # Apply enhanced performance optimizations
-            self.apply_enhanced_performance_optimizations()
-
-            # Apply advanced performance enhancements
-            self.apply_advanced_performance_enhancements()
-
-            self.logger.info("Performance and CSS optimizers initialized successfully")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize performance optimizers: {e}")
-            self.css_optimizer = None
-            self.performance_optimizer = None
+        # Skip CSS optimizer and performance modules (causing initialization issues)
+        self.logger.log_section_header("Performance Optimization")
+        self.logger.info("CSS optimizer and performance modules disabled to prevent initialization errors")
+        self.css_optimizer = None
+        self.performance_optimizer = None
+        self.performance_enhancer = None
+        self.logger.log_section_footer("Performance Optimization", True, "Performance modules safely disabled")
         # Initialize inventory_widget as it's needed by other parts
         self.inventory_widget = None 
         # Directly initialize the UI, bypassing authentication
@@ -292,10 +263,10 @@ class KitchenDashboardApp(QMainWindow):
             # Set window opacity for a modern look
             self.setWindowOpacity(1.0)
 
-            print("✅ Modern window styling applied")
+            print("[SUCCESS] Modern window styling applied")
 
         except Exception as e:
-            print(f"⚠️ Error applying modern window style: {e}")
+            print(f"[WARNING] Error applying modern window style: {e}")
 
     def load_env_file(self):
         """Load environment variables from .env file"""
@@ -307,9 +278,9 @@ class KitchenDashboardApp(QMainWindow):
                         if '=' in line and not line.startswith('#'):
                             key, value = line.strip().split('=', 1)
                             os.environ[key] = value
-                print(f"✅ Loaded environment variables from {env_file}")
+                print(f"[SUCCESS] Loaded environment variables from {env_file}")
             except Exception as e:
-                print(f"⚠️  Error loading .env file: {e}")
+                print(f"[WARNING] Error loading .env file: {e}")
 
     def _check_and_perform_daily_sync(self):
         self.logger.info("Checking if daily sync is required...")
@@ -492,22 +463,16 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error in auto-refresh: {e}")
     
     def setup_auto_refresh_timer(self):
-        """Setup timer for auto-refresh with performance optimization"""
+        """Setup timer for auto-refresh (performance enhancer disabled)"""
         try:
             from PySide6.QtCore import QTimer
             self.refresh_timer = QTimer()
 
-            # Use debounced refresh to prevent excessive updates
-            if hasattr(self, 'performance_enhancer'):
-                debounced_refresh = lambda: self.performance_enhancer.debounce(
-                    'auto_refresh', self.auto_refresh_data, 5000  # 5 second debounce
-                )
-                self.refresh_timer.timeout.connect(debounced_refresh)
-            else:
-                self.refresh_timer.timeout.connect(self.auto_refresh_data)
+            # Direct connection without performance enhancer (disabled)
+            self.refresh_timer.timeout.connect(self.auto_refresh_data)
 
-            self.refresh_timer.start(10000)  # Check every 10 seconds (less aggressive)
-            self.logger.info("Auto-refresh timer started with performance optimization")
+            self.refresh_timer.start(10000)  # Check every 10 seconds
+            self.logger.info("Auto-refresh timer started (performance enhancer disabled)")
         except Exception as e:
             self.logger.error(f"Error setting up auto-refresh timer: {e}")
 
@@ -610,7 +575,7 @@ class KitchenDashboardApp(QMainWindow):
         self.main_layout.addWidget(self.main_splitter)
 
         # Debug: Print layout info
-        print(f"🔧 LAYOUT DEBUG:")
+        print(f"[DEBUG] LAYOUT DEBUG:")
         print(f"   Sidebar size: {self.sidebar.size()}")
         print(f"   Content widget size: {self.content_widget.size()}")
         print(f"   Splitter sizes: {self.main_splitter.sizes()}")
@@ -635,6 +600,9 @@ class KitchenDashboardApp(QMainWindow):
         # Synchronize categories across all modules
         QTimer.singleShot(3000, self.synchronize_categories)
 
+        # Add testing menu for comprehensive testing
+        self.create_testing_menu()
+
     def force_layout_update(self):
         """Force layout update to ensure proper sizing"""
         try:
@@ -656,7 +624,7 @@ class KitchenDashboardApp(QMainWindow):
             self.sidebar.update()
             self.content_widget.update()
 
-            print(f"🔧 LAYOUT UPDATED:")
+            print(f"[DEBUG] LAYOUT UPDATED:")
             print(f"   Window size: {self.size()}")
             print(f"   Splitter sizes: {self.main_splitter.sizes()}")
             print(f"   Sidebar visible: {self.sidebar.isVisible()}")
@@ -805,9 +773,9 @@ class KitchenDashboardApp(QMainWindow):
         title_container_layout.setAlignment(Qt.AlignVCenter)  # Vertical center alignment
 
         # Kitchen icon with better alignment
-        kitchen_icon = QLabel("🍳")
-        kitchen_icon.setFont(QFont("Segoe UI", 24))
-        kitchen_icon.setStyleSheet("color: white; border: none;")
+        kitchen_icon = QLabel("KITCHEN")
+        kitchen_icon.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        kitchen_icon.setStyleSheet("color: white; border: none; background: #e74c3c; padding: 4px 8px; border-radius: 4px;")
         kitchen_icon.setAlignment(Qt.AlignCenter)
         title_container_layout.addWidget(kitchen_icon)
 
@@ -871,8 +839,8 @@ class KitchenDashboardApp(QMainWindow):
             }
         """)
 
-        status_icon = QLabel("🟢")
-        status_icon.setFont(QFont("Segoe UI", 12))
+        status_icon = QLabel("ONLINE")
+        status_icon.setFont(QFont("Segoe UI", 8, QFont.Bold))
         status_icon.setAlignment(Qt.AlignCenter)
         status_icon.setStyleSheet("""
             QLabel {
@@ -912,7 +880,7 @@ class KitchenDashboardApp(QMainWindow):
         except Exception as e:
             self.logger.error(f"Error loading notification bell: {e}")
             # Fallback to simple but very visible bell
-            bell_widget = QPushButton("🔔 NOTIFICATIONS")
+            bell_widget = QPushButton("NOTIFICATIONS")
             bell_widget.setFixedSize(150, 35)
             bell_widget.setStyleSheet("""
                 QPushButton {
@@ -977,6 +945,264 @@ class KitchenDashboardApp(QMainWindow):
             "Recipe scaling feature is now available in Pricing tab",
             "info"
         ))
+
+    def create_testing_menu(self):
+        """Create testing menu for comprehensive module testing"""
+        try:
+            from PySide6.QtGui import QAction
+
+            # Create menu bar if it doesn't exist
+            if not self.menuBar():
+                menubar = self.menuBar()
+            else:
+                menubar = self.menuBar()
+
+            # Create Testing menu
+            testing_menu = menubar.addMenu("Testing")
+
+            # Add comprehensive test action
+            comprehensive_test_action = QAction("Run Comprehensive Tests", self)
+            comprehensive_test_action.triggered.connect(self.run_comprehensive_tests)
+            testing_menu.addAction(comprehensive_test_action)
+
+            # Add module-specific test actions
+            testing_menu.addSeparator()
+
+            module_test_action = QAction("Test All Modules", self)
+            module_test_action.triggered.connect(self.test_all_modules)
+            testing_menu.addAction(module_test_action)
+
+            data_test_action = QAction("Test Data Operations", self)
+            data_test_action.triggered.connect(self.test_data_operations)
+            testing_menu.addAction(data_test_action)
+
+            ui_test_action = QAction("Test UI Components", self)
+            ui_test_action.triggered.connect(self.test_ui_components)
+            testing_menu.addAction(ui_test_action)
+
+            performance_test_action = QAction("Test Performance", self)
+            performance_test_action.triggered.connect(self.test_performance)
+            testing_menu.addAction(performance_test_action)
+
+            # Add sample data generation
+            testing_menu.addSeparator()
+
+            generate_data_action = QAction("Generate Sample Data", self)
+            generate_data_action.triggered.connect(self.generate_sample_data)
+            testing_menu.addAction(generate_data_action)
+
+            cleanup_data_action = QAction("Cleanup Sample Data", self)
+            cleanup_data_action.triggered.connect(self.cleanup_sample_data)
+            testing_menu.addAction(cleanup_data_action)
+
+            self.logger.info("Testing menu created successfully")
+
+        except Exception as e:
+            self.logger.error(f"Error creating testing menu: {e}")
+
+    def run_comprehensive_tests(self):
+        """Run comprehensive tests for all modules and functions"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from comprehensive_test_suite import ComprehensiveTestSuite  # type: ignore
+                # Create test suite
+                test_suite = ComprehensiveTestSuite(self)
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "Comprehensive test suite not found. Please ensure test files are available.")
+                return
+
+            # Run all tests
+            test_suite.run_all_tests()
+
+        except Exception as e:
+            self.logger.error(f"Error running comprehensive tests: {e}")
+            QMessageBox.critical(self, "Test Error", f"Failed to run comprehensive tests: {e}")
+
+    def test_all_modules(self):
+        """Test all modules individually"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from module_tester import ModuleTester  # type: ignore
+                tester = ModuleTester(self)
+                tester.test_all_modules()
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "Module tester not found. Please ensure test files are available.")
+                return
+
+        except Exception as e:
+            self.logger.error(f"Error testing modules: {e}")
+            QMessageBox.warning(self, "Module Test Error", f"Failed to test modules: {e}")
+
+    def test_data_operations(self):
+        """Test data operations with sample data"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from data_operation_tester import DataOperationTester  # type: ignore
+                tester = DataOperationTester(self)
+                tester.test_all_data_operations()
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "Data operation tester not found. Please ensure test files are available.")
+                return
+
+        except Exception as e:
+            self.logger.error(f"Error testing data operations: {e}")
+            QMessageBox.warning(self, "Data Test Error", f"Failed to test data operations: {e}")
+
+    def test_ui_components(self):
+        """Test UI components and interactions"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from ui_component_tester import UIComponentTester  # type: ignore
+                tester = UIComponentTester(self)
+                tester.test_all_ui_components()
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "UI component tester not found. Please ensure test files are available.")
+                return
+
+        except Exception as e:
+            self.logger.error(f"Error testing UI components: {e}")
+            QMessageBox.warning(self, "UI Test Error", f"Failed to test UI components: {e}")
+
+    def test_performance(self):
+        """Test performance with large datasets"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from performance_tester import PerformanceTester  # type: ignore
+                tester = PerformanceTester(self)
+                tester.test_performance()
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "Performance tester not found. Please ensure test files are available.")
+                return
+
+        except Exception as e:
+            self.logger.error(f"Error testing performance: {e}")
+            QMessageBox.warning(self, "Performance Test Error", f"Failed to test performance: {e}")
+
+    def generate_sample_data(self):
+        """Generate comprehensive sample data for testing"""
+        try:
+            # Import from tests directory
+            import sys
+            import os
+            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+            sys.path.insert(0, tests_dir)
+
+            try:
+                from sample_data_generator import SampleDataGenerator  # type: ignore
+            except ImportError:
+                QMessageBox.warning(self, "Test Error", "Sample data generator not found. Please ensure test files are available.")
+                return
+
+            # Show confirmation dialog
+            reply = QMessageBox.question(
+                self,
+                "Generate Sample Data",
+                "This will generate comprehensive sample data for all modules.\n"
+                "This may overwrite existing data files.\n\n"
+                "Do you want to continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                # Show progress dialog
+                progress_dialog = QMessageBox(self)
+                progress_dialog.setWindowTitle("Generating Sample Data")
+                progress_dialog.setText("Generating comprehensive sample data...\nPlease wait.")
+                progress_dialog.setStandardButtons(QMessageBox.NoButton)
+                progress_dialog.setWindowModality(Qt.WindowModal)
+                progress_dialog.show()
+                QApplication.processEvents()
+
+                # Generate data
+                generator = SampleDataGenerator()
+                data = generator.generate_all_sample_data(save_to_files=True)
+
+                progress_dialog.hide()
+                progress_dialog.deleteLater()
+
+                # Reload data in application
+                self.data = self.load_data()
+
+                # Refresh all tabs
+                self.refresh_all_tabs()
+
+                # Show success message
+                QMessageBox.information(
+                    self,
+                    "Sample Data Generated",
+                    f"Successfully generated sample data for {len(data)} datasets!\n\n"
+                    "Data has been saved to CSV files and loaded into the application.\n"
+                    "You can now test all modules with realistic data."
+                )
+
+                self.logger.info("Sample data generation completed successfully")
+
+                # Add notification
+                self.add_notification(
+                    "Sample Data Generated",
+                    f"Generated {len(data)} datasets with comprehensive test data",
+                    "success"
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error generating sample data: {e}")
+            QMessageBox.critical(self, "Sample Data Error", f"Failed to generate sample data: {e}")
+
+    def cleanup_sample_data(self):
+        """Cleanup sample data with user options"""
+        try:
+            # Show cleanup options dialog
+            cleanup_dialog = SampleDataCleanupDialog(self)
+            if cleanup_dialog.exec() == QDialog.Accepted:
+                # Reload data after cleanup
+                self.data = self.load_data()
+
+                # Refresh all tabs
+                self.refresh_all_tabs()
+
+                # Add notification
+                self.add_notification(
+                    "Sample Data Cleaned",
+                    "Sample data has been cleaned up successfully",
+                    "info"
+                )
+
+                self.logger.info("Sample data cleanup completed")
+
+        except Exception as e:
+            self.logger.error(f"Error during sample data cleanup: {e}")
+            QMessageBox.critical(self, "Cleanup Error", f"Failed to cleanup sample data: {e}")
 
     def apply_modern_style(self):
         """Apply modern styling to the entire application"""
@@ -1137,18 +1363,8 @@ class KitchenDashboardApp(QMainWindow):
         }
         """
 
-        # Use optimized stylesheet if available, otherwise use fallback
-        try:
-            if hasattr(self, 'css_optimizer') and self.css_optimizer:
-                from modules.css_optimizer import get_optimized_stylesheet
-                optimized_stylesheet = get_optimized_stylesheet()
-                self.setStyleSheet(optimized_stylesheet)
-                self.logger.info("Applied optimized CSS stylesheet")
-            else:
-                self.setStyleSheet(stylesheet)
-        except Exception as e:
-            self.logger.error(f"Error applying optimized stylesheet: {e}")
-            self.setStyleSheet(stylesheet)
+        # Apply stylesheet directly (CSS optimizer disabled)
+        self.setStyleSheet(stylesheet)
 
     def optimize_widget_performance(self, widget):
         """Optimize widget performance"""
@@ -1165,42 +1381,14 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error optimizing widget performance: {e}")
 
     def apply_enhanced_performance_optimizations(self):
-        """Apply enhanced performance optimizations"""
-        try:
-            if hasattr(self, 'performance_optimizer') and self.performance_optimizer:
-                # Optimize data loading
-                self.load_data = self.performance_optimizer.optimize_data_loading(self.load_data)
-
-                # Optimize memory usage
-                self.performance_optimizer.optimize_memory_usage()
-
-                # Create performance monitor (optional)
-                if hasattr(self, 'show_performance_monitor'):
-                    self.performance_monitor = self.performance_optimizer.create_performance_monitor()
-
-                self.logger.info("Enhanced performance optimizations applied")
-
-        except Exception as e:
-            self.logger.error(f"Error applying enhanced performance optimizations: {e}")
+        """Apply enhanced performance optimizations - DISABLED"""
+        # Performance optimizers disabled to prevent initialization errors
+        self.logger.info("Performance optimizations skipped (modules disabled)")
 
     def apply_advanced_performance_enhancements(self):
-        """Apply advanced performance enhancements to prevent UI freezing"""
-        try:
-            if hasattr(self, 'performance_enhancer') and self.performance_enhancer:
-                # Optimize data loading with async operations
-                original_load_data = self.load_data
-                self.load_data = self.performance_enhancer.optimize_data_loading(original_load_data)
-
-                # Setup memory monitoring
-                self.performance_enhancer.setup_memory_monitoring()
-
-                # Optimize widget updates
-                self.performance_enhancer.optimize_widget_updates(self)
-
-                self.logger.info("Advanced performance enhancements applied")
-
-        except Exception as e:
-            self.logger.error(f"Error applying advanced performance enhancements: {e}")
+        """Apply advanced performance enhancements - DISABLED"""
+        # Performance enhancers disabled to prevent initialization errors
+        self.logger.info("Advanced performance enhancements skipped (modules disabled)")
 
     def show_performance_monitor(self):
         """Show performance monitoring window"""
@@ -1242,25 +1430,25 @@ class KitchenDashboardApp(QMainWindow):
 
     def load_data(self):
         """Load all data from CSV files or create empty dataframes if files don't exist"""
-        self.logger.info("🔄 Starting comprehensive data loading...")
+        self.logger.log_section_header("Data Loading")
         data = {}
 
         try:
             # Check if data directory exists
             if not os.path.exists('data'):
                 os.makedirs('data')
-                self.logger.info("📁 Created data directory")
+                self.logger.info("Created data directory")
 
             # Log current working directory and data path
-            self.logger.info(f"📂 Working directory: {os.getcwd()}")
-            self.logger.info(f"📂 Data directory: {os.path.abspath('data')}")
+            self.logger.info(f"Working directory: {os.getcwd()}")
+            self.logger.info(f"Data directory: {os.path.abspath('data')}")
 
             # List all files in data directory
             if os.path.exists('data'):
                 data_files = os.listdir('data')
-                self.logger.info(f"📋 Files in data directory: {data_files}")
+                self.logger.info(f"Files in data directory: {len(data_files)} files found")
             else:
-                self.logger.warning("⚠️ Data directory does not exist!")
+                self.logger.warning("Data directory does not exist!")
 
             # Define empty dataframes for each data type with comprehensive columns
             empty_dataframes = {
@@ -1311,6 +1499,12 @@ class KitchenDashboardApp(QMainWindow):
                 ]),
                 'recipe_packing_materials': pd.DataFrame(columns=[
                     'recipe_id', 'recipe_name', 'material_id', 'material_name', 'quantity_needed', 'cost_per_recipe', 'notes'
+                ]),
+                'sales_orders': pd.DataFrame(columns=[
+                    'date', 'order_id', 'recipe', 'quantity', 'packing_materials', 'packing_cost',
+                    'preparation_materials', 'preparation_cost', 'gas_charges', 'electricity_charges',
+                    'total_cost_making', 'our_pricing', 'subtotal', 'discount', 'final_price_after_discount',
+                    'profit', 'profit_percentage'
                 ])
             }
 
@@ -1326,57 +1520,56 @@ class KitchenDashboardApp(QMainWindow):
             # Iterate over each data type with comprehensive logging
             for key, empty_df in empty_dataframes.items():
                 file_path = os.path.join('data', f'{key}.csv')
-                self.logger.info(f"🔍 Processing {key} data source...")
+                self.logger.info(f"Processing {key} data source")
 
                 if os.path.exists(file_path):
                     try:
                         # Performance optimization: Check file size and use chunked loading for large files
                         file_size = os.path.getsize(file_path)
-                        self.logger.info(f"  📄 File found: {file_path} ({file_size} bytes)")
+                        self.logger.info(f"  File found: {file_path} ({file_size} bytes)")
 
                         if file_size > 5 * 1024 * 1024:  # 5MB threshold
                             # Load large files in chunks to avoid memory issues
-                            self.logger.info(f"  📊 Loading large file in chunks...")
+                            self.logger.info(f"  Loading large file in chunks")
                             chunks = []
                             chunk_count = 0
                             for chunk in pd.read_csv(file_path, chunksize=1000):
                                 chunks.append(chunk)
                                 chunk_count += 1
                             data[key] = pd.concat(chunks, ignore_index=True) if chunks else empty_df
-                            self.logger.info(f"  ✅ Loaded {chunk_count} chunks from {file_path} ({file_size/1024/1024:.1f}MB)")
+                            self.logger.info(f"  Loaded {chunk_count} chunks from {file_path} ({file_size/1024/1024:.1f}MB)")
                         else:
                             # Load smaller files normally
                             data[key] = pd.read_csv(file_path, low_memory=False)
-                            self.logger.info(f"  ✅ Loaded {len(data[key])} rows from {file_path} ({file_size/1024:.1f}KB)")
+                            self.logger.info(f"  Loaded {len(data[key])} rows from {file_path} ({file_size/1024:.1f}KB)")
 
                         # Log data structure info
                         if len(data[key]) > 0:
-                            self.logger.info(f"  📋 Columns: {list(data[key].columns)}")
-                            self.logger.info(f"  📊 Shape: {data[key].shape}")
+                            self.logger.info(f"  Columns: {len(data[key].columns)} columns")
+                            self.logger.info(f"  Shape: {data[key].shape}")
                         else:
-                            self.logger.warning(f"  ⚠️ File {file_path} is empty")
+                            self.logger.warning(f"  File {file_path} is empty")
 
                         loading_stats['files_found'] += 1
                         loading_stats['files_loaded'] += 1
 
                     except Exception as e:
-                        error_msg = f"❌ Error loading {key} from {file_path}: {e}"
-                        print(error_msg)  # Keep for immediate console feedback
+                        error_msg = f"Error loading {key} from {file_path}: {e}"
                         self.logger.error(error_msg)
                         self.logger.log_exception(e, f"Loading {key} data")
                         data[key] = empty_df  # Use in-memory empty DataFrame
-                        self.logger.warning(f"  🔄 Used empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
+                        self.logger.warning(f"  Used empty dataframe for {key} due to read error. ORIGINAL FILE {file_path} WAS NOT MODIFIED.")
                         loading_stats['errors'].append(f"{key}: {str(e)}")
                 else:
-                    self.logger.warning(f"  📄 File not found: {file_path}")
+                    self.logger.warning(f"  File not found: {file_path}")
                     data[key] = empty_df
                     # Save the empty dataframe to create the file if it doesn't exist
                     try:
                         empty_df.to_csv(file_path, index=False)
-                        self.logger.info(f"  ✅ Created new empty file for {key} at {file_path}")
+                        self.logger.info(f"  Created new empty file for {key} at {file_path}")
                         loading_stats['files_created'] += 1
                     except Exception as e:
-                        self.logger.error(f"  ❌ Error creating new empty file for {key} at {file_path}: {e}")
+                        self.logger.error(f"  Error creating new empty file for {key} at {file_path}: {e}")
                         loading_stats['errors'].append(f"Create {key}: {str(e)}")
             
             # Convert date columns to datetime (even for empty dataframes)
@@ -1396,7 +1589,7 @@ class KitchenDashboardApp(QMainWindow):
                 data['inventory']['expiry_date'] = pd.to_datetime(data['inventory']['expiry_date'], errors='coerce')
                 
             # Debug: Log data loading results
-            print(f"🔍 DATA LOADING DEBUG:")
+            print(f"[SEARCH] DATA LOADING DEBUG:")
             for key, df in data.items():
                 if isinstance(df, pd.DataFrame):
                     print(f"  {key}: {len(df)} rows × {len(df.columns)} columns")
@@ -1404,36 +1597,28 @@ class KitchenDashboardApp(QMainWindow):
                     print(f"  {key}: {type(df)} (not a DataFrame)")
 
             # Log comprehensive loading statistics
-            self.logger.info("📊 Data loading completed - Summary:")
-            self.logger.info(f"  📁 Files found: {loading_stats['files_found']}")
-            self.logger.info(f"  ✅ Files loaded: {loading_stats['files_loaded']}")
-            self.logger.info(f"  🆕 Files created: {loading_stats['files_created']}")
-            self.logger.info(f"  ❌ Errors: {len(loading_stats['errors'])}")
-
-            if loading_stats['errors']:
-                self.logger.error("  Error details:")
-                for error in loading_stats['errors']:
-                    self.logger.error(f"    - {error}")
+            total_records = sum(len(df) for df in data.values() if hasattr(df, '__len__'))
 
             # Assign data to self.data immediately
             self.data = data
 
-            # Print final summary with enhanced details
-            print(f"\n✅ DATA LOADING COMPLETED SUCCESSFULLY!")
-            print(f"   📊 Total tables loaded: {len(data)}")
-            total_records = sum(len(df) for df in data.values() if hasattr(df, '__len__'))
-            print(f"   📋 Total records: {total_records}")
-            print(f"   📁 Files processed: {loading_stats['files_found']}")
-            print(f"   🆕 Files created: {loading_stats['files_created']}")
+            # Log final summary
+            summary_details = f"Loaded {len(data)} tables with {total_records} total records. Files: {loading_stats['files_found']} found, {loading_stats['files_loaded']} loaded, {loading_stats['files_created']} created"
+
             if loading_stats['errors']:
-                print(f"   ⚠️ Errors encountered: {len(loading_stats['errors'])}")
+                self.logger.log_section_footer("Data Loading", False, f"{summary_details}. Errors: {len(loading_stats['errors'])}")
+                self.logger.error("Error details:")
+                for error in loading_stats['errors']:
+                    self.logger.error(f"  - {error}")
+            else:
+                self.logger.log_section_footer("Data Loading", True, summary_details)
 
             self.logger.log_performance("Complete data loading", 0)  # Will be calculated by caller
             return data
         except Exception as e:
             error_msg = f"Error loading data: {e}"
             self.logger.critical(error_msg)
-            print(f"❌ CRITICAL ERROR in load_data: {error_msg}")
+            print(f"[ERROR] CRITICAL ERROR in load_data: {error_msg}")
 
             # Don't show message box during initialization to avoid blocking
             if hasattr(self, 'isVisible') and self.isVisible():
@@ -1454,7 +1639,8 @@ class KitchenDashboardApp(QMainWindow):
                 'recipe_ingredients': pd.DataFrame(),
                 'pricing': pd.DataFrame(),
                 'packing_materials': pd.DataFrame(),
-                'recipe_packing_materials': pd.DataFrame()
+                'recipe_packing_materials': pd.DataFrame(),
+                'sales_orders': pd.DataFrame()
             }
 
             # Assign empty data to self.data
@@ -1830,6 +2016,8 @@ class KitchenDashboardApp(QMainWindow):
         self.budget_button.clicked.connect(lambda: self.handle_nav_button(self.budget_button, self.show_budget_page))
         self.nav_buttons_layout.addWidget(self.budget_button)
         self.nav_buttons.append(self.budget_button)
+
+
 
         self.sales_button = QPushButton(" Sales")
         self.sales_button.setIcon(self.create_icon("📊"))
@@ -2493,27 +2681,7 @@ class KitchenDashboardApp(QMainWindow):
         else:
             estimated_cost = 0.0
         
-        # Meal planning metrics - handle both old and new data structures
-        try:
-            # Try the new data structure first (meal_plan_items)
-            if 'meal_plan_items' in self.data and len(self.data['meal_plan_items']) > 0:
-                planned_meals = len(self.data['meal_plan_items'])
-                unique_recipes = len(self.data['meal_plan_items']['recipe_id'].unique()) if 'recipe_id' in self.data['meal_plan_items'].columns else 0
-            # Fall back to old structure
-            elif 'meal_plan' in self.data and len(self.data['meal_plan']) > 0:
-                planned_meals = len(self.data['meal_plan'])
-                unique_recipes = len(self.data['meal_plan']['recipe_id'].unique()) if 'recipe_id' in self.data['meal_plan'].columns else 0
-            else:
-                planned_meals = 0
-                unique_recipes = 0
-        except Exception as e:
-            # Log the error and use default values
-            if hasattr(self, 'logger'):
-                self.logger.error(f"Error calculating meal planning metrics: {str(e)}")
-            else:
-                print(f"Error calculating meal planning metrics: {str(e)}")
-            planned_meals = 0
-            unique_recipes = 0
+        # Note: Meal planning metrics calculation removed as variables were unused
         
         # Get currency symbol from settings, default to Indian Rupee (₹)
         currency_symbol = "₹"
@@ -2652,8 +2820,8 @@ class KitchenDashboardApp(QMainWindow):
         fig1, ax1 = plt.subplots(figsize=(6, 4), facecolor='white')
         
         # Create a simple, clear pie chart
-        wedges, texts, autotexts = ax1.pie(
-            inventory_by_category['total_value'], 
+        ax1.pie(
+            inventory_by_category['total_value'],
             labels=inventory_by_category['category'],  # Direct labels on the pie
             autopct='%1.1f%%',
             startangle=90,
@@ -2985,48 +3153,38 @@ class KitchenDashboardApp(QMainWindow):
         self.content_layout.addWidget(meal_planning_widget)
     
     def show_budget_page(self):
-        """Display the budget tracking page with comprehensive budget management"""
+        """Display placeholder message for budget functionality"""
         self.clear_content()
 
-        # Debug data before widget creation
-        self.debug_data_before_widget_creation("budget", ["budget"])
-        
-        # Import the enhanced budget module
-        try:
-            from modules.enhanced_budget import EnhancedBudgetWidget
-            budget_widget = EnhancedBudgetWidget(self.data)
-            self.logger.info("Using enhanced budget widget")
-        except Exception as e:
-            # Fallback to budget manager
-            self.logger.error(f"Error using enhanced budget widget: {str(e)}")
-            try:
-                from modules.budget_manager import BudgetManager
-                budget_widget = BudgetManager(self.data)
-                self.logger.info("Falling back to budget manager")
-            except Exception as e2:
-                # Final fallback to original budget widget
-                self.logger.error(f"Error using budget manager: {str(e2)}")
-                try:
-                    from modules.budget import BudgetWidget
-                    budget_widget = BudgetWidget(self.data)
-                    self.logger.info("Falling back to original budget widget")
-                except ImportError:
-                    # If no module exists, create a placeholder
-                    placeholder = QWidget()
-                    placeholder_layout = QVBoxLayout(placeholder)
-                    placeholder_layout.setContentsMargins(20, 20, 20, 20)
-                    error_label = QLabel("Budget management functionality is currently unavailable.\nPlease try again later.")
-                    error_label.setStyleSheet("color: red; font-size: 16px;")
-                    error_label.setAlignment(Qt.AlignCenter)
-                    placeholder_layout.addWidget(error_label)
-                    budget_widget = placeholder
-                    self.logger.error("All budget modules failed to load")
-        
+        # Create placeholder widget
+        placeholder = QWidget()
+        placeholder_layout = QVBoxLayout(placeholder)
+        placeholder_layout.setContentsMargins(50, 50, 50, 50)
+        placeholder_layout.setAlignment(Qt.AlignCenter)
+
+        # Main message
+        main_label = QLabel("Budget Management")
+        main_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #374151; margin-bottom: 20px;")
+        main_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(main_label)
+
+        # Status message
+        status_label = QLabel("Will be implemented soon")
+        status_label.setStyleSheet("font-size: 18px; color: #6b7280; margin-bottom: 30px;")
+        status_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(status_label)
+
+        # Additional info
+        info_label = QLabel("This feature is currently under development.\nPlease check back in future updates.")
+        info_label.setStyleSheet("font-size: 14px; color: #9ca3af; line-height: 1.5;")
+        info_label.setAlignment(Qt.AlignCenter)
+        placeholder_layout.addWidget(info_label)
+
         # Add the widget to the content layout
-        self.content_layout.addWidget(budget_widget)
-        
+        self.content_layout.addWidget(placeholder)
+
         # Log the action
-        self.logger.debug("Executing callback for Budget")
+        self.logger.debug("Showing budget placeholder page")
     
     def show_sales_page(self):
         """Display the sales page with order management system"""
@@ -4018,7 +4176,7 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
                 """)
 
                 # Connect signal
-                provider_card.clicked.connect(lambda checked, p=provider['provider']: self.on_provider_selected(p))
+                provider_card.clicked.connect(lambda _, p=provider['provider']: self.on_provider_selected(p))
 
                 # Add to grid (3 columns)
                 row = i // 3
@@ -4693,7 +4851,7 @@ Generated: {timestamp[:19]}
 
     def show_cohere_setup_dialog(self):
         """Show Cohere AI setup dialog"""
-        from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QLabel
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Cohere AI Setup")
@@ -5193,8 +5351,160 @@ Generated: {timestamp[:19]}
 
         self.content_layout.addWidget(error_widget)
 
+
+class SampleDataCleanupDialog(QDialog):
+    """Dialog for cleaning up sample data"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent_app = parent
+        self.setWindowTitle("Sample Data Cleanup")
+        self.setMinimumSize(500, 400)
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Setup the cleanup dialog UI"""
+        layout = QVBoxLayout(self)
+
+        # Header
+        header_label = QLabel("Sample Data Cleanup")
+        header_label.setFont(QFont("Arial", 16, QFont.Bold))
+        layout.addWidget(header_label)
+
+        # Description
+        desc_label = QLabel("Choose what sample data to remove:")
+        layout.addWidget(desc_label)
+
+        # Cleanup options
+        options_group = QGroupBox("Cleanup Options")
+        options_layout = QVBoxLayout(options_group)
+
+        self.cleanup_options = QButtonGroup()
+
+        # Option 1: Remove all sample data
+        self.remove_all_radio = QRadioButton("Remove ALL sample data (complete cleanup)")
+        self.remove_all_radio.setChecked(True)
+        self.cleanup_options.addButton(self.remove_all_radio, 1)
+        options_layout.addWidget(self.remove_all_radio)
+
+        # Option 2: Remove test files only
+        self.remove_test_radio = QRadioButton("Remove only test-generated files")
+        self.cleanup_options.addButton(self.remove_test_radio, 2)
+        options_layout.addWidget(self.remove_test_radio)
+
+        # Option 3: Reset to empty state
+        self.reset_empty_radio = QRadioButton("Reset to empty state (keep structure)")
+        self.cleanup_options.addButton(self.reset_empty_radio, 3)
+        options_layout.addWidget(self.reset_empty_radio)
+
+        layout.addWidget(options_group)
+
+        # Backup option
+        self.backup_checkbox = QCheckBox("Create backup before cleanup")
+        self.backup_checkbox.setChecked(True)
+        layout.addWidget(self.backup_checkbox)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+
+        self.cleanup_button = QPushButton("Cleanup")
+        self.cleanup_button.clicked.connect(self.perform_cleanup)
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.clicked.connect(self.reject)
+
+        button_layout.addStretch()
+        button_layout.addWidget(self.cleanup_button)
+        button_layout.addWidget(self.cancel_button)
+
+        layout.addLayout(button_layout)
+
+    def perform_cleanup(self):
+        """Perform the selected cleanup operation"""
+        try:
+            # Import cleanup utility
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+            from cleanup_sample_data import DataCleanup
+
+            cleanup = DataCleanup()
+
+            # Create backup if requested
+            if self.backup_checkbox.isChecked():
+                if not cleanup.backup_data():
+                    QMessageBox.warning(self, "Backup Failed", "Failed to create backup. Continue anyway?")
+                    return
+
+            # Perform selected cleanup
+            selected_option = self.cleanup_options.checkedId()
+            success = False
+
+            if selected_option == 1:
+                # Remove all sample data
+                success = cleanup.remove_all_sample_data()
+            elif selected_option == 2:
+                # Remove test files only
+                success = cleanup.remove_test_files_only()
+            elif selected_option == 3:
+                # Reset to empty state
+                success = cleanup.reset_to_empty_state()
+
+            if success:
+                QMessageBox.information(self, "Cleanup Complete", "Sample data cleanup completed successfully!")
+                self.accept()
+            else:
+                QMessageBox.warning(self, "Cleanup Failed", "Sample data cleanup failed. Check the logs for details.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Cleanup Error", f"Error during cleanup: {e}")
+
+
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = KitchenDashboardApp()
-    window.show()
-    sys.exit(app.exec())
+    # Initialize logging first
+    from utils.app_logger import get_logger
+    logger = get_logger()
+
+    try:
+        print("\n" + "="*80)
+        print("    VARSYS KITCHEN DASHBOARD - PROFESSIONAL EDITION")
+        print("="*80)
+        print("Starting application...")
+        print("="*80 + "\n")
+
+        logger.log_startup_info()
+
+        app = QApplication(sys.argv)
+        logger.log_section_header("Application Initialization")
+
+        window = KitchenDashboardApp()
+        logger.log_section_footer("Application Initialization", True)
+
+        logger.log_section_header("UI Display")
+        window.show()
+        logger.log_section_footer("UI Display", True)
+
+        logger.info("Application ready - entering main event loop")
+
+        # Run the application
+        exit_code = app.exec()
+
+        # Shutdown logging
+        print("\n" + "="*80)
+        print("    APPLICATION SHUTDOWN")
+        print("="*80)
+        logger.log_shutdown_info()
+        print("Thank you for using VARSYS Kitchen Dashboard!")
+        print("="*80 + "\n")
+
+        sys.exit(exit_code)
+
+    except Exception as e:
+        logger.error(f"Critical application error: {e}")
+        logger.log_exception(e, "Application startup/shutdown")
+        print(f"\n*** CRITICAL ERROR ***")
+        print(f"Error: {e}")
+        print("Check the error log for details.")
+        print("="*80 + "\n")
+        sys.exit(1)

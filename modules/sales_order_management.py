@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QDialogButtonBox, QFrame, QGridLayout, QGroupBox,
                              QScrollArea, QSizePolicy, QApplication)
 from PySide6.QtCore import Qt, QDate, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 
 class SalesOrderDialog(QDialog):
     """Comprehensive order dialog with detailed cost breakdown"""
@@ -1292,11 +1292,11 @@ class SalesOrderManagementWidget(QWidget):
 
                 # Color coding for profit
                 if profit > 0:
-                    profit_item.setStyleSheet("color: #10b981; font-weight: 600;")
-                    profit_percent_item.setStyleSheet("color: #10b981; font-weight: 600;")
+                    profit_item.setForeground(QColor("#10b981"))
+                    profit_percent_item.setForeground(QColor("#10b981"))
                 else:
-                    profit_item.setStyleSheet("color: #dc2626; font-weight: 600;")
-                    profit_percent_item.setStyleSheet("color: #dc2626; font-weight: 600;")
+                    profit_item.setForeground(QColor("#dc2626"))
+                    profit_percent_item.setForeground(QColor("#dc2626"))
 
                 self.orders_table.setItem(row, 13, profit_item)
                 self.orders_table.setItem(row, 14, profit_percent_item)
@@ -1305,9 +1305,9 @@ class SalesOrderManagementWidget(QWidget):
                 status = "Completed" if profit > 0 else "Review Required"
                 status_item = QTableWidgetItem(status)
                 if profit > 0:
-                    status_item.setStyleSheet("color: #10b981; font-weight: 500;")
+                    status_item.setForeground(QColor("#10b981"))
                 else:
-                    status_item.setStyleSheet("color: #f59e0b; font-weight: 500;")
+                    status_item.setForeground(QColor("#f59e0b"))
 
                 self.orders_table.setItem(row, 15, status_item)
 

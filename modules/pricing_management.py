@@ -672,10 +672,10 @@ class PricingManagementWidget(QWidget):
             }
 
             make_table_responsive(self.cost_table, column_config)
-            print("✅ Applied responsive functionality to cost analysis table")
+            print("[SUCCESS] Applied responsive functionality to cost analysis table")
 
         except ImportError:
-            print("⚠️ Responsive table utilities not available for cost analysis table")
+            print("[WARNING] Responsive table utilities not available for cost analysis table")
 
         layout.addWidget(self.cost_table)
         
@@ -758,10 +758,10 @@ class PricingManagementWidget(QWidget):
             }
 
             make_table_responsive(self.pricing_table, column_config)
-            print("✅ Applied responsive functionality to pricing strategy table")
+            print("[SUCCESS] Applied responsive functionality to pricing strategy table")
 
         except ImportError:
-            print("⚠️ Responsive table utilities not available for pricing strategy table")
+            print("[WARNING] Responsive table utilities not available for pricing strategy table")
 
         layout.addWidget(self.pricing_table)
         
@@ -819,10 +819,10 @@ class PricingManagementWidget(QWidget):
             }
 
             make_table_responsive(self.profit_table, column_config)
-            print("✅ Applied responsive functionality to profit analysis table")
+            print("[SUCCESS] Applied responsive functionality to profit analysis table")
 
         except ImportError:
-            print("⚠️ Responsive table utilities not available for profit analysis table")
+            print("[WARNING] Responsive table utilities not available for profit analysis table")
 
         layout.addWidget(self.profit_table)
         
@@ -869,10 +869,10 @@ class PricingManagementWidget(QWidget):
             }
 
             make_table_responsive(self.discount_table, column_config)
-            print("✅ Applied responsive functionality to discount analysis table")
+            print("[SUCCESS] Applied responsive functionality to discount analysis table")
 
         except ImportError:
-            print("⚠️ Responsive table utilities not available for discount analysis table")
+            print("[WARNING] Responsive table utilities not available for discount analysis table")
             # Fallback to original column sizing
             header = self.discount_table.horizontalHeader()
             header.setSectionResizeMode(0, QHeaderView.Stretch)           # Recipe Name
@@ -2129,7 +2129,7 @@ class PricingManagementWidget(QWidget):
                         for _, row in recipe_materials.iterrows():
                             materials_list.append(f"{row['material_name']} (₹{row['cost_per_recipe']:.2f})")
 
-                        self.logger.info(f"✅ Packing cost from IN-MEMORY data for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
+                        self.logger.info(f"[SUCCESS] Packing cost from IN-MEMORY data for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
                         return float(total_cost)
 
             # Fallback to CSV file if in-memory data is not available or empty
@@ -2635,18 +2635,18 @@ class PricingManagementWidget(QWidget):
                         if not exact_match.empty:
                             step1_items_found = True
                             matched_item_name = exact_match.iloc[0]['item_name']
-                            self.logger.info(f"    Step 1: ✅ Found exact match for '{ingredient_name}'")
+                            self.logger.info(f"    Step 1: [SUCCESS] Found exact match for '{ingredient_name}'")
                         else:
                             # Try partial match if exact match failed
                             partial_match = items_df[items_df['item_name'].str.lower().str.contains(ingredient_name.lower(), na=False)]
                             if not partial_match.empty:
                                 step1_items_found = True
                                 matched_item_name = partial_match.iloc[0]['item_name']
-                                self.logger.info(f"    Step 1: ✅ Found partial match for '{ingredient_name}' -> '{matched_item_name}'")
+                                self.logger.info(f"    Step 1: [SUCCESS] Found partial match for '{ingredient_name}' -> '{matched_item_name}'")
                             else:
-                                self.logger.info(f"    Step 1: ❌ Not found in items table")
+                                self.logger.info(f"    Step 1: [ERROR] Not found in items table")
                     else:
-                        self.logger.info(f"    Step 1: ❌ Items table is empty or doesn't exist")
+                        self.logger.info(f"    Step 1: [ERROR] Items table is empty or doesn't exist")
 
                     # STEP 2: Check if properly categorized
                     if step1_items_found:
@@ -2657,11 +2657,11 @@ class PricingManagementWidget(QWidget):
                                 category = item_match.iloc[0].get('category', '').strip()
                                 if category and category.lower() not in ['', 'none', 'null', 'undefined']:
                                     step2_categorized = True
-                                    self.logger.info(f"    Step 2: ✅ Item is categorized as '{category}'")
+                                    self.logger.info(f"    Step 2: [SUCCESS] Item is categorized as '{category}'")
                                 else:
-                                    self.logger.info(f"    Step 2: ❌ Item has no valid category")
+                                    self.logger.info(f"    Step 2: [ERROR] Item has no valid category")
                             else:
-                                self.logger.info(f"    Step 2: ❌ Could not find item for category check")
+                                self.logger.info(f"    Step 2: [ERROR] Could not find item for category check")
                     else:
                         self.logger.info(f"    Step 2: ⏭️ Skipped (not in items table)")
 
@@ -2690,7 +2690,7 @@ class PricingManagementWidget(QWidget):
                                     step3_in_inventory = True
                                     current_qty = inventory_match.iloc[0].get('quantity', 0)
                                     inventory_item_name = inventory_match.iloc[0]['item_name']
-                                    self.logger.info(f"    Step 3: ✅ Found exact match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
+                                    self.logger.info(f"    Step 3: [SUCCESS] Found exact match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
                             except Exception as e:
                                 self.logger.warning(f"    Step 3: Error in exact match: {e}")
 
@@ -2706,7 +2706,7 @@ class PricingManagementWidget(QWidget):
                                         step3_in_inventory = True
                                         current_qty = inventory_partial.iloc[0].get('quantity', 0)
                                         inventory_item_name = inventory_partial.iloc[0]['item_name']
-                                        self.logger.info(f"    Step 3: ✅ Found partial match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
+                                        self.logger.info(f"    Step 3: [SUCCESS] Found partial match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
                                 except Exception as e:
                                     self.logger.warning(f"    Step 3: Error in partial match: {e}")
 
@@ -2721,7 +2721,7 @@ class PricingManagementWidget(QWidget):
                                                 step3_in_inventory = True
                                                 current_qty = inv_item.get('quantity', 0)
                                                 inventory_item_name = inv_item['item_name']
-                                                self.logger.info(f"    Step 3: ✅ Found reverse match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
+                                                self.logger.info(f"    Step 3: [SUCCESS] Found reverse match in inventory: '{inventory_item_name}' with quantity: {current_qty}")
                                                 break
                                 except Exception as e:
                                     self.logger.warning(f"    Step 3: Error in reverse match: {e}")
@@ -2743,7 +2743,7 @@ class PricingManagementWidget(QWidget):
                                 price = price_match.iloc[0].get('last_price', 0)
                                 if pd.notna(price) and price > 0:
                                     price_found = True
-                                    self.logger.info(f"    Pricing: ✅ Found pricing for '{matched_item_name}': ₹{price}")
+                                    self.logger.info(f"    Pricing: [SUCCESS] Found pricing for '{matched_item_name}': ₹{price}")
 
                     # REVISED VALIDATION LOGIC: More intelligent missing item detection
                     # An item is considered "missing" only if it's truly unavailable for cooking
@@ -2790,7 +2790,7 @@ class PricingManagementWidget(QWidget):
 
                     # Log the decision
                     if ingredient_available:
-                        self.logger.info(f"    ✅ AVAILABLE: {availability_source}")
+                        self.logger.info(f"    [SUCCESS] AVAILABLE: {availability_source}")
                         found_ingredients.append({
                             'name': ingredient_name,
                             'matched_item': matched_item_name if matched_item_name != ingredient_name else None,
@@ -2948,12 +2948,12 @@ class PricingManagementWidget(QWidget):
             # Test each ingredient
             for idx, ingredient_row in recipe_ingredients.iterrows():
                 ingredient_name = ingredient_row.get('item_name', '').strip()
-                self.logger.info(f"\n🧪 DEBUG: Testing ingredient: '{ingredient_name}'")
+                self.logger.info(f"\n[DEBUG] Testing ingredient: '{ingredient_name}'")
 
                 # Step 1: Items table check
                 exact_match = items_df[items_df['item_name'].str.lower() == ingredient_name.lower()]
                 step1_result = not exact_match.empty
-                self.logger.info(f"  Step 1 (Items): {'✅ PASS' if step1_result else '❌ FAIL'}")
+                self.logger.info(f"  Step 1 (Items): {'[SUCCESS] PASS' if step1_result else '[ERROR] FAIL'}")
 
                 if step1_result:
                     matched_item_name = exact_match.iloc[0]['item_name']
@@ -2961,23 +2961,23 @@ class PricingManagementWidget(QWidget):
                     # Step 2: Category check
                     category = exact_match.iloc[0].get('category', '').strip()
                     step2_result = category and category.lower() not in ['', 'none', 'null', 'undefined']
-                    self.logger.info(f"  Step 2 (Category): {'✅ PASS' if step2_result else '❌ FAIL'} - Category: '{category}'")
+                    self.logger.info(f"  Step 2 (Category): {'[SUCCESS] PASS' if step2_result else '[ERROR] FAIL'} - Category: '{category}'")
 
                     # Step 3: Inventory check
                     inventory_match = inventory_df[inventory_df['item_name'].str.lower() == matched_item_name.lower()]
                     step3_result = not inventory_match.empty
                     if step3_result:
                         qty = inventory_match.iloc[0].get('quantity', 0)
-                        self.logger.info(f"  Step 3 (Inventory): ✅ PASS - Found with quantity: {qty}")
+                        self.logger.info(f"  Step 3 (Inventory): [SUCCESS] PASS - Found with quantity: {qty}")
                     else:
-                        self.logger.info(f"  Step 3 (Inventory): ❌ FAIL - Not found in inventory")
+                        self.logger.info(f"  Step 3 (Inventory): [ERROR] FAIL - Not found in inventory")
                         # Show what IS in inventory for comparison
                         inventory_sample = inventory_df['item_name'].head(5).tolist()
                         self.logger.info(f"    Inventory sample: {inventory_sample}")
 
                     # Final result
                     all_passed = step1_result and step2_result and step3_result
-                    self.logger.info(f"  FINAL RESULT: {'✅ FOUND' if all_passed else '❌ MISSING'}")
+                    self.logger.info(f"  FINAL RESULT: {'[SUCCESS] FOUND' if all_passed else '[ERROR] MISSING'}")
 
                     if not all_passed:
                         failed_steps = []

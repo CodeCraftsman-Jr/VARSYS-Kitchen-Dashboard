@@ -264,7 +264,8 @@ class GasManagementWidget(QWidget):
                 border-left: 4px solid {color};
             }}
             QFrame:hover {{
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                background-color: rgba(255, 255, 255, 0.1);
+                border: 2px solid {color};
             }}
         """)
         
