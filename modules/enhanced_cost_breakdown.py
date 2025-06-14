@@ -460,9 +460,12 @@ class EnhancedCostBreakdownPanel(QWidget):
             # Calculate ingredient cost
             ingredient_cost = self.calculate_recipe_ingredient_cost(recipe_id)
 
-            # Calculate other costs
-            making_cost = ingredient_cost * 0.2  # 20% of ingredient cost
-            packaging_cost = 5.0
+            # Calculate making cost - same as ingredient cost (not 20%)
+            making_cost = ingredient_cost
+
+            # Calculate actual packaging cost from packing materials mapping
+            packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
+
             cook_time = recipe.get('cook_time', 30)
             electricity_cost = self.calculate_electricity_cost(cook_time)
             gas_cost = self.calculate_gas_cost(recipe_data=recipe)
@@ -761,6 +764,61 @@ class EnhancedCostBreakdownPanel(QWidget):
         self.logger.info("Exporting cost analysis")
         # Implement export functionality
     
+    def calculate_actual_packaging_cost(self, recipe_name):
+        """Calculate actual packaging cost from packing materials mapping"""
+        try:
+            # Check if recipe packing materials data exists
+            if 'recipe_packing_materials' in self.data and not self.data['recipe_packing_materials'].empty:
+                # Get materials for this recipe from in-memory data
+                recipe_materials = self.data['recipe_packing_materials'][
+                    self.data['recipe_packing_materials']['recipe_name'] == recipe_name
+                ]
+
+                if not recipe_materials.empty:
+                    # Use the pre-calculated cost_per_recipe from in-memory data
+                    total_cost = recipe_materials['cost_per_recipe'].sum()
+
+                    if total_cost > 0:
+                        # Debug information
+                        materials_list = []
+                        for _, row in recipe_materials.iterrows():
+                            materials_list.append(f"{row['material_name']} (₹{row['cost_per_recipe']:.2f})")
+
+                        self.logger.info(f"✅ Packing cost from data for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
+                        return float(total_cost)
+
+            # Fallback to CSV file if in-memory data is not available or empty
+            import os
+            import pandas as pd
+
+            packing_file = os.path.join('data', 'recipe_packing_materials.csv')
+            if os.path.exists(packing_file):
+                packing_df = pd.read_csv(packing_file)
+
+                # Filter for the specific recipe
+                recipe_materials = packing_df[packing_df['recipe_name'] == recipe_name]
+
+                if not recipe_materials.empty:
+                    # Sum up all packing costs for this recipe (cost_per_recipe column already calculated)
+                    total_cost = recipe_materials['cost_per_recipe'].sum()
+
+                    if total_cost > 0:
+                        # Debug information
+                        materials_list = []
+                        for _, row in recipe_materials.iterrows():
+                            materials_list.append(f"{row['material_name']} (₹{row['cost_per_recipe']:.2f})")
+
+                        self.logger.info(f"⚠️ Packing cost from CSV for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
+                        return float(total_cost)
+
+            # If no packing materials found, return default cost
+            self.logger.warning(f"No packing materials found for {recipe_name}, using default cost of ₹5.00")
+            return 5.0
+
+        except Exception as e:
+            self.logger.error(f"Error calculating actual packaging cost for {recipe_name}: {e}")
+            return 5.0  # Default fallback
+
     def refresh_data(self):
         """Refresh cost data"""
         self.load_recipes()

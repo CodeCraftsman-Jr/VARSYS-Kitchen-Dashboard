@@ -1172,7 +1172,7 @@ class PricingManagementWidget(QWidget):
                         self.cost_table.setItem(row, col, QTableWidgetItem("N/A"))
                     continue
 
-                making_cost = ingredient_cost * 0.2  # 20% of ingredient cost
+                making_cost = ingredient_cost  # Making cost equals ingredient cost
 
                 # Calculate actual packaging cost from packing materials
                 packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
@@ -1326,7 +1326,7 @@ class PricingManagementWidget(QWidget):
                         self.pricing_table.setItem(row, col, QTableWidgetItem("N/A"))
                     continue
 
-                making_cost = ingredient_cost * 0.2
+                making_cost = ingredient_cost  # Making cost equals ingredient cost
                 packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
                 other_charges = 2.0
                 total_cost = ingredient_cost + making_cost + packaging_cost + other_charges

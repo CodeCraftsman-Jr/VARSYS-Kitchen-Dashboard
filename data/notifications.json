@@ -1,6 +1,30 @@
 {
   "notifications": [
     {
+      "id": 35,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-14T05:27:38.241985",
+      "read": false
+    },
+    {
+      "id": 34,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-14T05:27:34.502185",
+      "read": false
+    },
+    {
+      "id": 33,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-14T05:27:33.250036",
+      "read": false
+    },
+    {
       "id": 32,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
@@ -257,5 +281,5 @@
       "read": false
     }
   ],
-  "last_updated": "2025-06-14T05:19:02.602868"
+  "last_updated": "2025-06-14T05:27:38.241985"
 }
