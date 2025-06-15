@@ -1,11 +1,11 @@
 {
   "version": "1.0.5",
-  "release_date": "2025-06-15T20:56:28.371378",
+  "release_date": "2025-06-15T21:24:19.811454",
   "package_name": "VARSYS_Kitchen_Dashboard_v1.0.5.zip",
-  "package_size": 309400760,
+  "package_size": 272063506,
   "checksums": {
-    "md5": "3da8b050db388888be608912cf3baa65",
-    "sha256": "cc00b558ecfb0a75cdbe48266e086b8d02eb5df7b9c25b4d494815a0164694ac"
+    "md5": "5e6360b1c04e71f54cf6837b659929c0",
+    "sha256": "607c3c26a637d6902571f4a9aad8b05f6c026717bb1b6e1a9967e80c7cab85d7"
   },
   "download_url": "https://github.com/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard/releases/download/v1.0.5/VARSYS_Kitchen_Dashboard_v1.0.5.zip",
   "system_requirements": {

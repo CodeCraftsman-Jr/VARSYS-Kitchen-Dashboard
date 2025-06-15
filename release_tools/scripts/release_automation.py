@@ -39,14 +39,22 @@ class ReleaseAutomation:
         print("SUCCESS: Build directories cleaned")
     
     def build_application(self):
-        """Build the application using cx_Freeze"""
+        """Build the application using cx_Freeze with icon"""
         print("Building application...")
 
         try:
-            # Run the build command
-            result = subprocess.run([
-                sys.executable, "setup_cx_freeze.py", "build"
-            ], cwd=self.base_dir, capture_output=True, text=True)
+            # Check if icon-enabled build script exists
+            icon_build_script = self.base_dir / "build_with_icon.py"
+            if icon_build_script.exists():
+                print("Using icon-enabled build script...")
+                result = subprocess.run([
+                    sys.executable, "build_with_icon.py"
+                ], cwd=self.base_dir, capture_output=True, text=True)
+            else:
+                print("Using standard build script...")
+                result = subprocess.run([
+                    sys.executable, "setup_cx_freeze.py", "build"
+                ], cwd=self.base_dir, capture_output=True, text=True)
 
             if result.returncode == 0:
                 print("SUCCESS: Application built successfully")
