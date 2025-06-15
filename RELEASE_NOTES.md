@@ -1,6 +1,30 @@
 # VARSYS Solutions - Kitchen Dashboard
 ## Release Notes
 
+### Version 1.0.5 (Bug Fix Release) - June 15, 2025
+
+**🔧 Critical Update System Fixes**
+
+This release addresses critical issues with the application's update checking system and repository references.
+
+#### 🐛 Bug Fixes
+- **Fixed Update Check 404 Error**: Resolved HTTP 404 errors when checking for application updates
+- **Corrected Repository URLs**: Updated all GitHub repository references to point to the correct location
+- **Enhanced Update System Reliability**: Update checking now works seamlessly without errors
+
+#### 🚀 Improvements
+- **Better Error Handling**: Improved error logging and user feedback for update-related issues
+- **Repository Alignment**: All internal links and references now correctly point to the active repository
+- **Stability Enhancements**: Reduced application startup errors related to update checking
+
+#### 📋 Technical Changes
+- Updated `UPDATE_CHECK_URL` to point to correct GitHub repository
+- Updated `DOWNLOAD_BASE_URL` for proper release downloads
+- Corrected website URL in version information
+- Enhanced update verification and error reporting
+
+---
+
 ### Version 1.0.0 (Initial Release) - January 2025
 
 **🎉 First Software in VARSYS Solutions Ecosystem**

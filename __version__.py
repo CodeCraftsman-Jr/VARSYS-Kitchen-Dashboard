@@ -7,20 +7,20 @@ Software: Kitchen Dashboard (First software in VARSYS ecosystem)
 License: Proprietary - Free for limited testing period
 """
 
-__version__ = "1.0.4"
-__build__ = "20250613"
+__version__ = "1.0.5"
+__build__ = "20250615"
 __company__ = "VARSYS Solutions"
 __product__ = "Kitchen Dashboard"
 __description__ = "Professional Kitchen Management System"
 __copyright__ = "© 2025 VARSYS Solutions. All rights reserved."
-__website__ = "https://github.com/VARSYS-Solutions"
+__website__ = "https://github.com/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard"
 __support_email__ = "support@varsys-solutions.com"
 
 # Version components
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
-VERSION_PATCH = 4
-VERSION_BUILD = 20250613
+VERSION_PATCH = 5
+VERSION_BUILD = 20250615
 
 # Release information
 RELEASE_TYPE = "stable"  # alpha, beta, rc, stable
@@ -28,8 +28,8 @@ IS_BETA = False
 IS_DEVELOPMENT = False
 
 # Update configuration
-UPDATE_CHECK_URL = "https://api.github.com/repos/VARSYS-Solutions/Kitchen-Dashboard/releases/latest"
-DOWNLOAD_BASE_URL = "https://github.com/VARSYS-Solutions/Kitchen-Dashboard/releases/download"
+UPDATE_CHECK_URL = "https://api.github.com/repos/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard/releases/latest"
+DOWNLOAD_BASE_URL = "https://github.com/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard/releases/download"
 
 # Feature flags for ecosystem
 FIREBASE_ENABLED = False  # Disabled for initial release

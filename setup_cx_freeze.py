@@ -32,7 +32,6 @@ build_options = {
         ('utils/', 'utils/'),
         ('data/', 'data/'),
         ('assets/', 'assets/'),
-        ('secure_credentials/', 'secure_credentials/'),
         ('firebase_web_config.json', 'firebase_web_config.json'),
         ('README.md', 'README.md'),
         ('requirements.txt', 'requirements.txt'),
@@ -59,7 +58,7 @@ executables = [
 # Setup configuration
 setup(
     name='VARSYS Kitchen Dashboard',
-    version="1.0.4",
+    version="1.0.5",
     description='Professional Kitchen Management System',
     author='VARSYS Team',
     options={'build_exe': build_options},
