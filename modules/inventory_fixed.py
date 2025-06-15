@@ -2345,16 +2345,33 @@ class InventoryWidget(QWidget):
         self.expiry_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.expiry_table.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        # Set custom widths for columns
-        self.expiry_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.expiry_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)  # Item name stretches
-        self.expiry_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)  # Category stretches
-        self.expiry_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)  # Location stretches
+        # FIXED: Enable consistent manual column resizing for Expiry table
+        print("🔧 Setting up Expiry table column resizing...")
+        expiry_header = self.expiry_table.horizontalHeader()
 
-        # Set fixed widths for numeric columns
-        column_widths = {2: 80, 3: 60, 5: 100, 6: 80}
-        for col, width in column_widths.items():
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(7):  # 7 columns in expiry table
+            expiry_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Expiry Column {col}: Interactive")
+
+        # Set default column widths (keeping the working behavior but making all resizable)
+        expiry_default_widths = {
+            0: 200,  # Item Name
+            1: 120,  # Category
+            2: 80,   # Quantity (was working)
+            3: 60,   # Unit (was working)
+            4: 120,  # Location
+            5: 100,  # Expiry Date (was working)
+            6: 80    # Days Left (was working)
+        }
+        for col, width in expiry_default_widths.items():
             self.expiry_table.setColumnWidth(col, width)
+            print(f"   Expiry Column {col}: {width}px")
+
+        # Basic header configuration
+        expiry_header.setStretchLastSection(False)
+        expiry_header.setMinimumSectionSize(50)
+        print("✅ Expiry table column resizing enabled for ALL columns!")
 
         # Apply modern table styling with background color support
         if apply_modern_table_styling:
@@ -2564,7 +2581,30 @@ class InventoryWidget(QWidget):
         self.items_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.items_table.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        self.items_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # FIXED: Enable manual column resizing for Items table
+        print("🔧 Setting up Items table column resizing...")
+        items_header = self.items_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(3):
+            items_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Items Column {col}: Interactive")
+
+        # Set default column widths
+        items_default_widths = {
+            0: 200,  # Item Name
+            1: 80,   # Unit
+            2: 150   # Category
+        }
+        for col, width in items_default_widths.items():
+            self.items_table.setColumnWidth(col, width)
+            print(f"   Items Column {col}: {width}px")
+
+        # Basic header configuration
+        items_header.setStretchLastSection(False)
+        items_header.setMinimumSectionSize(50)
+        print("✅ Items table column resizing enabled!")
+
         self.items_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.items_table.setSelectionMode(QTableWidget.SingleSelection)
         self.items_table.itemSelectionChanged.connect(self.load_selected_item)
@@ -2953,7 +2993,30 @@ class InventoryWidget(QWidget):
         self.categories_table = QTableWidget()
         self.categories_table.setColumnCount(2)
         self.categories_table.setHorizontalHeaderLabels(["Category Name", "Item Count"])
-        self.categories_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # FIXED: Enable manual column resizing for Categories table
+        print("🔧 Setting up Categories table column resizing...")
+        categories_header = self.categories_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(2):
+            categories_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Categories Column {col}: Interactive")
+
+        # Set default column widths
+        categories_default_widths = {
+            0: 200,  # Category Name
+            1: 100   # Item Count
+        }
+        for col, width in categories_default_widths.items():
+            self.categories_table.setColumnWidth(col, width)
+            print(f"   Categories Column {col}: {width}px")
+
+        # Basic header configuration
+        categories_header.setStretchLastSection(False)
+        categories_header.setMinimumSectionSize(50)
+        print("✅ Categories table column resizing enabled!")
+
         self.categories_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.categories_table.setSelectionMode(QTableWidget.SingleSelection)
         self.categories_table.itemSelectionChanged.connect(self.load_selected_category)

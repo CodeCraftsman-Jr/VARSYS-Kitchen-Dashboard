@@ -195,15 +195,34 @@ class IngredientCostTable(QTableWidget):
             }
         """)
         
-        # Set column widths
+        # FIXED: Enable manual column resizing for Enhanced Cost Breakdown table
+        print("🔧 Setting up Enhanced Cost Breakdown table column resizing...")
         header = self.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)      # Ingredient
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Quantity
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Unit
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Cost/Unit
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Total Cost
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Source
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Last Updated
+
+        # Set ALL columns to Interactive mode for manual resizing
+        breakdown_columns = ["Ingredient", "Quantity", "Unit", "Cost/Unit", "Total Cost", "Source", "Last Updated"]
+        for col in range(7):
+            header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Breakdown Column {col} ({breakdown_columns[col]}): Interactive")
+
+        # Set default column widths
+        breakdown_default_widths = {
+            0: 180,  # Ingredient
+            1: 100,  # Quantity
+            2: 80,   # Unit
+            3: 120,  # Cost/Unit
+            4: 120,  # Total Cost
+            5: 120,  # Source
+            6: 140   # Last Updated
+        }
+        for col, width in breakdown_default_widths.items():
+            self.setColumnWidth(col, width)
+            print(f"   Breakdown Column {col}: {width}px")
+
+        # Basic header configuration
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(60)
+        print("✅ Enhanced Cost Breakdown table column resizing enabled!")
         
         # Connect selection signal
         self.itemSelectionChanged.connect(self.on_selection_changed)

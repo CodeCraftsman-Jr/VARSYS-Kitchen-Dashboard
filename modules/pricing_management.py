@@ -696,36 +696,20 @@ class PricingManagementWidget(QWidget):
         self.cost_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.cost_table.customContextMenuRequested.connect(self.show_cost_table_context_menu)
 
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # FIXED: Ensure manual column resizing is preserved for Cost Analysis table
+        print("🔧 Ensuring Cost Analysis table column resizing is preserved...")
+        cost_header = self.cost_table.horizontalHeader()
 
-            # Define column priorities for cost analysis table
-            column_priorities = {
-                0: 1,   # Recipe Name - highest priority (always show)
-                1: 2,   # Cost of Making - high priority
-                2: 2,   # Others Pricing - high priority (editable)
-                3: 2,   # Our Pricing - high priority (editable)
-                4: 3,   # Profit - medium priority
-                5: 3,   # Current Profit % - medium priority
-                6: 4,   # PKG Cost - low priority
-                7: 3,   # Other Charges - medium priority (editable)
-                8: 5,   # Electricity Cost - lowest priority
-                9: 5,   # Gas Cost - lowest priority
-                10: 4   # GST Amount - low priority
-            }
+        # Verify ALL columns are still Interactive mode (they should be from line 642)
+        for col in range(11):
+            current_mode = cost_header.sectionResizeMode(col)
+            if current_mode != QHeaderView.Interactive:
+                cost_header.setSectionResizeMode(col, QHeaderView.Interactive)
+                print(f"   Cost Column {col}: Fixed to Interactive")
+            else:
+                print(f"   Cost Column {col}: Interactive (OK)")
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [0, 1, 2, 3]  # Recipe Name, Cost, Others Pricing, Our Pricing
-            }
-
-            make_table_responsive(self.cost_table, column_config)
-            print("[SUCCESS] Applied responsive functionality to cost analysis table")
-
-        except ImportError:
-            print("[WARNING] Responsive table utilities not available for cost analysis table")
+        print("✅ Cost Analysis table column resizing preserved!")
 
         layout.addWidget(self.cost_table)
         
@@ -787,32 +771,20 @@ class PricingManagementWidget(QWidget):
         self.pricing_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.pricing_table.customContextMenuRequested.connect(self.show_pricing_table_context_menu)
 
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # FIXED: Ensure manual column resizing is preserved for Pricing Strategy table
+        print("🔧 Ensuring Pricing Strategy table column resizing is preserved...")
+        pricing_header = self.pricing_table.horizontalHeader()
 
-            # Define column priorities for pricing strategy table
-            column_priorities = {
-                0: 1,   # Recipe Name - highest priority (always show)
-                1: 3,   # Total Cost - medium priority
-                2: 2,   # Others Pricing - high priority (editable)
-                3: 4,   # Margin Value - low priority
-                4: 2,   # Our Pricing - high priority (editable)
-                5: 3,   # Selling Price - medium priority
-                6: 3    # Profit - medium priority
-            }
+        # Verify ALL columns are still Interactive mode (they should be from line 777)
+        for col in range(7):
+            current_mode = pricing_header.sectionResizeMode(col)
+            if current_mode != QHeaderView.Interactive:
+                pricing_header.setSectionResizeMode(col, QHeaderView.Interactive)
+                print(f"   Pricing Column {col}: Fixed to Interactive")
+            else:
+                print(f"   Pricing Column {col}: Interactive (OK)")
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [0, 2, 4]  # Recipe Name, Others Pricing, Our Pricing
-            }
-
-            make_table_responsive(self.pricing_table, column_config)
-            print("[SUCCESS] Applied responsive functionality to pricing strategy table")
-
-        except ImportError:
-            print("[WARNING] Responsive table utilities not available for pricing strategy table")
+        print("✅ Pricing Strategy table column resizing preserved!")
 
         layout.addWidget(self.pricing_table)
         
@@ -833,57 +805,55 @@ class PricingManagementWidget(QWidget):
             "Profit %", "Status"
         ])
 
-        # Simple column resizing for profit analysis table
-        header = self.profit_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Interactive)
-        self.profit_table.setColumnWidth(0, 180)  # Recipe Name
-        self.profit_table.setColumnWidth(1, 120)  # Selling Price
-        self.profit_table.setColumnWidth(2, 120)  # Total Cost
-        self.profit_table.setColumnWidth(3, 100)  # Profit
-        self.profit_table.setColumnWidth(4, 100)  # Profit %
-        self.profit_table.setColumnWidth(5, 100)  # Status
-        
+        # FIXED: Enable manual column resizing for Profit Analysis table
+        print("🔧 Setting up Profit Analysis table column resizing...")
+        profit_header = self.profit_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        profit_columns = ["Recipe Name", "Selling Price", "Total Cost", "Profit", "Profit %", "Status"]
+        for col in range(6):
+            profit_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Profit Column {col} ({profit_columns[col]}): Interactive")
+
+        # Set default column widths
+        profit_default_widths = {
+            0: 180,  # Recipe Name
+            1: 120,  # Selling Price
+            2: 120,  # Total Cost
+            3: 100,  # Profit
+            4: 100,  # Profit %
+            5: 100   # Status
+        }
+        for col, width in profit_default_widths.items():
+            self.profit_table.setColumnWidth(col, width)
+            print(f"   Profit Column {col}: {width}px")
+
+        # Basic header configuration
+        profit_header.setStretchLastSection(False)
+        profit_header.setMinimumSectionSize(80)
+        print("✅ Profit Analysis table column resizing enabled!")
+
         # Apply modern styling
         self.profit_table.setStyleSheet(self.cost_table.styleSheet())
-        
-        # Set column widths
-        header = self.profit_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)           # Recipe Name
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Selling Price
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Total Cost
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Profit
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Profit %
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Status
 
         # Enable right-click context menu for editable columns
         self.profit_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.profit_table.customContextMenuRequested.connect(self.show_profit_table_context_menu)
 
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # FIXED: Ensure manual column resizing is preserved for Profit Analysis table
+        print("🔧 Ensuring Profit Analysis table column resizing is preserved...")
+        profit_header = self.profit_table.horizontalHeader()
 
-            # Define column priorities for profit analysis table
-            column_priorities = {
-                0: 1,   # Recipe Name - highest priority (always show)
-                1: 2,   # Selling Price - high priority (editable)
-                2: 3,   # Total Cost - medium priority
-                3: 2,   # Profit - high priority
-                4: 3,   # Profit % - medium priority
-                5: 4    # Status - low priority
-            }
+        # Verify ALL columns are still Interactive mode (they should be from the fix above)
+        for col in range(6):
+            current_mode = profit_header.sectionResizeMode(col)
+            if current_mode != QHeaderView.Interactive:
+                profit_header.setSectionResizeMode(col, QHeaderView.Interactive)
+                print(f"   Profit Column {col}: Fixed to Interactive")
+            else:
+                print(f"   Profit Column {col}: Interactive (OK)")
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [0, 1, 3]  # Recipe Name, Selling Price, Profit
-            }
-
-            make_table_responsive(self.profit_table, column_config)
-            print("[SUCCESS] Applied responsive functionality to profit analysis table")
-
-        except ImportError:
-            print("[WARNING] Responsive table utilities not available for profit analysis table")
+        print("✅ Profit Analysis table column resizing preserved!")
 
         layout.addWidget(self.profit_table)
         
@@ -907,38 +877,36 @@ class PricingManagementWidget(QWidget):
         # Apply modern styling
         self.discount_table.setStyleSheet(self.cost_table.styleSheet())
         
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # FIXED: Enable manual column resizing for Discount Analysis table
+        print("🔧 Setting up Discount Analysis table column resizing...")
+        discount_header = self.discount_table.horizontalHeader()
 
-            # Define column priorities for discount analysis table
-            column_priorities = {
-                0: 1,   # Recipe Name - highest priority (always show)
-                1: 2,   # Original Price - high priority
-                2: 3,   # 10% Discount - medium priority
-                3: 3,   # 15% Discount - medium priority
-                4: 4,   # 25% Discount - low priority
-                5: 4,   # 30% Discount - low priority
-                6: 5,   # 40% Discount - lowest priority
-                7: 2    # Min Profitable - high priority
-            }
+        # Set ALL columns to Interactive mode for manual resizing
+        discount_columns = ["Recipe Name", "Original Price", "10% Discount", "15% Discount",
+                           "25% Discount", "30% Discount", "40% Discount", "Min Profitable"]
+        for col in range(8):
+            discount_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Discount Column {col} ({discount_columns[col]}): Interactive")
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [0, 1, 7]  # Recipe Name, Original Price, Min Profitable
-            }
+        # Set default column widths
+        discount_default_widths = {
+            0: 180,  # Recipe Name
+            1: 120,  # Original Price
+            2: 120,  # 10% Discount
+            3: 120,  # 15% Discount
+            4: 120,  # 25% Discount
+            5: 120,  # 30% Discount
+            6: 120,  # 40% Discount
+            7: 130   # Min Profitable
+        }
+        for col, width in discount_default_widths.items():
+            self.discount_table.setColumnWidth(col, width)
+            print(f"   Discount Column {col}: {width}px")
 
-            make_table_responsive(self.discount_table, column_config)
-            print("[SUCCESS] Applied responsive functionality to discount analysis table")
-
-        except ImportError:
-            print("[WARNING] Responsive table utilities not available for discount analysis table")
-            # Fallback to original column sizing
-            header = self.discount_table.horizontalHeader()
-            header.setSectionResizeMode(0, QHeaderView.Stretch)           # Recipe Name
-            for i in range(1, 8):
-                header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        # Basic header configuration
+        discount_header.setStretchLastSection(False)
+        discount_header.setMinimumSectionSize(80)
+        print("✅ Discount Analysis table column resizing enabled!")
 
         layout.addWidget(self.discount_table)
         

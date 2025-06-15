@@ -707,7 +707,33 @@ class FixedMealPlanningWidget(QWidget):
         columns = ['Day', 'Breakfast', 'Morning Snack', 'Lunch', 'Afternoon Snack', 'Dinner']
         self.meal_plan_table.setColumnCount(len(columns))
         self.meal_plan_table.setHorizontalHeaderLabels(columns)
-        self.meal_plan_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # FIXED: Enable manual column resizing for Weekly Meal Plan table
+        print("🔧 Setting up Fixed Weekly Meal Plan table column resizing...")
+        meal_plan_header = self.meal_plan_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(len(columns)):
+            meal_plan_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Fixed Meal Plan Column {col} ({columns[col]}): Interactive")
+
+        # Set default column widths
+        meal_plan_default_widths = {
+            0: 100,  # Day
+            1: 150,  # Breakfast
+            2: 120,  # Morning Snack
+            3: 150,  # Lunch
+            4: 120,  # Afternoon Snack
+            5: 150   # Dinner
+        }
+        for col, width in meal_plan_default_widths.items():
+            self.meal_plan_table.setColumnWidth(col, width)
+            print(f"   Fixed Meal Plan Column {col}: {width}px")
+
+        # Basic header configuration
+        meal_plan_header.setStretchLastSection(False)
+        meal_plan_header.setMinimumSectionSize(80)
+        print("✅ Fixed Weekly Meal Plan table column resizing enabled!")
         
         # Define days of week
         days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -895,7 +921,33 @@ class FixedMealPlanningWidget(QWidget):
         self.recipe_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.recipe_table.setSelectionMode(QTableWidget.SingleSelection)
         self.recipe_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.recipe_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+        # FIXED: Enable manual column resizing for Fixed Recipe table
+        print("🔧 Setting up Fixed Recipe table column resizing...")
+        fixed_recipe_header = self.recipe_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        fixed_recipe_columns = ["ID", "Name", "Category", "Servings"]
+        for col in range(4):
+            fixed_recipe_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Fixed Recipe Column {col} ({fixed_recipe_columns[col]}): Interactive")
+
+        # Set default column widths
+        fixed_recipe_default_widths = {
+            0: 60,   # ID
+            1: 200,  # Name
+            2: 120,  # Category
+            3: 80    # Servings
+        }
+        for col, width in fixed_recipe_default_widths.items():
+            self.recipe_table.setColumnWidth(col, width)
+            print(f"   Fixed Recipe Column {col}: {width}px")
+
+        # Basic header configuration
+        fixed_recipe_header.setStretchLastSection(False)
+        fixed_recipe_header.setMinimumSectionSize(50)
+        print("✅ Fixed Recipe table column resizing enabled!")
+
         self.recipe_table.verticalHeader().setVisible(False)
         left_layout.addWidget(self.recipe_table)
         

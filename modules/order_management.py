@@ -457,31 +457,35 @@ class OrderManagementWidget(QWidget):
             "Subtotal", "Discount", "Total"
         ])
         
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
-            
-            column_priorities = {
-                0: 2,   # Date - high priority
-                1: 1,   # Order ID - highest priority
-                2: 1,   # Platform - highest priority
-                3: 3,   # Customer - medium priority
-                4: 2,   # Items - high priority
-                5: 4,   # Subtotal - low priority
-                6: 4,   # Discount - low priority
-                7: 2    # Total - high priority
-            }
-            
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [1, 2, 4, 7]  # Order ID, Platform, Items, Total
-            }
-            
-            make_table_responsive(self.orders_table, column_config)
-            
-        except ImportError:
-            # Fallback to standard table
-            self.orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # FIXED: Enable manual column resizing for Order Management table
+        print("🔧 Setting up Order Management table column resizing...")
+        orders_header = self.orders_table.horizontalHeader()
+
+        # Set ALL columns to Interactive mode for manual resizing
+        order_columns = ["Date", "Order ID", "Platform", "Customer", "Items", "Subtotal", "Discount", "Total"]
+        for col in range(8):
+            orders_header.setSectionResizeMode(col, QHeaderView.Interactive)
+            print(f"   Order Column {col} ({order_columns[col]}): Interactive")
+
+        # Set default column widths
+        order_default_widths = {
+            0: 120,  # Date
+            1: 100,  # Order ID
+            2: 120,  # Platform
+            3: 150,  # Customer
+            4: 200,  # Items
+            5: 100,  # Subtotal
+            6: 100,  # Discount
+            7: 120   # Total
+        }
+        for col, width in order_default_widths.items():
+            self.orders_table.setColumnWidth(col, width)
+            print(f"   Order Column {col}: {width}px")
+
+        # Basic header configuration
+        orders_header.setStretchLastSection(False)
+        orders_header.setMinimumSectionSize(80)
+        print("✅ Order Management table column resizing enabled!")
         
         parent_layout.addWidget(self.orders_table)
     

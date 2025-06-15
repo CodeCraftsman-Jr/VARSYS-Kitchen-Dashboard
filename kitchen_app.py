@@ -2230,7 +2230,7 @@ class KitchenDashboardApp(QMainWindow):
         version_icon.setStyleSheet("border: none; background: transparent;")
         version_layout.addWidget(version_icon)
 
-        self.version_label = QLabel("v1.0.0")
+        self.version_label = QLabel("v1.0.4")
         self.version_label.setAlignment(Qt.AlignCenter)
         self.version_label.setStyleSheet("""
             QLabel {
