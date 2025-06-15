@@ -292,21 +292,9 @@ class PackingMaterialsWidget(QWidget):
             "Cost/Unit", "Current Stock", "Min Stock", "Supplier", "Status", "Edit", "Delete"
         ])
 
-        # Simple column resizing for materials table
+        # Simple column resizing for materials table - apply after data is loaded
         header = self.materials_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Interactive)
-        self.materials_table.setColumnWidth(0, 60)   # ID
-        self.materials_table.setColumnWidth(1, 180)  # Material Name
-        self.materials_table.setColumnWidth(2, 120)  # Category
-        self.materials_table.setColumnWidth(3, 80)   # Size
-        self.materials_table.setColumnWidth(4, 60)   # Unit
-        self.materials_table.setColumnWidth(5, 100)  # Cost/Unit
-        self.materials_table.setColumnWidth(6, 120)  # Current Stock
-        self.materials_table.setColumnWidth(7, 100)  # Min Stock
-        self.materials_table.setColumnWidth(8, 150)  # Supplier
-        self.materials_table.setColumnWidth(9, 80)   # Status
-        self.materials_table.setColumnWidth(10, 100) # Edit
-        self.materials_table.setColumnWidth(11, 100) # Delete
 
         # Set row height
         self.materials_table.verticalHeader().setDefaultSectionSize(50)
@@ -645,20 +633,9 @@ class PackingMaterialsWidget(QWidget):
             "Last Price", "Current Price", "Avg Price", "Supplier", "Last Updated", "Buy", "History"
         ])
 
-        # Simple column resizing for stock table
+        # Simple column resizing for stock table - apply after data is loaded
         header = self.stock_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Interactive)
-        self.stock_table.setColumnWidth(0, 180)  # Material Name
-        self.stock_table.setColumnWidth(1, 120)  # Current Stock
-        self.stock_table.setColumnWidth(2, 100)  # Min Stock
-        self.stock_table.setColumnWidth(3, 80)   # Status
-        self.stock_table.setColumnWidth(4, 100)  # Last Price
-        self.stock_table.setColumnWidth(5, 100)  # Current Price
-        self.stock_table.setColumnWidth(6, 100)  # Avg Price
-        self.stock_table.setColumnWidth(7, 150)  # Supplier
-        self.stock_table.setColumnWidth(8, 120)  # Last Updated
-        self.stock_table.setColumnWidth(9, 100)  # Buy
-        self.stock_table.setColumnWidth(10, 120) # History
 
         # Set row height
         self.stock_table.verticalHeader().setDefaultSectionSize(50)
@@ -705,7 +682,8 @@ class PackingMaterialsWidget(QWidget):
                 background-color: #c0392b;
             }
         """)
-        sync_costs_btn.clicked.connect(self.sync_costs_with_purchase_history)
+        # Temporarily disable this connection to fix initialization issue
+        # sync_costs_btn.clicked.connect(self.sync_costs_with_purchase_history)
         sync_costs_btn.setToolTip("Sync purchase history when material costs are updated manually")
         header_layout.addWidget(sync_costs_btn)
 
@@ -1537,8 +1515,30 @@ class PackingMaterialsWidget(QWidget):
                 delete_btn.clicked.connect(lambda checked, r=row: self.delete_material(r))
                 self.materials_table.setCellWidget(row, 11, delete_btn)
 
+            # Apply column widths after data is populated
+            self.set_materials_table_column_widths()
+            self.logger.info(f"Successfully populated materials table with {len(materials_df)} rows")
+
         except Exception as e:
             self.logger.error(f"Error populating materials table: {e}")
+
+    def set_materials_table_column_widths(self):
+        """Set column widths for materials table after data is populated"""
+        try:
+            self.materials_table.setColumnWidth(0, 60)   # ID
+            self.materials_table.setColumnWidth(1, 180)  # Material Name
+            self.materials_table.setColumnWidth(2, 120)  # Category
+            self.materials_table.setColumnWidth(3, 80)   # Size
+            self.materials_table.setColumnWidth(4, 60)   # Unit
+            self.materials_table.setColumnWidth(5, 100)  # Cost/Unit
+            self.materials_table.setColumnWidth(6, 120)  # Current Stock
+            self.materials_table.setColumnWidth(7, 100)  # Min Stock
+            self.materials_table.setColumnWidth(8, 150)  # Supplier
+            self.materials_table.setColumnWidth(9, 80)   # Status
+            self.materials_table.setColumnWidth(10, 100) # Edit
+            self.materials_table.setColumnWidth(11, 100) # Delete
+        except Exception as e:
+            self.logger.error(f"Error setting column widths: {e}")
 
     def populate_recipe_combo(self):
         """Populate recipe combo box"""

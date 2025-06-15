@@ -1,0 +1,27 @@
+VARSYS Kitchen Dashboard v1.0.5 Complete - File Checksums
+Generated: 2025-06-15 21:57:39
+
+File: VARSYS_Kitchen_Dashboard_v1.0.5_Complete.zip
+Size: 169,279,659 bytes (161.4 MB)
+
+MD5:    18f76d8c5d95808a45ec9b9bbc0b8844
+SHA256: 4adae8b1b95b0bbd4441026a98aaff9414c9e17cbe56e0344c6196138c061c04
+
+This is the COMPLETE version including:
+- All modules and utilities
+- Complete documentation
+- Sample data and templates
+- Security features
+- Backup capabilities
+- All original folders and files
+
+Verification Instructions:
+1. Download the file
+2. Calculate checksums using:
+   - Windows: certutil -hashfile VARSYS_Kitchen_Dashboard_v1.0.5_Complete.zip MD5
+   - Windows: certutil -hashfile VARSYS_Kitchen_Dashboard_v1.0.5_Complete.zip SHA256
+   - Linux/Mac: md5sum VARSYS_Kitchen_Dashboard_v1.0.5_Complete.zip
+   - Linux/Mac: sha256sum VARSYS_Kitchen_Dashboard_v1.0.5_Complete.zip
+3. Compare with the values above
+
+If checksums don't match, do not use the file and report the issue.

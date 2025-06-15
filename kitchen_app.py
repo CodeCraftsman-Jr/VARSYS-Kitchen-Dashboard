@@ -49,6 +49,18 @@ except ImportError:
     def track_navigation(*_args, **_kwargs): pass  # Fallback function
     def track_system_event(*_args, **_kwargs): pass  # Fallback function
 
+# Import update system
+try:
+    from update_manager import UpdateManager
+    from updater import get_updater
+    from version import version_manager
+    UPDATE_SYSTEM_AVAILABLE = True
+except ImportError:
+    UPDATE_SYSTEM_AVAILABLE = False
+    UpdateManager = None
+    get_updater = None
+    version_manager = None
+
 # Simple fix for category dropdowns has been integrated into the inventory module
 
 class KitchenDashboardApp(QMainWindow):
@@ -221,8 +233,28 @@ class KitchenDashboardApp(QMainWindow):
         self.performance_optimizer = None
         self.performance_enhancer = None
         self.logger.log_section_footer("Performance Optimization", True, "Performance modules safely disabled")
+
+        # Initialize Update System
+        self.logger.log_section_header("Update System Initialization")
+        try:
+            if UPDATE_SYSTEM_AVAILABLE:
+                self.updater = get_updater(self.logger)
+                self.update_manager = UpdateManager(self)
+                self.logger.info("Update system initialized successfully")
+                self.logger.log_section_footer("Update System Initialization", True, "Update checking and installation ready")
+            else:
+                self.updater = None
+                self.update_manager = None
+                self.logger.warning("Update system not available - modules not found")
+                self.logger.log_section_footer("Update System Initialization", False, "Update modules not found")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize update system: {e}")
+            self.updater = None
+            self.update_manager = None
+            self.logger.log_section_footer("Update System Initialization", False, f"Update system initialization failed: {e}")
+
         # Initialize inventory_widget as it's needed by other parts
-        self.inventory_widget = None 
+        self.inventory_widget = None
         # Directly initialize the UI, bypassing authentication
         self.initialize_ui()
         # If there was any user-specific setup that happened after login, ensure defaults are fine
@@ -612,6 +644,12 @@ class KitchenDashboardApp(QMainWindow):
 
         # Add testing menu for comprehensive testing
         self.create_testing_menu()
+
+        # Add separate updates menu
+        self.create_updates_menu()
+
+        # Initialize automatic update checking (after UI is ready)
+        QTimer.singleShot(5000, self.initialize_update_checking)
 
     def force_layout_update(self):
         """Force layout update to ensure proper sizing"""
@@ -1009,6 +1047,362 @@ class KitchenDashboardApp(QMainWindow):
 
         except Exception as e:
             self.logger.error(f"Error creating testing menu: {e}")
+
+    def create_updates_menu(self):
+        """Create dedicated updates menu for version management and updates"""
+        try:
+            from PySide6.QtGui import QAction
+
+            # Get menu bar
+            menubar = self.menuBar()
+
+            # Create Updates menu
+            updates_menu = menubar.addMenu("Updates")
+
+            # Add version information action
+            show_version_action = QAction("Show Version Info", self)
+            show_version_action.triggered.connect(self.show_version_info)
+            updates_menu.addAction(show_version_action)
+
+            updates_menu.addSeparator()
+
+            # Add update checking actions
+            if UPDATE_SYSTEM_AVAILABLE and self.update_manager:
+                check_updates_action = QAction("Check for Updates", self)
+                check_updates_action.triggered.connect(self.manual_check_for_updates)
+                updates_menu.addAction(check_updates_action)
+
+                auto_update_action = QAction("Auto-Check Settings", self)
+                auto_update_action.triggered.connect(self.show_auto_update_settings)
+                updates_menu.addAction(auto_update_action)
+
+                updates_menu.addSeparator()
+
+                backup_data_action = QAction("Backup Data Before Update", self)
+                backup_data_action.triggered.connect(self.backup_data_for_update)
+                updates_menu.addAction(backup_data_action)
+
+                restore_data_action = QAction("Restore Data from Backup", self)
+                restore_data_action.triggered.connect(self.restore_data_from_backup)
+                updates_menu.addAction(restore_data_action)
+
+                updates_menu.addSeparator()
+
+                update_history_action = QAction("Update History", self)
+                update_history_action.triggered.connect(self.show_update_history)
+                updates_menu.addAction(update_history_action)
+
+            else:
+                # Show disabled update options when system is not available
+                check_updates_disabled = QAction("Check for Updates (Not Available)", self)
+                check_updates_disabled.setEnabled(False)
+                updates_menu.addAction(check_updates_disabled)
+
+                updates_menu.addSeparator()
+
+                install_update_system_action = QAction("Install Update System", self)
+                install_update_system_action.triggered.connect(self.show_update_system_installation_info)
+                updates_menu.addAction(install_update_system_action)
+
+            self.logger.info("Updates menu created successfully")
+
+        except Exception as e:
+            self.logger.error(f"Error creating updates menu: {e}")
+
+    def initialize_update_checking(self):
+        """Initialize automatic update checking after UI is ready"""
+        try:
+            if UPDATE_SYSTEM_AVAILABLE and self.update_manager:
+                self.logger.info("Initializing automatic update checking...")
+
+                # Check for updates automatically on startup
+                self.update_manager.auto_check_updates()
+
+                # Add notification about update system
+                self.add_notification(
+                    "Update System Ready",
+                    "Automatic update checking is now active. Updates will be checked periodically.",
+                    "info"
+                )
+
+                self.logger.info("Automatic update checking initialized successfully")
+            else:
+                self.logger.warning("Update system not available - skipping automatic update checking")
+
+        except Exception as e:
+            self.logger.error(f"Error initializing update checking: {e}")
+            self.add_notification(
+                "Update System Error",
+                f"Failed to initialize update checking: {str(e)}",
+                "error"
+            )
+
+    def manual_check_for_updates(self):
+        """Manually check for updates"""
+        try:
+            if UPDATE_SYSTEM_AVAILABLE and self.update_manager:
+                self.logger.info("Manual update check requested")
+                self.update_manager.manual_check_updates()
+
+                self.add_notification(
+                    "Update Check",
+                    "Checking for updates manually...",
+                    "info"
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Update System Not Available",
+                    "The update system is not available. Please check if update modules are properly installed."
+                )
+        except Exception as e:
+            self.logger.error(f"Error during manual update check: {e}")
+            QMessageBox.critical(
+                self,
+                "Update Check Error",
+                f"Failed to check for updates: {str(e)}"
+            )
+
+    def show_version_info(self):
+        """Show current version information"""
+        try:
+            if UPDATE_SYSTEM_AVAILABLE and version_manager:
+                version_info = version_manager.get_version_info()
+
+                info_text = f"""
+Current Version Information:
+
+Version: {version_info.get('version', 'Unknown')}
+Build: {version_info.get('build', 'Unknown')}
+Author: {version_info.get('author', 'Unknown')}
+Description: {version_info.get('description', 'Unknown')}
+Release Date: {version_info.get('release_date', 'Unknown')}
+                """
+
+                QMessageBox.information(
+                    self,
+                    "Version Information",
+                    info_text.strip()
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Version Info Not Available",
+                    "Version information is not available. Update system may not be properly installed."
+                )
+        except Exception as e:
+            self.logger.error(f"Error showing version info: {e}")
+            QMessageBox.critical(
+                self,
+                "Version Info Error",
+                f"Failed to retrieve version information: {str(e)}"
+            )
+
+    def backup_data_for_update(self):
+        """Create a backup of current data before update"""
+        try:
+            self.logger.info("Creating data backup for update...")
+
+            # Use the existing save_data method which creates backups
+            self.save_data()
+
+            # Also create a timestamped backup specifically for updates
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'update_backup_{timestamp}')
+            os.makedirs(backup_dir, exist_ok=True)
+
+            # Save each dataframe to the update backup directory
+            for key, df in self.data.items():
+                backup_file = os.path.join(backup_dir, f"{key}.csv")
+                df.to_csv(backup_file, index=False, encoding='utf-8')
+
+            # Save settings
+            with open(os.path.join(backup_dir, 'settings.txt'), 'w', encoding='utf-8') as f:
+                f.write(f"currency_symbol={self.currency_symbol}\n")
+                f.write(f"backup_created={datetime.now().isoformat()}\n")
+
+            self.logger.info(f"Update backup created successfully at: {backup_dir}")
+
+            QMessageBox.information(
+                self,
+                "Backup Complete",
+                f"Data backup for update created successfully!\n\nBackup location:\n{backup_dir}"
+            )
+
+            self.add_notification(
+                "Backup Complete",
+                f"Data backup created at: {backup_dir}",
+                "success"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error creating update backup: {e}")
+            QMessageBox.critical(
+                self,
+                "Backup Error",
+                f"Failed to create data backup: {str(e)}"
+            )
+
+    def show_auto_update_settings(self):
+        """Show auto-update settings dialog"""
+        try:
+            if UPDATE_SYSTEM_AVAILABLE and self.update_manager:
+                # Show the update manager settings
+                self.update_manager.show()
+            else:
+                QMessageBox.information(
+                    self,
+                    "Auto-Update Settings",
+                    "Auto-update settings are not available.\nUpdate system may not be properly installed."
+                )
+        except Exception as e:
+            self.logger.error(f"Error showing auto-update settings: {e}")
+            QMessageBox.critical(
+                self,
+                "Settings Error",
+                f"Failed to show auto-update settings: {str(e)}"
+            )
+
+    def restore_data_from_backup(self):
+        """Restore data from a backup"""
+        try:
+            from PySide6.QtWidgets import QFileDialog
+
+            # Let user select backup directory
+            backup_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Select Backup Directory to Restore",
+                os.path.dirname(os.path.abspath(__file__)),
+                QFileDialog.ShowDirsOnly
+            )
+
+            if not backup_dir:
+                return
+
+            # Confirm restoration
+            reply = QMessageBox.question(
+                self,
+                "Confirm Restore",
+                f"Are you sure you want to restore data from:\n{backup_dir}\n\nThis will overwrite current data!",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply != QMessageBox.Yes:
+                return
+
+            # Restore data files
+            restored_files = []
+            for filename in os.listdir(backup_dir):
+                if filename.endswith('.csv'):
+                    source_file = os.path.join(backup_dir, filename)
+                    dest_file = os.path.join('data', filename)
+
+                    # Create data directory if it doesn't exist
+                    os.makedirs('data', exist_ok=True)
+
+                    # Copy file
+                    import shutil
+                    shutil.copy2(source_file, dest_file)
+                    restored_files.append(filename)
+
+            # Restore settings if available
+            settings_file = os.path.join(backup_dir, 'settings.txt')
+            if os.path.exists(settings_file):
+                with open(settings_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith('currency_symbol='):
+                            self.currency_symbol = line.split('=', 1)[1].strip()
+
+            # Reload data
+            self.data = self.load_data()
+            self.refresh_all_tabs()
+
+            self.logger.info(f"Data restored from backup: {backup_dir}")
+
+            QMessageBox.information(
+                self,
+                "Restore Complete",
+                f"Data restored successfully!\n\nRestored files:\n" + "\n".join(restored_files)
+            )
+
+            self.add_notification(
+                "Data Restored",
+                f"Data restored from backup: {os.path.basename(backup_dir)}",
+                "success"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error restoring data from backup: {e}")
+            QMessageBox.critical(
+                self,
+                "Restore Error",
+                f"Failed to restore data from backup: {str(e)}"
+            )
+
+    def show_update_history(self):
+        """Show update history"""
+        try:
+            if UPDATE_SYSTEM_AVAILABLE and version_manager:
+                # Create a simple update history dialog
+                history_text = """
+Update History:
+
+This feature shows the history of updates applied to the application.
+
+Current Version: """ + version_manager.get_version_info().get('version', 'Unknown') + """
+Build Date: """ + version_manager.get_version_info().get('build', 'Unknown') + """
+
+Note: Detailed update history will be available in future versions.
+For now, you can check the GitHub releases page for version history.
+                """
+
+                QMessageBox.information(
+                    self,
+                    "Update History",
+                    history_text.strip()
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Update History Not Available",
+                    "Update history is not available. Update system may not be properly installed."
+                )
+        except Exception as e:
+            self.logger.error(f"Error showing update history: {e}")
+            QMessageBox.critical(
+                self,
+                "Update History Error",
+                f"Failed to show update history: {str(e)}"
+            )
+
+    def show_update_system_installation_info(self):
+        """Show information about installing the update system"""
+        info_text = """
+Update System Installation
+
+The update system is not currently available. To enable automatic updates:
+
+1. Ensure the following files are present:
+   - update_manager.py
+   - updater.py
+   - version.py
+   - update_checker.py
+
+2. Install required dependencies:
+   - requests (for checking updates)
+   - PySide6 (for UI components)
+
+3. Restart the application
+
+For more information, please check the documentation or contact support.
+        """
+
+        QMessageBox.information(
+            self,
+            "Update System Installation",
+            info_text.strip()
+        )
 
     def run_comprehensive_tests(self):
         """Run comprehensive tests for all modules and functions"""
@@ -3333,7 +3727,7 @@ class KitchenDashboardApp(QMainWindow):
         self.logger.debug("Showing budget placeholder page")
     
     def show_sales_page(self):
-        """Display the sales page with order management system"""
+        """Display the sales page with both basic sales recording and order management"""
         self.clear_content()
 
         # Add header with refresh button
@@ -3343,7 +3737,65 @@ class KitchenDashboardApp(QMainWindow):
         # Debug data before widget creation
         self.debug_data_before_widget_creation("sales", ["sales", "orders"])
 
-        # Import the simplified sales order management module
+        # Create a tabbed interface for different sales functions
+        from PySide6.QtWidgets import QTabWidget
+
+        sales_tabs = QTabWidget()
+        sales_tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: white;
+            }
+            QTabBar::tab {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                padding: 8px 16px;
+                margin-right: 2px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+            }
+            QTabBar::tab:selected {
+                background: white;
+                border-bottom-color: white;
+                font-weight: 600;
+            }
+            QTabBar::tab:hover {
+                background: #f1f5f9;
+            }
+        """)
+
+        # Tab 1: Basic Sales Recording
+        try:
+            from modules.sales import SalesWidget
+            # Create a dummy inventory widget since SalesWidget requires it
+            # but we'll use None for now and handle it in the SalesWidget
+            basic_sales_widget = SalesWidget(self.data, None)
+            sales_tabs.addTab(basic_sales_widget, "📝 Record Sales")
+            self.logger.info("Basic sales recording widget loaded successfully")
+        except Exception as e:
+            # Create placeholder for basic sales
+            placeholder = QWidget()
+            placeholder_layout = QVBoxLayout(placeholder)
+            error_label = QLabel(f"Basic Sales module failed to load.\n\nError: {str(e)}")
+            error_label.setStyleSheet("""
+                QLabel {
+                    color: #dc2626;
+                    font-size: 14px;
+                    padding: 20px;
+                    background-color: #fef2f2;
+                    border: 1px solid #fecaca;
+                    border-radius: 8px;
+                    margin: 20px;
+                }
+            """)
+            error_label.setAlignment(Qt.AlignCenter)
+            placeholder_layout.addWidget(error_label)
+            sales_tabs.addTab(placeholder, "📝 Record Sales")
+            self.logger.error(f"Basic sales module failed to load: {e}")
+
+        # Tab 2: Order Management
+        order_management_widget = None
         try:
             from modules.sales_order_management import SalesOrderManagementWidget
 
@@ -3355,31 +3807,60 @@ class KitchenDashboardApp(QMainWindow):
             except Exception as e:
                 self.logger.warning(f"Could not load pricing data: {e}")
 
-            sales_widget = SalesOrderManagementWidget(self.data, pricing_data)
-            self.logger.info("Using simplified sales order management widget")
+            order_management_widget = SalesOrderManagementWidget(self.data, pricing_data)
+            sales_tabs.addTab(order_management_widget, "🛒 Order Management")
+            self.logger.info("Sales order management widget loaded successfully")
 
         except Exception as e:
-            # Create placeholder if module fails to load
-            self.logger.error(f"Error using order management widget: {str(e)}")
+            # Create placeholder for order management
             placeholder = QWidget()
             placeholder_layout = QVBoxLayout(placeholder)
-            placeholder_layout.setContentsMargins(20, 20, 20, 20)
-
-            title_label = QLabel("Sales - Order Management")
-            title_label.setStyleSheet("font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 20px;")
-            title_label.setAlignment(Qt.AlignCenter)
-            placeholder_layout.addWidget(title_label)
-
-            error_label = QLabel("Order management functionality is currently unavailable.\nPlease try again later.")
-            error_label.setStyleSheet("color: red; font-size: 16px;")
+            error_label = QLabel(f"Order Management module failed to load.\n\nError: {str(e)}")
+            error_label.setStyleSheet("""
+                QLabel {
+                    color: #dc2626;
+                    font-size: 14px;
+                    padding: 20px;
+                    background-color: #fef2f2;
+                    border: 1px solid #fecaca;
+                    border-radius: 8px;
+                    margin: 20px;
+                }
+            """)
             error_label.setAlignment(Qt.AlignCenter)
             placeholder_layout.addWidget(error_label)
+            sales_tabs.addTab(placeholder, "🛒 Order Management")
+            self.logger.error(f"Order management module failed to load: {e}")
 
-            sales_widget = placeholder
-            self.logger.error("Order management module failed to load")
+        # Connect signals between widgets if both were created successfully
+        try:
+            if 'basic_sales_widget' in locals() and order_management_widget is not None:
+                # Connect the sale_deleted signal to refresh the order management
+                basic_sales_widget.sale_deleted.connect(lambda: self.refresh_order_management(order_management_widget))
+                # Connect the sale_added signal to refresh the order management
+                basic_sales_widget.sale_added.connect(lambda: self.refresh_order_management(order_management_widget))
+                self.logger.info("Connected basic sales widget to order management for cross-tab updates")
+        except Exception as e:
+            self.logger.warning(f"Could not connect sales widgets: {e}")
 
-        # Add the widget to the content layout
-        self.content_layout.addWidget(sales_widget)
+        # Add the tabbed widget to the content layout
+        self.content_layout.addWidget(sales_tabs)
+
+    def refresh_order_management(self, order_management_widget):
+        """Refresh the order management widget when a sale is added or deleted"""
+        try:
+            # Reload the sales_orders data
+            self.data = self.load_data()
+
+            # Update the widget's data
+            order_management_widget.data = self.data
+
+            # Refresh the orders display
+            order_management_widget.load_orders()
+
+            self.logger.info("Order management widget refreshed after sale change")
+        except Exception as e:
+            self.logger.error(f"Error refreshing order management widget: {e}")
 
     def show_platform_reports_page(self):
         """Display the platform reports page (Zomato/Swiggy specific)"""
@@ -3451,17 +3932,21 @@ class KitchenDashboardApp(QMainWindow):
         # Import the packing materials module
         try:
             from modules.packing_materials import PackingMaterialsWidget
+            self.logger.info("Packing materials module imported successfully")
             packing_widget = PackingMaterialsWidget(self.data)
-            self.logger.info("Using packing materials widget")
+            self.logger.info("Packing materials widget created successfully")
         except Exception as e:
             # Create placeholder if module fails to load
             self.logger.error(f"Error loading packing materials widget: {str(e)}")
+            import traceback
+            self.logger.error(f"Full traceback: {traceback.format_exc()}")
             placeholder = QWidget()
             placeholder_layout = QVBoxLayout(placeholder)
             placeholder_layout.setContentsMargins(20, 20, 20, 20)
-            error_label = QLabel("Packing materials functionality is currently unavailable.\nPlease try again later.")
+            error_label = QLabel(f"Packing materials functionality is currently unavailable.\nError: {str(e)}")
             error_label.setStyleSheet("color: red; font-size: 16px;")
             error_label.setAlignment(Qt.AlignCenter)
+            error_label.setWordWrap(True)
             placeholder_layout.addWidget(error_label)
             packing_widget = placeholder
             self.logger.error("Packing materials module failed to load")
