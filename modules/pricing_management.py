@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QAbstractItemView, QMenu, QInputDialog)
 from PySide6.QtCore import Qt, Signal, QDate, QTimer, QPoint
 from PySide6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QAction
+from utils.table_styling import apply_universal_column_resizing
 
 # Import notification system
 try:
@@ -170,7 +171,41 @@ class PricingManagementWidget(QWidget):
         }
 
     def init_recipe_pricing_data(self):
-        """Initialize recipe pricing data from user's Excel calculations"""
+        """Initialize recipe pricing data from CSV files first, then fallback to hardcoded data"""
+        # First try to load from CSV files
+        self.recipe_pricing_data = {}
+
+        # Load from main pricing CSV file
+        try:
+            import os
+            import pandas as pd
+
+            pricing_csv_path = os.path.join('data', 'pricing.csv')
+            if os.path.exists(pricing_csv_path):
+                pricing_df = pd.read_csv(pricing_csv_path)
+                self.logger.info(f"Loading pricing data from {pricing_csv_path}")
+
+                for _, row in pricing_df.iterrows():
+                    recipe_name = row.get('recipe_name', '')
+                    if recipe_name:
+                        self.recipe_pricing_data[recipe_name] = {
+                            'others_pricing': float(row.get('others_pricing', 0)),
+                            'our_pricing': float(row.get('our_pricing', 0)),
+                            'cooking_time': str(row.get('cooking_time', '')),
+                            'other_charges': float(row.get('other_charges', 2.0))
+                        }
+
+                self.logger.info(f"Loaded {len(self.recipe_pricing_data)} recipes from CSV")
+
+                # If we successfully loaded data from CSV, return early
+                if self.recipe_pricing_data:
+                    return
+
+        except Exception as e:
+            self.logger.error(f"Error loading pricing data from CSV: {e}")
+
+        # Fallback to hardcoded data if CSV loading fails
+        self.logger.info("Using fallback hardcoded pricing data")
         self.recipe_pricing_data = {
             # Basic Items
             "Dosa": {"others_pricing": 76, "our_pricing": 62, "cooking_time": "20 mins"},
@@ -445,9 +480,9 @@ class PricingManagementWidget(QWidget):
         overview_layout.setSpacing(16)
         
         # Initialize overview cards
-        self.avg_cost_card = PricingCard("Average Cost", "₹0", "Per Dish", "#ef4444")
-        self.avg_selling_price_card = PricingCard("Average Selling Price", "₹0", "Per Dish", "#10b981")
-        self.avg_profit_card = PricingCard("Average Profit", "₹0", "Per Dish", "#3b82f6")
+        self.avg_cost_card = PricingCard("Average Cost", "Rs.0", "Per Dish", "#ef4444")
+        self.avg_selling_price_card = PricingCard("Average Selling Price", "Rs.0", "Per Dish", "#10b981")
+        self.avg_profit_card = PricingCard("Average Profit", "Rs.0", "Per Dish", "#3b82f6")
         self.avg_margin_card = PricingCard("Average Margin", "0%", "Profit Percentage", "#8b5cf6")
         
         overview_layout.addWidget(self.avg_cost_card, 0, 0)
@@ -599,8 +634,23 @@ class PricingManagementWidget(QWidget):
         self.cost_table.setHorizontalHeaderLabels([
             "Recipe Name", "Cost of Making", "Others Pricing", "Our Pricing",
             "Profit", "Current Profit %", "PKG Cost", "Other Charges",
-            "Electricity Cost", "Gas Cost", "GST Amount"
+            "Electricity Cost", "Gas Cost", "GST+SGST Amount"
         ])
+
+        # Simple column resizing for pricing cost table
+        header = self.cost_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.cost_table.setColumnWidth(0, 180)  # Recipe Name
+        self.cost_table.setColumnWidth(1, 120)  # Cost of Making
+        self.cost_table.setColumnWidth(2, 120)  # Others Pricing
+        self.cost_table.setColumnWidth(3, 120)  # Our Pricing
+        self.cost_table.setColumnWidth(4, 100)  # Profit
+        self.cost_table.setColumnWidth(5, 120)  # Current Profit %
+        self.cost_table.setColumnWidth(6, 100)  # PKG Cost
+        self.cost_table.setColumnWidth(7, 120)  # Other Charges
+        self.cost_table.setColumnWidth(8, 120)  # Electricity Cost
+        self.cost_table.setColumnWidth(9, 100)  # Gas Cost
+        self.cost_table.setColumnWidth(10, 140) # GST+SGST Amount
         
         # Modern table styling
         self.cost_table.setStyleSheet("""
@@ -715,22 +765,23 @@ class PricingManagementWidget(QWidget):
         self.pricing_table = QTableWidget()
         self.pricing_table.setColumnCount(7)
         self.pricing_table.setHorizontalHeaderLabels([
-            "Recipe Name", "Total Cost", "Others Pricing", "Margin Value", 
+            "Recipe Name", "Total Cost", "Others Pricing", "Margin Value",
             "Our Pricing", "Selling Price", "Profit"
         ])
-        
+
         # Apply modern styling
         self.pricing_table.setStyleSheet(self.cost_table.styleSheet())
-        
-        # Set column widths
+
+        # Simple column resizing for pricing strategy table
         header = self.pricing_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)           # Recipe Name
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Total Cost
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Others Pricing
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Margin Value
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Our Pricing
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Selling Price
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Profit
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.pricing_table.setColumnWidth(0, 180)  # Recipe Name
+        self.pricing_table.setColumnWidth(1, 120)  # Total Cost
+        self.pricing_table.setColumnWidth(2, 120)  # Others Pricing
+        self.pricing_table.setColumnWidth(3, 120)  # Margin Value
+        self.pricing_table.setColumnWidth(4, 120)  # Our Pricing
+        self.pricing_table.setColumnWidth(5, 120)  # Selling Price
+        self.pricing_table.setColumnWidth(6, 100)  # Profit
 
         # Enable right-click context menu for editable columns
         self.pricing_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -778,9 +829,19 @@ class PricingManagementWidget(QWidget):
         self.profit_table = QTableWidget()
         self.profit_table.setColumnCount(6)
         self.profit_table.setHorizontalHeaderLabels([
-            "Recipe Name", "Selling Price", "Total Cost", "Profit", 
+            "Recipe Name", "Selling Price", "Total Cost", "Profit",
             "Profit %", "Status"
         ])
+
+        # Simple column resizing for profit analysis table
+        header = self.profit_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.profit_table.setColumnWidth(0, 180)  # Recipe Name
+        self.profit_table.setColumnWidth(1, 120)  # Selling Price
+        self.profit_table.setColumnWidth(2, 120)  # Total Cost
+        self.profit_table.setColumnWidth(3, 100)  # Profit
+        self.profit_table.setColumnWidth(4, 100)  # Profit %
+        self.profit_table.setColumnWidth(5, 100)  # Status
         
         # Apply modern styling
         self.profit_table.setStyleSheet(self.cost_table.styleSheet())
@@ -945,10 +1006,21 @@ class PricingManagementWidget(QWidget):
             "Scaled Total Cost", "Cost per Unit", "Profit Margin", "Bulk Savings"
         ])
 
+        # Simple column resizing for scaling table
+        header = self.scaling_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.scaling_table.setColumnWidth(0, 180)  # Recipe Name
+        self.scaling_table.setColumnWidth(1, 120)  # Single Cost
+        self.scaling_table.setColumnWidth(2, 120)  # Scaled Quantity
+        self.scaling_table.setColumnWidth(3, 140)  # Scaled Ingredient Cost
+        self.scaling_table.setColumnWidth(4, 140)  # Scaled Total Cost
+        self.scaling_table.setColumnWidth(5, 120)  # Cost per Unit
+        self.scaling_table.setColumnWidth(6, 120)  # Profit Margin
+        self.scaling_table.setColumnWidth(7, 120)  # Bulk Savings
+
         # Set table properties
         self.scaling_table.setAlternatingRowColors(True)
         self.scaling_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.scaling_table.horizontalHeader().setStretchLastSection(True)
 
         layout.addWidget(self.scaling_table)
 
@@ -973,7 +1045,7 @@ class PricingManagementWidget(QWidget):
                 single_ingredient_cost = self.calculate_ingredient_cost(recipe_id)
                 single_making_cost = single_ingredient_cost * 0.2
                 single_packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
-                single_electricity_cost = self.calculate_electricity_cost(recipe.get('cook_time', 30))
+                single_electricity_cost = self.calculate_electricity_cost(recipe.get('cook_time', 30), recipe_name=recipe_name)
                 single_gas_cost = self.calculate_gas_cost(recipe_data=recipe)
                 single_other_charges = 2.0
                 single_total_cost = (single_ingredient_cost + single_making_cost +
@@ -1008,15 +1080,15 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.scaling_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.scaling_table.setItem(row, 1, QTableWidgetItem(f"₹{single_total_cost:.2f}"))
+                self.scaling_table.setItem(row, 1, QTableWidgetItem(f"Rs.{single_total_cost:.2f}"))
                 self.scaling_table.setItem(row, 2, QTableWidgetItem(f"{scale_factor}x"))
-                self.scaling_table.setItem(row, 3, QTableWidgetItem(f"₹{scaled_ingredient_cost:.2f}"))
-                self.scaling_table.setItem(row, 4, QTableWidgetItem(f"₹{scaled_total_cost:.2f}"))
-                self.scaling_table.setItem(row, 5, QTableWidgetItem(f"₹{cost_per_unit:.2f}"))
+                self.scaling_table.setItem(row, 3, QTableWidgetItem(f"Rs.{scaled_ingredient_cost:.2f}"))
+                self.scaling_table.setItem(row, 4, QTableWidgetItem(f"Rs.{scaled_total_cost:.2f}"))
+                self.scaling_table.setItem(row, 5, QTableWidgetItem(f"Rs.{cost_per_unit:.2f}"))
                 self.scaling_table.setItem(row, 6, QTableWidgetItem(f"{profit_margin:.1f}%"))
 
                 # Color code savings
-                savings_item = QTableWidgetItem(f"₹{bulk_savings_per_unit:.2f} ({bulk_savings_percentage:.1f}%)")
+                savings_item = QTableWidgetItem(f"Rs.{bulk_savings_per_unit:.2f} ({bulk_savings_percentage:.1f}%)")
                 if bulk_savings_percentage > 15:
                     savings_item.setForeground(QColor("#27ae60"))  # Green for good savings
                 elif bulk_savings_percentage > 10:
@@ -1095,7 +1167,7 @@ class PricingManagementWidget(QWidget):
     def on_cost_breakdown_updated(self, recipe_id, new_cost):
         """Handle cost breakdown updates"""
         try:
-            self.logger.info(f"Cost updated for recipe {recipe_id}: ₹{new_cost:.2f}")
+            self.logger.info(f"Cost updated for recipe {recipe_id}: Rs.{new_cost:.2f}")
             # Refresh pricing data
             self.load_data()
 
@@ -1139,6 +1211,9 @@ class PricingManagementWidget(QWidget):
     def load_data(self):
         """Load and display pricing data"""
         try:
+            # First reload pricing data from CSV to get latest updates
+            self.reload_pricing_data_from_csv()
+
             self.populate_cost_analysis()
             self.populate_pricing_strategy()
             self.populate_profit_analysis()
@@ -1179,7 +1254,8 @@ class PricingManagementWidget(QWidget):
 
                 # Calculate electricity and gas costs based on preparation time
                 cook_time = recipe.get('cook_time', 30)  # Default 30 minutes
-                electricity_cost = self.calculate_electricity_cost(cook_time)
+                recipe_name = recipe.get('recipe_name', '')
+                electricity_cost = self.calculate_electricity_cost(cook_time, recipe_name=recipe_name)
                 gas_cost = self.calculate_gas_cost(recipe_data=recipe)
 
                 other_charges = 2.0  # Default other charges
@@ -1194,15 +1270,15 @@ class PricingManagementWidget(QWidget):
                 
                 # Populate table
                 self.cost_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.cost_table.setItem(row, 1, QTableWidgetItem(f"₹{ingredient_cost:.2f}"))
-                self.cost_table.setItem(row, 2, QTableWidgetItem(f"₹{making_cost:.2f}"))
-                self.cost_table.setItem(row, 3, QTableWidgetItem(f"₹{packaging_cost:.2f}"))
-                self.cost_table.setItem(row, 4, QTableWidgetItem(f"₹{electricity_cost:.2f}"))
-                self.cost_table.setItem(row, 5, QTableWidgetItem(f"₹{gas_cost:.2f}"))
-                self.cost_table.setItem(row, 6, QTableWidgetItem(f"₹{other_charges:.2f}"))
-                self.cost_table.setItem(row, 7, QTableWidgetItem(f"₹{total_cost:.2f}"))
-                self.cost_table.setItem(row, 8, QTableWidgetItem(f"₹{gst_amount:.2f}"))
-                self.cost_table.setItem(row, 9, QTableWidgetItem(f"₹{final_cost:.2f}"))
+                self.cost_table.setItem(row, 1, QTableWidgetItem(f"Rs.{ingredient_cost:.2f}"))
+                self.cost_table.setItem(row, 2, QTableWidgetItem(f"Rs.{making_cost:.2f}"))
+                self.cost_table.setItem(row, 3, QTableWidgetItem(f"Rs.{packaging_cost:.2f}"))
+                self.cost_table.setItem(row, 4, QTableWidgetItem(f"Rs.{electricity_cost:.2f}"))
+                self.cost_table.setItem(row, 5, QTableWidgetItem(f"Rs.{gas_cost:.2f}"))
+                self.cost_table.setItem(row, 6, QTableWidgetItem(f"Rs.{other_charges:.2f}"))
+                self.cost_table.setItem(row, 7, QTableWidgetItem(f"Rs.{total_cost:.2f}"))
+                self.cost_table.setItem(row, 8, QTableWidgetItem(f"Rs.{gst_amount:.2f}"))
+                self.cost_table.setItem(row, 9, QTableWidgetItem(f"Rs.{final_cost:.2f}"))
                 self.cost_table.setItem(row, 10, QTableWidgetItem(f"{overhead_percentage:.1f}%"))
                 
         except Exception as e:
@@ -1231,14 +1307,19 @@ class PricingManagementWidget(QWidget):
 
                 # Calculate standard charges
                 pkg_cost = self.calculate_actual_packaging_cost(recipe_name)
-                electricity_cost = 3.0  # Standard 3 rupees as per user requirement
+
+                # Calculate electricity cost using proper method with cooking time
+                cook_time = recipe.get('cook_time', 30)  # Default 30 minutes if not specified
+                electricity_cost = self.calculate_electricity_cost(cook_time, recipe_name=recipe_name)
+
                 gas_cost = self.calculate_gas_cost(recipe_data=recipe)
                 other_charges = 2.0  # Standard 2 rupees as per user requirement
 
-                # Calculate GST (18% on total cost)
+                # Calculate GST+SGST using configurable rates
+                gst_sgst_rates = self.get_tax_rates()
                 if cost_of_making is not None and cost_of_making > 0:
                     total_base_cost = cost_of_making + pkg_cost + electricity_cost + gas_cost + other_charges
-                    gst_amount = total_base_cost * 0.18
+                    gst_amount = total_base_cost * (gst_sgst_rates['gst_rate'] + gst_sgst_rates['sgst_rate'])
                 else:
                     total_base_cost = 0
                     gst_amount = 0
@@ -1248,7 +1329,7 @@ class PricingManagementWidget(QWidget):
 
                 # Cost of Making - calculated from actual ingredients
                 if cost_of_making is not None and cost_of_making > 0:
-                    self.cost_table.setItem(row, 1, QTableWidgetItem(f"₹{cost_of_making:.2f}"))
+                    self.cost_table.setItem(row, 1, QTableWidgetItem(f"Rs.{cost_of_making:.2f}"))
 
                     # Calculate profit if we have our pricing
                     if our_pricing is not None:
@@ -1258,15 +1339,15 @@ class PricingManagementWidget(QWidget):
 
                         # Others Pricing
                         if others_pricing is not None:
-                            self.cost_table.setItem(row, 2, QTableWidgetItem(f"₹{others_pricing:.2f}"))
+                            self.cost_table.setItem(row, 2, QTableWidgetItem(f"Rs.{others_pricing:.2f}"))
                         else:
                             self.cost_table.setItem(row, 2, QTableWidgetItem("N/A"))
 
                         # Our Pricing
-                        self.cost_table.setItem(row, 3, QTableWidgetItem(f"₹{our_pricing:.2f}"))
+                        self.cost_table.setItem(row, 3, QTableWidgetItem(f"Rs.{our_pricing:.2f}"))
 
                         # Profit
-                        profit_item = QTableWidgetItem(f"₹{profit:.2f}")
+                        profit_item = QTableWidgetItem(f"Rs.{profit:.2f}")
                         if profit > 0:
                             profit_item.setForeground(QColor("#10b981"))  # Green
                         else:
@@ -1294,11 +1375,11 @@ class PricingManagementWidget(QWidget):
                         self.cost_table.setItem(row, col, QTableWidgetItem("N/A"))
 
                 # Set standard charges columns with actual values
-                self.cost_table.setItem(row, 6, QTableWidgetItem(f"₹{pkg_cost:.2f}"))  # PKG Cost
-                self.cost_table.setItem(row, 7, QTableWidgetItem(f"₹{other_charges:.2f}"))  # Other Charges
-                self.cost_table.setItem(row, 8, QTableWidgetItem(f"₹{electricity_cost:.2f}"))  # Electricity Cost
-                self.cost_table.setItem(row, 9, QTableWidgetItem(f"₹{gas_cost:.2f}"))  # Gas Cost
-                self.cost_table.setItem(row, 10, QTableWidgetItem(f"₹{gst_amount:.2f}"))  # GST Amount
+                self.cost_table.setItem(row, 6, QTableWidgetItem(f"Rs.{pkg_cost:.2f}"))  # PKG Cost
+                self.cost_table.setItem(row, 7, QTableWidgetItem(f"Rs.{other_charges:.2f}"))  # Other Charges
+                self.cost_table.setItem(row, 8, QTableWidgetItem(f"Rs.{electricity_cost:.2f}"))  # Electricity Cost
+                self.cost_table.setItem(row, 9, QTableWidgetItem(f"Rs.{gas_cost:.2f}"))  # Gas Cost
+                self.cost_table.setItem(row, 10, QTableWidgetItem(f"Rs.{gst_amount:.2f}"))  # GST Amount
 
         except Exception as e:
             self.logger.error(f"Error populating cost analysis: {e}")
@@ -1341,12 +1422,12 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.pricing_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.pricing_table.setItem(row, 1, QTableWidgetItem(f"₹{total_cost:.2f}"))
-                self.pricing_table.setItem(row, 2, QTableWidgetItem(f"₹{others_pricing:.2f}"))
-                self.pricing_table.setItem(row, 3, QTableWidgetItem(f"₹{margin_value:.2f}"))
-                self.pricing_table.setItem(row, 4, QTableWidgetItem(f"₹{our_pricing:.2f}"))
-                self.pricing_table.setItem(row, 5, QTableWidgetItem(f"₹{selling_price:.2f}"))
-                self.pricing_table.setItem(row, 6, QTableWidgetItem(f"₹{profit:.2f}"))
+                self.pricing_table.setItem(row, 1, QTableWidgetItem(f"Rs.{total_cost:.2f}"))
+                self.pricing_table.setItem(row, 2, QTableWidgetItem(f"Rs.{others_pricing:.2f}"))
+                self.pricing_table.setItem(row, 3, QTableWidgetItem(f"Rs.{margin_value:.2f}"))
+                self.pricing_table.setItem(row, 4, QTableWidgetItem(f"Rs.{our_pricing:.2f}"))
+                self.pricing_table.setItem(row, 5, QTableWidgetItem(f"Rs.{selling_price:.2f}"))
+                self.pricing_table.setItem(row, 6, QTableWidgetItem(f"Rs.{profit:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating pricing strategy (no missing check): {e}")
@@ -1405,14 +1486,14 @@ class PricingManagementWidget(QWidget):
                 self.profit_table.setItem(row, 0, QTableWidgetItem(recipe_name))
 
                 if our_pricing is not None:
-                    self.profit_table.setItem(row, 1, QTableWidgetItem(f"₹{our_pricing:.2f}"))
+                    self.profit_table.setItem(row, 1, QTableWidgetItem(f"Rs.{our_pricing:.2f}"))
                 else:
                     self.profit_table.setItem(row, 1, QTableWidgetItem("Soon"))
 
-                self.profit_table.setItem(row, 2, QTableWidgetItem(f"₹{cost_of_making:.2f}"))
+                self.profit_table.setItem(row, 2, QTableWidgetItem(f"Rs.{cost_of_making:.2f}"))
 
                 if profit is not None:
-                    profit_item = QTableWidgetItem(f"₹{profit:.2f}")
+                    profit_item = QTableWidgetItem(f"Rs.{profit:.2f}")
                     if profit > 0:
                         profit_item.setForeground(QColor("#10b981"))
                     else:
@@ -1473,13 +1554,13 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.discount_table.setItem(row, 1, QTableWidgetItem(f"₹{original_price:.2f}"))
-                self.discount_table.setItem(row, 2, QTableWidgetItem(f"₹{discount_10:.2f}"))
-                self.discount_table.setItem(row, 3, QTableWidgetItem(f"₹{discount_15:.2f}"))
-                self.discount_table.setItem(row, 4, QTableWidgetItem(f"₹{discount_25:.2f}"))
-                self.discount_table.setItem(row, 5, QTableWidgetItem(f"₹{discount_30:.2f}"))
-                self.discount_table.setItem(row, 6, QTableWidgetItem(f"₹{discount_40:.2f}"))
-                self.discount_table.setItem(row, 7, QTableWidgetItem(f"₹{min_profitable:.2f}"))
+                self.discount_table.setItem(row, 1, QTableWidgetItem(f"Rs.{original_price:.2f}"))
+                self.discount_table.setItem(row, 2, QTableWidgetItem(f"Rs.{discount_10:.2f}"))
+                self.discount_table.setItem(row, 3, QTableWidgetItem(f"Rs.{discount_15:.2f}"))
+                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
+                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
+                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
+                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{min_profitable:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating discount analysis (no missing check): {e}")
@@ -1509,7 +1590,7 @@ class PricingManagementWidget(QWidget):
                 if unit_price > 0:
                     ingredient_cost = quantity * unit_price
                     total_cost += ingredient_cost
-                    self.logger.debug(f"Recipe {recipe_id}: {item_name} = {quantity} {unit} × ₹{unit_price} = ₹{ingredient_cost:.4f}")
+                    self.logger.debug(f"Recipe {recipe_id}: {item_name} = {quantity} {unit} × Rs.{unit_price} = Rs.{ingredient_cost:.4f}")
                 else:
                     missing_ingredients.append({
                         'item_name': item_name,
@@ -1659,7 +1740,7 @@ class PricingManagementWidget(QWidget):
             total_cost = converted_quantity * price_per_unit
 
             # Log the conversion for debugging
-            self.logger.debug(f"Unit conversion for {item_name}: {recipe_quantity} {recipe_unit} = {converted_quantity} {inventory_unit}, cost = ₹{total_cost:.2f}")
+            self.logger.debug(f"Unit conversion for {item_name}: {recipe_quantity} {recipe_unit} = {converted_quantity} {inventory_unit}, cost = Rs.{total_cost:.2f}")
 
             return total_cost
 
@@ -1879,7 +1960,7 @@ class PricingManagementWidget(QWidget):
                 else:
                     return None
 
-                # Return reasonable price (cap at ₹1000 per unit to avoid extreme values)
+                # Return reasonable price (cap at Rs.1000 per unit to avoid extreme values)
                 return min(price, 1000.0)
 
             # Try partial match
@@ -1932,7 +2013,7 @@ class PricingManagementWidget(QWidget):
                 else:
                     return None
 
-                # Return reasonable price (cap at ₹1000 per unit to avoid extreme values)
+                # Return reasonable price (cap at Rs.1000 per unit to avoid extreme values)
                 return min(price, 1000.0)
 
             # Try partial match
@@ -1950,7 +2031,7 @@ class PricingManagementWidget(QWidget):
                 else:
                     return None
 
-                # Return reasonable price (cap at ₹1000 per unit to avoid extreme values)
+                # Return reasonable price (cap at Rs.1000 per unit to avoid extreme values)
                 return min(price, 1000.0)
 
             return None
@@ -2020,21 +2101,49 @@ class PricingManagementWidget(QWidget):
             self.logger.error(f"Error calculating cost from recipe ingredients: {e}")
             return 10.0
 
-    def calculate_electricity_cost(self, cook_time_minutes):
-        """Calculate electricity cost based on cooking time"""
+    def calculate_electricity_cost(self, cook_time_minutes, recipe_name=None, selected_appliance=None):
+        """Calculate electricity cost - basic ₹0.50 for all items unless specifically mapped to electric appliances"""
         try:
-            # Assumptions:
-            # - Average cooking appliance uses 2 kW
-            # - Electricity rate: ₹6 per kWh
-            power_kw = 2.0
-            rate_per_kwh = 6.0
-            hours = cook_time_minutes / 60.0
+            # Load electricity cost configuration
+            electricity_config = self.load_electricity_cost_config()
+            electricity_settings = electricity_config.get('electricity_settings', {})
+            appliances = electricity_config.get('appliances', {})
+            recipe_mapping = electricity_config.get('recipe_appliance_mapping', {})
 
+            # Get basic settings
+            rate_per_kwh = electricity_settings.get('electricity_rate_per_kwh_inr', 7.50)
+            basic_charge = electricity_settings.get('minimum_cost_inr', 0.50)  # Basic ₹0.50 for tubelight
+
+            # Check if recipe is specifically mapped to an electric appliance
+            appliance_name = selected_appliance
+            if not appliance_name and recipe_name:
+                appliance_name = recipe_mapping.get(recipe_name)
+
+            # If no specific appliance mapping, return basic charge (tubelight only)
+            if not appliance_name:
+                self.logger.debug(f"Electricity cost: {recipe_name} using basic charge (tubelight only) = Rs.{basic_charge:.2f}")
+                return basic_charge
+
+            # Calculate actual appliance cost for mapped dishes
+            appliance_data = appliances.get(appliance_name, {})
+            power_kw = appliance_data.get('power_consumption_kw', 0.0)
+
+            if power_kw == 0.0:
+                # If appliance has 0 power (like Basic Kitchen Lighting), return basic charge
+                return basic_charge
+
+            # Calculate actual electricity cost for electric appliances
+            hours = cook_time_minutes / 60.0
             cost = power_kw * hours * rate_per_kwh
-            return max(cost, 0.5)  # Minimum ₹0.5
+            final_cost = max(cost, basic_charge)  # Never less than basic charge
+
+            self.logger.debug(f"Electricity cost calculated: {recipe_name} using {appliance_name} "
+                            f"({power_kw}kW) for {cook_time_minutes}min = Rs.{final_cost:.2f}")
+            return final_cost
+
         except Exception as e:
             self.logger.error(f"Error calculating electricity cost: {e}")
-            return 1.0
+            return 0.50  # Return basic charge on error
 
     def calculate_gas_cost(self, recipe_data=None, cook_time_minutes=None):
         """Calculate gas cost based on total preparation time (prep_time + cook_time)"""
@@ -2078,7 +2187,7 @@ class PricingManagementWidget(QWidget):
             cost = gas_consumption_per_hour * hours * rate_per_kg
             final_cost = max(cost, minimum_cost)
 
-            self.logger.debug(f"Gas cost calculated: {total_time_minutes}min = ₹{final_cost:.2f}")
+            self.logger.debug(f"Gas cost calculated: {total_time_minutes}min = Rs.{final_cost:.2f}")
             return final_cost
 
         except Exception as e:
@@ -2102,6 +2211,75 @@ class PricingManagementWidget(QWidget):
         except Exception as e:
             self.logger.error(f"Error loading gas cost config: {e}")
             return {}
+
+    def load_electricity_cost_config(self):
+        """Load electricity cost configuration from JSON file"""
+        try:
+            import json
+            import os
+
+            config_path = os.path.join('data', 'electricity_cost_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                self.logger.warning(f"Electricity cost config file not found at {config_path}, using defaults")
+                return {
+                    "electricity_settings": {
+                        "default_appliance": "Basic Kitchen Lighting",
+                        "electricity_rate_per_kwh_inr": 7.50,
+                        "minimum_cost_inr": 0.50,
+                        "use_cooking_time_only": True
+                    },
+                    "appliances": {
+                        "Basic Kitchen Lighting": {"power_consumption_kw": 0.0},
+                        "Electric Induction Cooktop": {"power_consumption_kw": 2.0},
+                        "Mixer": {"power_consumption_kw": 0.5}
+                    }
+                }
+        except Exception as e:
+            self.logger.error(f"Error loading electricity cost config: {e}")
+            return {
+                "electricity_settings": {
+                    "default_appliance": "Basic Kitchen Lighting",
+                    "electricity_rate_per_kwh_inr": 7.50,
+                    "minimum_cost_inr": 0.50,
+                    "use_cooking_time_only": True
+                },
+                "appliances": {
+                    "Basic Kitchen Lighting": {"power_consumption_kw": 0.0},
+                    "Electric Induction Cooktop": {"power_consumption_kw": 2.0},
+                    "Mixer": {"power_consumption_kw": 0.5}
+                }
+            }
+
+    def get_tax_rates(self):
+        """Get GST and SGST rates from configuration"""
+        try:
+            # Try to load from settings file
+            import os
+            config_path = os.path.join('data', 'tax_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    import json
+                    tax_config = json.load(f)
+                    tax_settings = tax_config.get('tax_settings', {})
+                    return {
+                        'gst_rate': tax_settings.get('gst_rate', 0.075),  # 7.5%
+                        'sgst_rate': tax_settings.get('sgst_rate', 0.075)  # 7.5%
+                    }
+            else:
+                # Return default rates
+                return {
+                    'gst_rate': 0.075,  # 7.5% GST
+                    'sgst_rate': 0.075  # 7.5% SGST
+                }
+        except Exception as e:
+            self.logger.error(f"Error loading tax rates: {e}")
+            return {
+                'gst_rate': 0.075,  # 7.5% GST
+                'sgst_rate': 0.075  # 7.5% SGST
+            }
 
     def calculate_actual_packaging_cost(self, recipe_name):
         """Calculate actual packaging cost from in-memory data first, then CSV fallback"""
@@ -2127,9 +2305,9 @@ class PricingManagementWidget(QWidget):
                         # Debug information
                         materials_list = []
                         for _, row in recipe_materials.iterrows():
-                            materials_list.append(f"{row['material_name']} (₹{row['cost_per_recipe']:.2f})")
+                            materials_list.append(f"{row['material_name']} (Rs.{row['cost_per_recipe']:.2f})")
 
-                        self.logger.info(f"[SUCCESS] Packing cost from IN-MEMORY data for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
+                        self.logger.info(f"[SUCCESS] Packing cost from IN-MEMORY data for {recipe_name}: {', '.join(materials_list)} = Rs.{total_cost:.2f}")
                         return float(total_cost)
 
             # Fallback to CSV file if in-memory data is not available or empty
@@ -2151,9 +2329,9 @@ class PricingManagementWidget(QWidget):
                         # Debug information
                         materials_list = []
                         for _, row in recipe_materials.iterrows():
-                            materials_list.append(f"{row['material_name']} (₹{row['cost_per_recipe']:.2f})")
+                            materials_list.append(f"{row['material_name']} (Rs.{row['cost_per_recipe']:.2f})")
 
-                        self.logger.info(f"⚠️ Packing cost from CSV FALLBACK for {recipe_name}: {', '.join(materials_list)} = ₹{total_cost:.2f}")
+                        self.logger.info(f"⚠️ Packing cost from CSV FALLBACK for {recipe_name}: {', '.join(materials_list)} = Rs.{total_cost:.2f}")
                         return float(total_cost)
 
             # Final fallback - use default cost
@@ -2203,12 +2381,12 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.pricing_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.pricing_table.setItem(row, 1, QTableWidgetItem(f"₹{total_cost:.2f}"))
-                self.pricing_table.setItem(row, 2, QTableWidgetItem(f"₹{others_pricing:.2f}"))
-                self.pricing_table.setItem(row, 3, QTableWidgetItem(f"₹{margin_value:.2f}"))
-                self.pricing_table.setItem(row, 4, QTableWidgetItem(f"₹{our_pricing:.2f}"))
-                self.pricing_table.setItem(row, 5, QTableWidgetItem(f"₹{selling_price:.2f}"))
-                self.pricing_table.setItem(row, 6, QTableWidgetItem(f"₹{profit:.2f}"))
+                self.pricing_table.setItem(row, 1, QTableWidgetItem(f"Rs.{total_cost:.2f}"))
+                self.pricing_table.setItem(row, 2, QTableWidgetItem(f"Rs.{others_pricing:.2f}"))
+                self.pricing_table.setItem(row, 3, QTableWidgetItem(f"Rs.{margin_value:.2f}"))
+                self.pricing_table.setItem(row, 4, QTableWidgetItem(f"Rs.{our_pricing:.2f}"))
+                self.pricing_table.setItem(row, 5, QTableWidgetItem(f"Rs.{selling_price:.2f}"))
+                self.pricing_table.setItem(row, 6, QTableWidgetItem(f"Rs.{profit:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating pricing strategy: {e}")
@@ -2258,9 +2436,9 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.profit_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.profit_table.setItem(row, 1, QTableWidgetItem(f"₹{selling_price:.2f}"))
-                self.profit_table.setItem(row, 2, QTableWidgetItem(f"₹{total_cost:.2f}"))
-                self.profit_table.setItem(row, 3, QTableWidgetItem(f"₹{profit:.2f}"))
+                self.profit_table.setItem(row, 1, QTableWidgetItem(f"Rs.{selling_price:.2f}"))
+                self.profit_table.setItem(row, 2, QTableWidgetItem(f"Rs.{total_cost:.2f}"))
+                self.profit_table.setItem(row, 3, QTableWidgetItem(f"Rs.{profit:.2f}"))
                 self.profit_table.setItem(row, 4, QTableWidgetItem(f"{profit_percentage:.1f}%"))
 
                 status_item = QTableWidgetItem(status)
@@ -2309,13 +2487,13 @@ class PricingManagementWidget(QWidget):
 
                 # Populate table
                 self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.discount_table.setItem(row, 1, QTableWidgetItem(f"₹{original_price:.2f}"))
-                self.discount_table.setItem(row, 2, QTableWidgetItem(f"₹{discount_10:.2f}"))
-                self.discount_table.setItem(row, 3, QTableWidgetItem(f"₹{discount_15:.2f}"))
-                self.discount_table.setItem(row, 4, QTableWidgetItem(f"₹{discount_25:.2f}"))
-                self.discount_table.setItem(row, 5, QTableWidgetItem(f"₹{discount_30:.2f}"))
-                self.discount_table.setItem(row, 6, QTableWidgetItem(f"₹{discount_40:.2f}"))
-                self.discount_table.setItem(row, 7, QTableWidgetItem(f"₹{min_profitable:.2f}"))
+                self.discount_table.setItem(row, 1, QTableWidgetItem(f"Rs.{original_price:.2f}"))
+                self.discount_table.setItem(row, 2, QTableWidgetItem(f"Rs.{discount_10:.2f}"))
+                self.discount_table.setItem(row, 3, QTableWidgetItem(f"Rs.{discount_15:.2f}"))
+                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
+                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
+                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
+                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{min_profitable:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating discount analysis: {e}")
@@ -2358,9 +2536,9 @@ class PricingManagementWidget(QWidget):
                 avg_margin = (avg_profit / avg_cost * 100) if avg_cost > 0 else 0
 
                 # Update cards
-                self.avg_cost_card.findChildren(QLabel)[1].setText(f"₹{avg_cost:.2f}")
-                self.avg_selling_price_card.findChildren(QLabel)[1].setText(f"₹{avg_selling_price:.2f}")
-                self.avg_profit_card.findChildren(QLabel)[1].setText(f"₹{avg_profit:.2f}")
+                self.avg_cost_card.findChildren(QLabel)[1].setText(f"Rs.{avg_cost:.2f}")
+                self.avg_selling_price_card.findChildren(QLabel)[1].setText(f"Rs.{avg_selling_price:.2f}")
+                self.avg_profit_card.findChildren(QLabel)[1].setText(f"Rs.{avg_profit:.2f}")
                 self.avg_margin_card.findChildren(QLabel)[1].setText(f"{avg_margin:.1f}%")
             else:
                 # No valid recipes with complete pricing
@@ -2408,7 +2586,7 @@ class PricingManagementWidget(QWidget):
 
                     if ingredient_cost is not None and ingredient_cost > 0:
                         calculated_count += 1
-                        self.logger.info(f"Calculated cost for {recipe_name}: ₹{ingredient_cost:.2f}")
+                        self.logger.info(f"Calculated cost for {recipe_name}: Rs.{ingredient_cost:.2f}")
                     else:
                         # Check for missing ingredient prices
                         if 'recipe_ingredients' in self.data:
@@ -2743,7 +2921,7 @@ class PricingManagementWidget(QWidget):
                                 price = price_match.iloc[0].get('last_price', 0)
                                 if pd.notna(price) and price > 0:
                                     price_found = True
-                                    self.logger.info(f"    Pricing: [SUCCESS] Found pricing for '{matched_item_name}': ₹{price}")
+                                    self.logger.info(f"    Pricing: [SUCCESS] Found pricing for '{matched_item_name}': Rs.{price}")
 
                     # REVISED VALIDATION LOGIC: More intelligent missing item detection
                     # An item is considered "missing" only if it's truly unavailable for cooking
@@ -3022,7 +3200,7 @@ class PricingManagementWidget(QWidget):
 
         recipe_name = recipe_name_item.text()
         column_name = editable_columns[col]
-        current_value = item.text().replace('₹', '').replace(',', '').strip()
+        current_value = item.text().replace('Rs.', '').replace('₹', '').replace(',', '').strip()
 
         # Create context menu
         menu = QMenu(self)
@@ -3061,7 +3239,7 @@ class PricingManagementWidget(QWidget):
 
         recipe_name = recipe_name_item.text()
         column_name = editable_columns[col]
-        current_value = item.text().replace('₹', '').replace(',', '').strip()
+        current_value = item.text().replace('Rs.', '').replace('₹', '').replace(',', '').strip()
 
         # Create context menu
         menu = QMenu(self)
@@ -3094,7 +3272,7 @@ class PricingManagementWidget(QWidget):
             return
 
         recipe_name = recipe_name_item.text()
-        current_value = item.text().replace('₹', '').replace(',', '').strip()
+        current_value = item.text().replace('Rs.', '').replace('₹', '').replace(',', '').strip()
 
         # Create context menu
         menu = QMenu(self)
@@ -3130,7 +3308,7 @@ class PricingManagementWidget(QWidget):
 
             if ok:
                 # Update the table cell
-                table.setItem(row, col, QTableWidgetItem(f"₹{new_value:.2f}"))
+                table.setItem(row, col, QTableWidgetItem(f"Rs.{new_value:.2f}"))
 
                 # Update the underlying data
                 self.update_recipe_pricing_data(recipe_name, field_name, new_value)
@@ -3144,7 +3322,7 @@ class PricingManagementWidget(QWidget):
                 # Show success notification
                 notify_success(
                     "Pricing Updated",
-                    f"Updated {field_name.lower()} for {recipe_name} to ₹{new_value:.2f}",
+                    f"Updated {field_name.lower()} for {recipe_name} to Rs.{new_value:.2f}",
                     parent=self
                 )
 
@@ -3185,15 +3363,19 @@ class PricingManagementWidget(QWidget):
         try:
             import os
 
-            # Prepare data for CSV
+            # Prepare data for CSV - use the same format as the main app expects
             csv_data = []
             for recipe_name, data in self.recipe_pricing_data.items():
                 csv_data.append({
+                    'recipe_id': recipe_name.lower().replace(' ', '_'),  # Generate ID from name
                     'recipe_name': recipe_name,
+                    'total_cost': self.calculate_total_cost_for_recipe(recipe_name),
+                    'cost_per_serving': self.calculate_cost_per_serving(recipe_name),
                     'others_pricing': data.get('others_pricing', 0),
                     'our_pricing': data.get('our_pricing', 0),
                     'cooking_time': data.get('cooking_time', ''),
-                    'other_charges': data.get('other_charges', 2.0)  # Default 2 rupees
+                    'other_charges': data.get('other_charges', 2.0),  # Default 2 rupees
+                    'last_calculated': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
 
             # Create DataFrame and save to CSV
@@ -3202,14 +3384,40 @@ class PricingManagementWidget(QWidget):
             # Ensure data directory exists
             os.makedirs('data', exist_ok=True)
 
-            # Save to CSV
-            csv_path = os.path.join('data', 'updated_pricing_data.csv')
+            # Save to the main pricing CSV file that the app loads from
+            csv_path = os.path.join('data', 'pricing.csv')
             df.to_csv(csv_path, index=False)
 
-            self.logger.info(f"Saved pricing data to {csv_path}")
+            # Also save to the backup file for compatibility
+            backup_path = os.path.join('data', 'updated_pricing_data.csv')
+            df.to_csv(backup_path, index=False)
+
+            self.logger.info(f"Saved pricing data to {csv_path} and {backup_path}")
 
         except Exception as e:
             self.logger.error(f"Error saving pricing data to CSV: {e}")
+
+    def calculate_total_cost_for_recipe(self, recipe_name):
+        """Calculate total cost for a recipe"""
+        try:
+            if recipe_name in self.recipe_pricing_data:
+                data = self.recipe_pricing_data[recipe_name]
+                # Basic cost calculation - can be enhanced
+                base_cost = 10.0  # Default base cost
+                other_charges = data.get('other_charges', 2.0)
+                return base_cost + other_charges
+            return 10.0
+        except:
+            return 10.0
+
+    def calculate_cost_per_serving(self, recipe_name):
+        """Calculate cost per serving for a recipe"""
+        try:
+            total_cost = self.calculate_total_cost_for_recipe(recipe_name)
+            # Assume 1 serving by default - can be enhanced with actual serving data
+            return total_cost
+        except:
+            return 10.0
 
     def update_javascript_pricing_data(self):
         """Update JavaScript pricing data file for consistency"""
@@ -3264,6 +3472,42 @@ class PricingManagementWidget(QWidget):
 
         except Exception as e:
             self.logger.error(f"Error refreshing pricing displays: {e}")
+
+    def reload_pricing_data_from_csv(self):
+        """Reload pricing data from CSV files to get latest updates"""
+        try:
+            import os
+            import pandas as pd
+
+            pricing_csv_path = os.path.join('data', 'pricing.csv')
+            if os.path.exists(pricing_csv_path):
+                pricing_df = pd.read_csv(pricing_csv_path)
+                self.logger.info(f"Reloading pricing data from {pricing_csv_path}")
+
+                # Clear existing data
+                self.recipe_pricing_data.clear()
+
+                # Load fresh data from CSV
+                for _, row in pricing_df.iterrows():
+                    recipe_name = row.get('recipe_name', '')
+                    if recipe_name:
+                        self.recipe_pricing_data[recipe_name] = {
+                            'others_pricing': float(row.get('others_pricing', 0)),
+                            'our_pricing': float(row.get('our_pricing', 0)),
+                            'cooking_time': str(row.get('cooking_time', '')),
+                            'other_charges': float(row.get('other_charges', 2.0))
+                        }
+
+                self.logger.info(f"Reloaded {len(self.recipe_pricing_data)} recipes from CSV")
+
+                # Refresh all displays with new data
+                self.refresh_all_pricing_displays()
+
+                return True
+
+        except Exception as e:
+            self.logger.error(f"Error reloading pricing data from CSV: {e}")
+            return False
 
 
 class AddRecipePricingDialog(QDialog):

@@ -11,6 +11,7 @@ from datetime import datetime
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
+from utils.table_styling import apply_universal_column_resizing
 
 # Add the parent directory to the path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -291,25 +292,21 @@ class PackingMaterialsWidget(QWidget):
             "Cost/Unit", "Current Stock", "Min Stock", "Supplier", "Status", "Edit", "Delete"
         ])
 
-        # Set column widths
+        # Simple column resizing for materials table
         header = self.materials_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # ID
-        header.setSectionResizeMode(1, QHeaderView.Fixed)  # Material Name - Fixed width
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Category
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Size
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Unit
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Cost/Unit
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Current Stock
-        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)  # Min Stock
-        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)  # Supplier
-        header.setSectionResizeMode(9, QHeaderView.ResizeToContents)  # Status
-        header.setSectionResizeMode(10, QHeaderView.Fixed)  # Edit
-        header.setSectionResizeMode(11, QHeaderView.Fixed)  # Delete
-
-        # Set specific column widths - MUCH WIDER TO GUARANTEE FIT
-        self.materials_table.setColumnWidth(1, 180)   # Material Name
-        self.materials_table.setColumnWidth(10, 100)  # Edit button - much wider
-        self.materials_table.setColumnWidth(11, 100)  # Delete button - much wider
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.materials_table.setColumnWidth(0, 60)   # ID
+        self.materials_table.setColumnWidth(1, 180)  # Material Name
+        self.materials_table.setColumnWidth(2, 120)  # Category
+        self.materials_table.setColumnWidth(3, 80)   # Size
+        self.materials_table.setColumnWidth(4, 60)   # Unit
+        self.materials_table.setColumnWidth(5, 100)  # Cost/Unit
+        self.materials_table.setColumnWidth(6, 120)  # Current Stock
+        self.materials_table.setColumnWidth(7, 100)  # Min Stock
+        self.materials_table.setColumnWidth(8, 150)  # Supplier
+        self.materials_table.setColumnWidth(9, 80)   # Status
+        self.materials_table.setColumnWidth(10, 100) # Edit
+        self.materials_table.setColumnWidth(11, 100) # Delete
 
         # Set row height
         self.materials_table.verticalHeader().setDefaultSectionSize(50)
@@ -648,24 +645,20 @@ class PackingMaterialsWidget(QWidget):
             "Last Price", "Current Price", "Avg Price", "Supplier", "Last Updated", "Buy", "History"
         ])
 
-        # Set column widths
+        # Simple column resizing for stock table
         header = self.stock_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Fixed)  # Material Name - Fixed width
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Current Stock
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Min Stock
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Status
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Last Price
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Current Price
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)  # Avg Price
-        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)  # Supplier
-        header.setSectionResizeMode(8, QHeaderView.ResizeToContents)  # Last Updated
-        header.setSectionResizeMode(9, QHeaderView.Fixed)  # Buy
-        header.setSectionResizeMode(10, QHeaderView.Fixed)  # History
-
-        # Set specific column widths - MUCH WIDER TO GUARANTEE FIT
-        self.stock_table.setColumnWidth(0, 180)   # Material Name
-        self.stock_table.setColumnWidth(9, 100)   # Buy button - much wider
-        self.stock_table.setColumnWidth(10, 120)  # History button - much wider
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.stock_table.setColumnWidth(0, 180)  # Material Name
+        self.stock_table.setColumnWidth(1, 120)  # Current Stock
+        self.stock_table.setColumnWidth(2, 100)  # Min Stock
+        self.stock_table.setColumnWidth(3, 80)   # Status
+        self.stock_table.setColumnWidth(4, 100)  # Last Price
+        self.stock_table.setColumnWidth(5, 100)  # Current Price
+        self.stock_table.setColumnWidth(6, 100)  # Avg Price
+        self.stock_table.setColumnWidth(7, 150)  # Supplier
+        self.stock_table.setColumnWidth(8, 120)  # Last Updated
+        self.stock_table.setColumnWidth(9, 100)  # Buy
+        self.stock_table.setColumnWidth(10, 120) # History
 
         # Set row height
         self.stock_table.verticalHeader().setDefaultSectionSize(50)
@@ -691,6 +684,30 @@ class PackingMaterialsWidget(QWidget):
         header_label.setStyleSheet("color: #2c3e50; margin-bottom: 10px;")
         header_layout.addWidget(header_label)
         header_layout.addStretch()
+
+        # Sync costs button
+        sync_costs_btn = QPushButton("🔄 Sync Updated Costs")
+        sync_costs_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e67e22;
+                color: white;
+                border: 1px solid #d35400;
+                padding: 8px 16px;
+                border-radius: 5px;
+                font-weight: bold;
+                min-width: 140px;
+            }
+            QPushButton:hover {
+                background-color: #d35400;
+                border-color: #c0392b;
+            }
+            QPushButton:pressed {
+                background-color: #c0392b;
+            }
+        """)
+        sync_costs_btn.clicked.connect(self.sync_costs_with_purchase_history)
+        sync_costs_btn.setToolTip("Sync purchase history when material costs are updated manually")
+        header_layout.addWidget(sync_costs_btn)
 
         # Export button
         export_btn = QPushButton("📊 Export History")
@@ -4284,6 +4301,125 @@ class EditPurchaseDialog(QDialog):
 
         except Exception as e:
             self.logger.error(f"Error updating material data: {e}")
+
+    def sync_purchase_history_with_updated_costs(self):
+        """Sync purchase history when packing materials costs are updated manually"""
+        try:
+            # Load current purchase history
+            purchase_history = self.load_purchase_history()
+
+            if purchase_history.empty:
+                return
+
+            # Get current materials data
+            materials_data = self.data.get('packing_materials', pd.DataFrame())
+            if materials_data.empty:
+                return
+
+            updated_records = []
+
+            # Check each material for cost updates
+            for _, material in materials_data.iterrows():
+                material_id = material['material_id']
+                material_name = material['material_name']
+                current_cost = float(material['cost_per_unit'])
+
+                # Get latest purchase for this material
+                material_purchases = purchase_history[purchase_history['material_id'] == material_id]
+
+                if not material_purchases.empty:
+                    latest_purchase = material_purchases.iloc[-1]
+                    latest_price = float(latest_purchase['price_per_unit'])
+
+                    # If cost has been updated and differs significantly from latest purchase
+                    if abs(current_cost - latest_price) > 0.01:  # More than 1 paisa difference
+                        # Create a new purchase record to reflect the cost update
+                        next_id = purchase_history['purchase_id'].max() + 1 if not purchase_history.empty else 1
+
+                        new_record = {
+                            'purchase_id': next_id,
+                            'material_id': material_id,
+                            'material_name': material_name,
+                            'purchase_date': datetime.now().strftime('%Y-%m-%d'),
+                            'quantity_purchased': 1.0,  # Nominal quantity for cost update
+                            'price_per_unit': current_cost,
+                            'total_cost': current_cost,
+                            'supplier': 'Cost Update',
+                            'invoice_number': f'COST_UPDATE_{datetime.now().strftime("%Y%m%d%H%M%S")}',
+                            'notes': f'Automatic cost update - Indian pricing standards applied'
+                        }
+
+                        updated_records.append(new_record)
+                        self.logger.info(f"Created cost update record for {material_name}: ₹{latest_price:.2f} → ₹{current_cost:.2f}")
+
+            # Add new records to purchase history if any updates were made
+            if updated_records:
+                new_records_df = pd.DataFrame(updated_records)
+                updated_history = pd.concat([purchase_history, new_records_df], ignore_index=True)
+
+                # Save updated purchase history
+                os.makedirs('data', exist_ok=True)
+                updated_history.to_csv('data/packing_materials_purchase_history.csv', index=False)
+
+                self.logger.info(f"Synced {len(updated_records)} cost updates to purchase history")
+
+                # Refresh the display
+                self.load_data()
+
+                return len(updated_records)
+
+            return 0
+
+        except Exception as e:
+            self.logger.error(f"Error syncing purchase history with updated costs: {e}")
+            return 0
+
+    def sync_costs_with_purchase_history(self):
+        """Button handler to sync costs with purchase history"""
+        try:
+            # Show confirmation dialog
+            reply = QMessageBox.question(
+                self,
+                "Sync Costs",
+                "This will create purchase history records for materials with updated costs.\n\n"
+                "This is useful when you've manually updated material costs and want to\n"
+                "keep the purchase history synchronized.\n\n"
+                "Do you want to continue?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                # Show progress
+                progress = QProgressDialog("Syncing costs with purchase history...", "Cancel", 0, 0, self)
+                progress.setWindowModality(Qt.WindowModal)
+                progress.show()
+
+                # Perform sync
+                updated_count = self.sync_purchase_history_with_updated_costs()
+
+                progress.close()
+
+                # Show result
+                if updated_count > 0:
+                    QMessageBox.information(
+                        self,
+                        "Sync Complete",
+                        f"Successfully created {updated_count} purchase history records\n"
+                        f"to reflect updated material costs.\n\n"
+                        f"The purchase history is now synchronized with current pricing."
+                    )
+                else:
+                    QMessageBox.information(
+                        self,
+                        "No Updates Needed",
+                        "All material costs are already synchronized with purchase history.\n"
+                        "No new records were created."
+                    )
+
+        except Exception as e:
+            self.logger.error(f"Error in sync costs button handler: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to sync costs: {str(e)}")
 
 
 class EditMaterialDialog(QDialog):

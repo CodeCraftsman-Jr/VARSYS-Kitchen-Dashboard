@@ -205,9 +205,6 @@ recipe_id,ingredient_id,item_name,quantity,unit,notes
 36,204,Oil,20.0,ml,
 36,205,Chicken Gravy,100.0,grams,
 36,206,Dosa batter,150.0,grams,
-1,207,Oil,20.0,ml,
-1,208,Fish Kolambu(Parai Fish),150.0,grams,
-1,209,Dosa batter,150.0,grams,
 2,210,Eggs,2.0,units,
 2,211,Pepper,4.0,grams,
 78,212,Eggs,2.0,units,
@@ -650,3 +647,6 @@ recipe_id,ingredient_id,item_name,quantity,unit,notes
 133,649,Coconut Chutni(Cooked),50.0,grams,
 133,650,Sambhar,80.0,grams,
 133,651,Coriander(kothamali),4.0,grams,
+1,652,Oil,20.0,ml,nan
+1,653,Fish Kolambu(Parai Fish),150.0,grams,nan
+1,654,Dosa batter,150.0,grams,nan

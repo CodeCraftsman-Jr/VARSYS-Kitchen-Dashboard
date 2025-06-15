@@ -1,0 +1,67 @@
+{
+  "electricity_settings": {
+    "default_appliance": "Basic Kitchen Lighting",
+    "electricity_rate_per_kwh_inr": 7.5,
+    "minimum_cost_inr": 0.5,
+    "use_cooking_time_only": true,
+    "location": "Puducherry",
+    "tariff_category": "LT Commercial",
+    "description": "Basic electricity charge ₹0.50 for tubelight. Only specific dishes mapped to electric appliances get higher charges."
+  },
+  "appliances": {
+    "Basic Kitchen Lighting": {
+      "power_consumption_kw": 0.0,
+      "description": "Basic tubelight electricity charge for all items",
+      "typical_usage": "Default charge for lighting during food preparation",
+      "efficiency_rating": "Standard"
+    },
+    "Electric Induction Cooktop": {
+      "power_consumption_kw": 2.0,
+      "description": "Electric induction cooking surface",
+      "typical_usage": "Full electric cooking for specific dishes",
+      "efficiency_rating": "High"
+    },
+    "Mixer": {
+      "power_consumption_kw": 0.5,
+      "description": "Electric mixer for grinding and blending",
+      "typical_usage": "Grinding spices, making chutneys, batter preparation",
+      "efficiency_rating": "High"
+    }
+  },
+  "tariff_rates": {
+    "Puducherry_LT_Commercial": {
+      "rate_per_kwh_inr": 7.5,
+      "fixed_charges_per_month": 150,
+      "description": "Puducherry LT Commercial tariff rates 2024",
+      "applicable_for": "Small commercial establishments, restaurants"
+    },
+    "Puducherry_HT_Commercial": {
+      "rate_per_kwh_inr": 6.8,
+      "fixed_charges_per_month": 500,
+      "description": "Puducherry HT Commercial tariff rates 2024",
+      "applicable_for": "Large commercial establishments"
+    }
+  },
+  "calculation_notes": {
+    "power_consumption": "Power consumption in kW per hour for each appliance type",
+    "electricity_rate": "Based on Puducherry commercial tariff rates 2024",
+    "minimum_cost": "Minimum electricity cost to charge even for very short cooking times",
+    "cooking_time_only": "Uses only cook_time for electricity calculation (not prep_time)",
+    "appliance_selection": "Different appliances have different power consumption rates",
+    "efficiency_notes": "High efficiency appliances consume less power for same cooking output"
+  },
+  "recipe_appliance_mapping": {
+    "Coconut Chutney": "Mixer",
+    "Tomato Chutney": "Mixer",
+    "Tea(125ml)": "Electric Induction Cooktop",
+    "Tea(250ml)": "Electric Induction Cooktop",
+    "Tea(500ml)": "Electric Induction Cooktop",
+    "Tea(750ml)": "Electric Induction Cooktop",
+    "Coffee": "Electric Induction Cooktop",
+    "Milk": "Electric Induction Cooktop",
+    "Horlicks": "Electric Induction Cooktop",
+    "Ginger Tea": "Electric Induction Cooktop"
+  },
+  "last_updated": "2024-12-19",
+  "version": "1.0"
+}

@@ -4,9 +4,10 @@ This module provides the settings functionality for the Kitchen Dashboard applic
 including currency settings and data management.
 """
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QPushButton, QGroupBox, QFormLayout,
-                              QMessageBox, QFileDialog, QTextEdit, QSplitter)
+                              QMessageBox, QFileDialog, QTextEdit, QSplitter,
+                              QDoubleSpinBox)
 from PySide6.QtCore import Qt, Signal
 import logging
 import traceback
@@ -90,7 +91,46 @@ class SettingsWidget(QWidget):
         currency_layout.addRow("", self.apply_button)
         
         layout.addWidget(currency_group)
-        
+
+        # Tax Settings Group
+        tax_group = QGroupBox("Tax Settings (GST & SGST)")
+        tax_layout = QFormLayout(tax_group)
+
+        # GST Rate
+        self.gst_rate_spinbox = QDoubleSpinBox()
+        self.gst_rate_spinbox.setRange(0.0, 50.0)
+        self.gst_rate_spinbox.setSingleStep(0.1)
+        self.gst_rate_spinbox.setSuffix("%")
+        self.gst_rate_spinbox.setValue(7.5)  # Default 7.5%
+        tax_layout.addRow("GST Rate:", self.gst_rate_spinbox)
+
+        # SGST Rate
+        self.sgst_rate_spinbox = QDoubleSpinBox()
+        self.sgst_rate_spinbox.setRange(0.0, 50.0)
+        self.sgst_rate_spinbox.setSingleStep(0.1)
+        self.sgst_rate_spinbox.setSuffix("%")
+        self.sgst_rate_spinbox.setValue(7.5)  # Default 7.5%
+        tax_layout.addRow("SGST Rate:", self.sgst_rate_spinbox)
+
+        # Total Tax Rate (read-only display)
+        self.total_tax_label = QLabel("15.0%")
+        self.total_tax_label.setStyleSheet("font-weight: bold; color: #2563eb;")
+        tax_layout.addRow("Total Tax Rate:", self.total_tax_label)
+
+        # Connect spinboxes to update total
+        self.gst_rate_spinbox.valueChanged.connect(self.update_total_tax_rate)
+        self.sgst_rate_spinbox.valueChanged.connect(self.update_total_tax_rate)
+
+        # Save Tax Settings button
+        self.save_tax_button = QPushButton("Save Tax Settings")
+        self.save_tax_button.clicked.connect(self.save_tax_settings)
+        tax_layout.addRow("", self.save_tax_button)
+
+        layout.addWidget(tax_group)
+
+        # Load current tax settings
+        self.load_tax_settings()
+
         # Data Import section (replacing sample data management)
         import_group = QGroupBox("Data Import")
         import_layout = QFormLayout(import_group)
@@ -276,7 +316,82 @@ class SettingsWidget(QWidget):
         data_layout.addRow(self.clear_button)       
         
         return data_group
-    
+
+    def load_tax_settings(self):
+        """Load current tax settings from configuration file"""
+        try:
+            config_path = os.path.join('data', 'tax_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    tax_config = json.load(f)
+                    tax_settings = tax_config.get('tax_settings', {})
+
+                    # Convert from decimal to percentage for display
+                    gst_rate = tax_settings.get('gst_rate', 0.075) * 100
+                    sgst_rate = tax_settings.get('sgst_rate', 0.075) * 100
+
+                    self.gst_rate_spinbox.setValue(gst_rate)
+                    self.sgst_rate_spinbox.setValue(sgst_rate)
+                    self.update_total_tax_rate()
+        except Exception as e:
+            self.logger.error(f"Error loading tax settings: {e}")
+
+    def update_total_tax_rate(self):
+        """Update the total tax rate display"""
+        total_rate = self.gst_rate_spinbox.value() + self.sgst_rate_spinbox.value()
+        self.total_tax_label.setText(f"{total_rate:.1f}%")
+
+    def save_tax_settings(self):
+        """Save tax settings to configuration file"""
+        try:
+            config_path = os.path.join('data', 'tax_config.json')
+
+            # Convert from percentage to decimal for storage
+            gst_rate = self.gst_rate_spinbox.value() / 100
+            sgst_rate = self.sgst_rate_spinbox.value() / 100
+            total_rate = gst_rate + sgst_rate
+
+            tax_config = {
+                "tax_settings": {
+                    "gst_rate": gst_rate,
+                    "sgst_rate": sgst_rate,
+                    "total_tax_rate": total_rate,
+                    "description": "GST (Goods and Services Tax) and SGST (State Goods and Services Tax) rates for pricing calculations",
+                    "location": "India",
+                    "last_updated": datetime.now().strftime("%Y-%m-%d")
+                },
+                "tax_breakdown": {
+                    "gst_percentage": f"{self.gst_rate_spinbox.value():.1f}%",
+                    "sgst_percentage": f"{self.sgst_rate_spinbox.value():.1f}%",
+                    "total_percentage": f"{total_rate * 100:.1f}%",
+                    "note": "GST and SGST are applied separately but calculated together for total tax amount"
+                },
+                "calculation_notes": {
+                    "formula": "Total Tax = (Base Cost) × (GST Rate + SGST Rate)",
+                    "base_cost_includes": "Cost of Making + Packaging Cost + Electricity Cost + Gas Cost + Other Charges",
+                    "display_format": "Shows combined GST+SGST amount in pricing table"
+                }
+            }
+
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(tax_config, f, indent=2, ensure_ascii=False)
+
+            QMessageBox.information(
+                self,
+                "Tax Settings Saved",
+                f"Tax rates updated successfully:\nGST: {self.gst_rate_spinbox.value():.1f}%\nSGST: {self.sgst_rate_spinbox.value():.1f}%\nTotal: {total_rate * 100:.1f}%"
+            )
+
+            self.logger.info(f"Tax settings saved: GST={gst_rate:.3f}, SGST={sgst_rate:.3f}, Total={total_rate:.3f}")
+
+        except Exception as e:
+            self.logger.error(f"Error saving tax settings: {e}")
+            QMessageBox.warning(
+                self,
+                "Save Error",
+                f"Failed to save tax settings: {str(e)}"
+            )
+
     def handle_manual_full_sync_request(self):
         if self.main_app and hasattr(self.main_app, 'trigger_manual_full_sync'):
             self.main_app.trigger_manual_full_sync()

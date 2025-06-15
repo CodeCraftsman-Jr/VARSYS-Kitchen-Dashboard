@@ -6,6 +6,7 @@ Handles Zomato and Swiggy sales tracking and reporting
 import logging
 import pandas as pd
 from datetime import datetime, timedelta
+from utils.table_styling import apply_universal_column_resizing
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QTableWidgetItem, QHeaderView, QLabel, QTabWidget,
                              QPushButton, QComboBox, QDateEdit, QGroupBox,
@@ -234,33 +235,28 @@ class SalesReportsWidget(QWidget):
             "Subtotal", "Commission", "Delivery Fee", "Total", "Status"
         ])
         
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
-            
-            column_priorities = {
-                0: 2,   # Date - high priority
-                1: 1,   # Order ID - highest priority
-                2: 1,   # Platform - highest priority
-                3: 3,   # Customer - medium priority
-                4: 2,   # Items - high priority
-                5: 3,   # Subtotal - medium priority
-                6: 4,   # Commission - low priority
-                7: 5,   # Delivery Fee - lowest priority
-                8: 2,   # Total - high priority
-                9: 3    # Status - medium priority
-            }
-            
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [1, 2, 4, 8]  # Order ID, Platform, Items, Total
-            }
-            
-            make_table_responsive(self.sales_table, column_config)
-            
-        except ImportError:
-            # Fallback to standard table
-            self.sales_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # Apply universal column resizing functionality
+        sales_default_column_widths = {
+            0: 100,  # Date
+            1: 120,  # Order ID
+            2: 100,  # Platform
+            3: 150,  # Customer
+            4: 200,  # Items
+            5: 100,  # Subtotal
+            6: 100,  # Commission
+            7: 100,  # Delivery Fee
+            8: 100,  # Total
+            9: 80    # Status
+        }
+
+        # Apply column resizing with settings persistence
+        self.sales_table_resizer = apply_universal_column_resizing(
+            self.sales_table,
+            'sales_reports_column_settings.json',
+            sales_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to sales reports table")
         
         layout.addWidget(self.sales_table)
         

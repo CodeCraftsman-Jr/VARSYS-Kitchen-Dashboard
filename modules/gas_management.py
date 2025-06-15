@@ -13,7 +13,7 @@ import pandas as pd
 import logging
 from datetime import datetime, timedelta
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, 
+    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget,
     QTableWidgetItem, QPushButton, QLabel, QLineEdit, QComboBox,
     QDateEdit, QSpinBox, QDoubleSpinBox, QTextEdit, QGroupBox,
     QFormLayout, QMessageBox, QHeaderView, QFrame, QGridLayout,
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QDate, QTimer, Signal
 from PySide6.QtGui import QFont, QIcon, QPixmap
+from utils.table_styling import apply_universal_column_resizing
 
 class GasManagementWidget(QWidget):
     """Main gas management widget with tabs for tracking, orders, and alerts"""
@@ -213,7 +214,23 @@ class GasManagementWidget(QWidget):
         self.usage_table.setHorizontalHeaderLabels([
             "Date", "Usage (kg)", "Remaining (kg)", "Days Left"
         ])
-        self.usage_table.horizontalHeader().setStretchLastSection(True)
+
+        # Apply universal column resizing functionality
+        usage_default_column_widths = {
+            0: 120,  # Date
+            1: 100,  # Usage (kg)
+            2: 120,  # Remaining (kg)
+            3: 100   # Days Left
+        }
+
+        # Apply column resizing with settings persistence
+        self.usage_table_resizer = apply_universal_column_resizing(
+            self.usage_table,
+            'gas_usage_column_settings.json',
+            usage_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to gas usage table")
         usage_layout.addWidget(self.usage_table)
         
         layout.addWidget(usage_group)
@@ -370,7 +387,28 @@ class GasManagementWidget(QWidget):
             "Order ID", "Date", "Supplier", "Quantity", "Total Cost",
             "Expected Delivery", "Status", "Payment", "Actions"
         ])
-        self.orders_table.horizontalHeader().setStretchLastSection(True)
+
+        # Apply universal column resizing functionality
+        orders_default_column_widths = {
+            0: 80,   # Order ID
+            1: 120,  # Date
+            2: 150,  # Supplier
+            3: 80,   # Quantity
+            4: 120,  # Total Cost
+            5: 140,  # Expected Delivery
+            6: 100,  # Status
+            7: 100,  # Payment
+            8: 120   # Actions
+        }
+
+        # Apply column resizing with settings persistence
+        self.orders_table_resizer = apply_universal_column_resizing(
+            self.orders_table,
+            'gas_orders_column_settings.json',
+            orders_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to gas orders table")
         orders_layout.addWidget(self.orders_table)
 
         layout.addWidget(orders_group)
@@ -417,7 +455,27 @@ class GasManagementWidget(QWidget):
             "Purchase Date", "Supplier", "Cylinder Weight", "Cost",
             "Delivery Charges", "Total", "Payment Method", "Notes"
         ])
-        self.history_table.horizontalHeader().setStretchLastSection(True)
+
+        # Apply universal column resizing functionality
+        history_default_column_widths = {
+            0: 120,  # Purchase Date
+            1: 150,  # Supplier
+            2: 120,  # Cylinder Weight
+            3: 100,  # Cost
+            4: 120,  # Delivery Charges
+            5: 100,  # Total
+            6: 120,  # Payment Method
+            7: 200   # Notes
+        }
+
+        # Apply column resizing with settings persistence
+        self.history_table_resizer = apply_universal_column_resizing(
+            self.history_table,
+            'gas_history_column_settings.json',
+            history_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to gas history table")
         layout.addWidget(self.history_table)
 
         # Summary section
@@ -1150,8 +1208,8 @@ class GasManagementWidget(QWidget):
         """Update gas usage when a sale is made based on cooking time"""
         try:
             # Calculate gas usage based on cooking time
-            # Assume average gas consumption of 0.2 kg per hour of cooking
-            gas_usage_per_hour = 0.2
+            # Realistic gas consumption of 0.1 kg per hour of cooking (was 0.2 - too high)
+            gas_usage_per_hour = 0.1
             cooking_time_hours = cooking_time_minutes / 60.0
             estimated_gas_usage = gas_usage_per_hour * cooking_time_hours
 

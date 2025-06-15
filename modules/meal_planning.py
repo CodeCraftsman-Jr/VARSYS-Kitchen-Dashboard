@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import os
+from utils.table_styling import apply_universal_column_resizing
 
 class MealPlanningWidget(QWidget):
     def __init__(self, data, parent=None):
@@ -2777,7 +2778,24 @@ class MealPlanningWidget(QWidget):
         self.shopping_list_table = QTableWidget()
         self.shopping_list_table.setColumnCount(5)
         self.shopping_list_table.setHorizontalHeaderLabels(["Item", "Quantity Needed", "Current Stock", "Unit", "Priority"])
-        self.shopping_list_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Apply universal column resizing functionality
+        shopping_list_default_column_widths = {
+            0: 200,  # Item
+            1: 120,  # Quantity Needed
+            2: 120,  # Current Stock
+            3: 80,   # Unit
+            4: 100   # Priority
+        }
+
+        # Apply column resizing with settings persistence
+        self.shopping_list_table_resizer = apply_universal_column_resizing(
+            self.shopping_list_table,
+            'meal_planning_shopping_column_settings.json',
+            shopping_list_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to meal planning shopping list table")
         results_layout.addWidget(self.shopping_list_table)
         
         # Export button

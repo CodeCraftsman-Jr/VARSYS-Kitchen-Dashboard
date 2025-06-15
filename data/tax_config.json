@@ -1,0 +1,21 @@
+{
+  "tax_settings": {
+    "gst_rate": 0.075,
+    "sgst_rate": 0.075,
+    "total_tax_rate": 0.15,
+    "description": "GST (Goods and Services Tax) and SGST (State Goods and Services Tax) rates for pricing calculations",
+    "location": "India",
+    "last_updated": "2025-06-14"
+  },
+  "tax_breakdown": {
+    "gst_percentage": "7.5%",
+    "sgst_percentage": "7.5%",
+    "total_percentage": "15%",
+    "note": "GST and SGST are applied separately but calculated together for total tax amount"
+  },
+  "calculation_notes": {
+    "formula": "Total Tax = (Base Cost) × (GST Rate + SGST Rate)",
+    "base_cost_includes": "Cost of Making + Packaging Cost + Electricity Cost + Gas Cost + Other Charges",
+    "display_format": "Shows combined GST+SGST amount in pricing table"
+  }
+}

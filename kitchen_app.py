@@ -62,8 +62,18 @@ class KitchenDashboardApp(QMainWindow):
         self.resize(1600, 1000)
         self.setMinimumSize(1400, 900)
 
-        # Hide the default status bar to prevent the dark bar at bottom
-        self.statusBar().hide()
+        # Configure status bar for refresh messages
+        self.status_bar = self.statusBar()
+        self.status_bar.setStyleSheet("""
+            QStatusBar {
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                color: #374151;
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        """)
+        self.status_bar.showMessage("Ready", 2000)
 
         # Customize window appearance to match modern theme
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint |
@@ -1407,6 +1417,9 @@ class KitchenDashboardApp(QMainWindow):
         self.logger.info("[REFRESH] Refreshing all data from CSV files...")
 
         try:
+            # Show loading indicator
+            self.show_loading_message("Refreshing data from CSV files...")
+
             # Reload data
             self.data = self.load_data()
 
@@ -1421,12 +1434,80 @@ class KitchenDashboardApp(QMainWindow):
                 # Trigger the current page refresh
                 current_button.click()
                 self.logger.info("[SUCCESS] Data refreshed and current view updated")
+
+                # Show success message
+                self.show_success_message("Data refreshed successfully!")
             else:
                 self.logger.info("[SUCCESS] Data refreshed")
+                self.show_success_message("Data refreshed successfully!")
 
         except Exception as e:
             self.logger.error(f"[ERROR] Error refreshing data: {e}")
             QMessageBox.warning(self, "Refresh Error", f"Failed to refresh data: {e}")
+
+    def refresh_current_tab_data(self):
+        """Refresh data for the current tab only"""
+        self.logger.info("[REFRESH] Refreshing current tab data...")
+
+        try:
+            # Show loading indicator
+            self.show_loading_message("Refreshing current tab data...")
+
+            # Reload data
+            self.data = self.load_data()
+
+            # Get current tab and refresh it
+            current_button = None
+            for button in self.nav_buttons:
+                if button.isChecked():
+                    current_button = button
+                    break
+
+            if current_button:
+                # Get the button's callback function and call it to refresh the page
+                button_index = self.nav_buttons.index(current_button)
+                tab_name = self.get_tab_name_by_index(button_index)
+
+                # Trigger the current page refresh
+                current_button.click()
+                self.logger.info(f"[SUCCESS] {tab_name} tab data refreshed")
+
+                # Show success message
+                self.show_success_message(f"{tab_name} data refreshed successfully!")
+            else:
+                self.logger.info("[SUCCESS] Data refreshed")
+                self.show_success_message("Data refreshed successfully!")
+
+        except Exception as e:
+            self.logger.error(f"[ERROR] Error refreshing current tab data: {e}")
+            QMessageBox.warning(self, "Refresh Error", f"Failed to refresh tab data: {e}")
+
+    def get_tab_name_by_index(self, index):
+        """Get tab name by button index"""
+        tab_names = [
+            "Home", "Inventory", "Meal Planning", "Budget", "Sales",
+            "Pricing", "Packing Materials", "Shopping", "Gas Management",
+            "Waste", "Cleaning", "Analytics", "Reports", "Logs", "Settings"
+        ]
+        return tab_names[index] if 0 <= index < len(tab_names) else "Unknown"
+
+    def show_loading_message(self, message):
+        """Show a temporary loading message"""
+        try:
+            # Create a temporary status message
+            if hasattr(self, 'status_bar'):
+                self.status_bar.showMessage(message, 2000)  # Show for 2 seconds
+        except:
+            pass  # Ignore if status bar doesn't exist
+
+    def show_success_message(self, message):
+        """Show a temporary success message"""
+        try:
+            # Create a temporary status message
+            if hasattr(self, 'status_bar'):
+                self.status_bar.showMessage(message, 3000)  # Show for 3 seconds
+        except:
+            pass  # Ignore if status bar doesn't exist
 
     def load_data(self):
         """Load all data from CSV files or create empty dataframes if files don't exist"""
@@ -2456,15 +2537,72 @@ class KitchenDashboardApp(QMainWindow):
         # Create a pixmap
         pixmap = QPixmap(24, 24)
         pixmap.fill(Qt.transparent)
-        
+
         # Create a painter to draw on the pixmap
         painter = QPainter(pixmap)
         painter.setFont(QFont("Segoe UI", 12))
         painter.setPen(QPen(QColor("#ecf0f1")))  # White text
         painter.drawText(pixmap.rect(), Qt.AlignCenter, emoji)
         painter.end()
-        
+
         return QIcon(pixmap)
+
+    def create_refresh_button(self, tab_name="", callback=None):
+        """Create a standardized refresh button for tabs"""
+        refresh_button = QPushButton("🔄 Refresh Data")
+        refresh_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3b82f6;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #2563eb;
+            }
+            QPushButton:pressed {
+                background-color: #1d4ed8;
+            }
+        """)
+
+        # Set tooltip
+        if tab_name:
+            refresh_button.setToolTip(f"Refresh {tab_name} data from CSV files")
+        else:
+            refresh_button.setToolTip("Refresh data from CSV files")
+
+        # Connect callback
+        if callback:
+            refresh_button.clicked.connect(callback)
+        else:
+            refresh_button.clicked.connect(self.refresh_current_tab_data)
+
+        return refresh_button
+
+    def create_tab_header_with_refresh(self, title, tab_name="", custom_refresh_callback=None):
+        """Create a standardized tab header with title and refresh button"""
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(20, 10, 20, 10)
+        header_layout.setSpacing(10)
+
+        # Title
+        title_label = QLabel(title)
+        title_label.setFont(self.title_font)
+        header_layout.addWidget(title_label)
+
+        # Spacer to push refresh button to the right
+        header_layout.addStretch()
+
+        # Refresh button
+        refresh_button = self.create_refresh_button(tab_name, custom_refresh_callback)
+        header_layout.addWidget(refresh_button)
+
+        return header_widget
     
     def clear_content(self):
         """Clear the content area"""
@@ -3034,7 +3172,7 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.log_ui_action("Navigation", "Inventory page requested")
             self.clear_content()
 
-            # Add header with smart ingredient check button
+            # Add header with smart ingredient check button and refresh button
             header_widget = QWidget()
             header_layout = QHBoxLayout(header_widget)
             header_layout.setContentsMargins(20, 10, 20, 10)
@@ -3046,6 +3184,10 @@ class KitchenDashboardApp(QMainWindow):
             header_layout.addWidget(title_label)
 
             header_layout.addStretch()
+
+            # Add refresh button
+            refresh_button = self.create_refresh_button("Inventory")
+            header_layout.addWidget(refresh_button)
 
             
             # Import the inventory module with error handling
@@ -3087,7 +3229,7 @@ class KitchenDashboardApp(QMainWindow):
 
                 # Add the widget to the content layout
                 self.content_layout.addWidget(self.inventory_widget)
-                self.logger.info("✅ Inventory page loaded successfully")
+                self.logger.info("[SUCCESS] Inventory page loaded successfully")
 
             except Exception as e:
                 self.logger.log_exception(e, "Error creating inventory widget")
@@ -3156,6 +3298,10 @@ class KitchenDashboardApp(QMainWindow):
         """Display placeholder message for budget functionality"""
         self.clear_content()
 
+        # Add header with refresh button
+        header_widget = self.create_tab_header_with_refresh("Budget Management", "Budget")
+        self.content_layout.addWidget(header_widget)
+
         # Create placeholder widget
         placeholder = QWidget()
         placeholder_layout = QVBoxLayout(placeholder)
@@ -3189,6 +3335,10 @@ class KitchenDashboardApp(QMainWindow):
     def show_sales_page(self):
         """Display the sales page with order management system"""
         self.clear_content()
+
+        # Add header with refresh button
+        header_widget = self.create_tab_header_with_refresh("Sales Management", "Sales")
+        self.content_layout.addWidget(header_widget)
 
         # Debug data before widget creation
         self.debug_data_before_widget_creation("sales", ["sales", "orders"])
@@ -3269,6 +3419,10 @@ class KitchenDashboardApp(QMainWindow):
         """Display the pricing management page"""
         self.clear_content()
 
+        # Add header with refresh button
+        header_widget = self.create_tab_header_with_refresh("Pricing Management", "Pricing")
+        self.content_layout.addWidget(header_widget)
+
         # Import the pricing management module
         try:
             from modules.pricing_management import PricingManagementWidget
@@ -3318,6 +3472,10 @@ class KitchenDashboardApp(QMainWindow):
     def show_shopping_page(self):
         """Display the shopping list page"""
         self.clear_content()
+
+        # Add header with refresh button
+        header_widget = self.create_tab_header_with_refresh("Shopping List", "Shopping")
+        self.content_layout.addWidget(header_widget)
 
         # Create the shopping widget using our fixed module
         # ShoppingWidget is already imported at the top of the file
@@ -3575,6 +3733,29 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
 
         settings_tabs.addTab(data_container, "📊 Data Management")
 
+        # Appliance & Electricity Management Tab
+        try:
+            from modules.appliance_management import ApplianceManagementWidget
+
+            appliance_container = QWidget()
+            appliance_layout = QVBoxLayout(appliance_container)
+            appliance_layout.setContentsMargins(20, 20, 20, 20)
+
+            # Create appliance management widget
+            appliance_widget = ApplianceManagementWidget()
+            appliance_widget.appliance_updated.connect(self.on_appliance_settings_updated)
+            appliance_layout.addWidget(appliance_widget)
+
+            settings_tabs.addTab(appliance_container, "⚡ Appliances")
+            self.logger.info("Appliance management integrated into Settings tab")
+
+        except Exception as e:
+            self.logger.warning(f"Appliance management not available: {e}")
+            appliance_placeholder = QLabel("Appliance management not available.\nPlease check appliance modules.")
+            appliance_placeholder.setAlignment(Qt.AlignCenter)
+            appliance_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
+            settings_tabs.addTab(appliance_placeholder, "⚡ Appliances")
+
         # Mobile & PWA Settings Tab
         try:
             mobile_container = QWidget()
@@ -3687,7 +3868,16 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
 
         # Log the action
         self.logger.info("Enhanced Settings page with Mobile, AI/ML, and Enterprise tabs displayed")
-    
+
+    def on_appliance_settings_updated(self):
+        """Handle appliance settings updates"""
+        try:
+            self.logger.info("Appliance settings updated - refreshing pricing calculations")
+            # Refresh any pricing-related data if needed
+            # This ensures that electricity cost calculations use the updated settings
+        except Exception as e:
+            self.logger.error(f"Error handling appliance settings update: {e}")
+
     def show_logs_page(self):
         """Display the logs viewer page with missing items tab"""
         self.clear_content()
@@ -3773,10 +3963,9 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
         """Display the business intelligence analytics page"""
         self.clear_content()
 
-        # Add header to the content area
-        header_label = QLabel("Business Intelligence Analytics")
-        header_label.setFont(self.title_font)
-        self.content_layout.addWidget(header_label)
+        # Add header with refresh button
+        header_widget = self.create_tab_header_with_refresh("Business Intelligence Analytics", "Analytics")
+        self.content_layout.addWidget(header_widget)
 
         # Create business intelligence dashboard
         try:

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import os
+from utils.table_styling import apply_universal_column_resizing
 
 class ShoppingWidget(QWidget):
     def __init__(self, data, parent=None):
@@ -192,38 +193,31 @@ class ShoppingWidget(QWidget):
             "Last Price", "Location", "Status", "Current Price",
             "Avg Price", "Date Added", "Date Purchased"
         ])
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
 
-            # Define column priorities for responsive behavior
-            column_priorities = {
-                0: 1,   # Item - highest priority (always show)
-                1: 2,   # Category - high priority
-                2: 2,   # Quantity - high priority
-                3: 3,   # Unit - medium priority
-                4: 3,   # Priority - medium priority
-                5: 4,   # Last Price - low priority
-                6: 3,   # Location - medium priority
-                7: 2,   # Status - high priority
-                8: 4,   # Current Price - low priority
-                9: 5,   # Avg Price - lowest priority (hide on mobile)
-                10: 5,  # Date Added - lowest priority (hide on mobile)
-                11: 4   # Date Purchased - low priority
-            }
+        # Apply universal column resizing functionality
+        default_column_widths = {
+            0: 180,  # Item
+            1: 120,  # Category
+            2: 80,   # Quantity
+            3: 60,   # Unit
+            4: 80,   # Priority
+            5: 100,  # Last Price
+            6: 120,  # Location
+            7: 80,   # Status
+            8: 100,  # Current Price
+            9: 100,  # Avg Price
+            10: 120, # Date Added
+            11: 120  # Date Purchased
+        }
 
-            # Configure responsive table
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [0, 1, 7]  # Item, Category, Status
-            }
+        # Apply column resizing with settings persistence
+        self.shopping_table_resizer = apply_universal_column_resizing(
+            self.shopping_table,
+            'shopping_column_settings.json',
+            default_column_widths
+        )
 
-            make_table_responsive(self.shopping_table, column_config)
-            print("✅ Applied responsive table functionality to shopping table")
-
-        except ImportError:
-            print("⚠️ Responsive table utilities not available, using standard styling")
-            self.shopping_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        print("✅ Applied universal column resizing to shopping table")
 
         self.shopping_table.setSelectionBehavior(QTableWidget.SelectRows)
         layout.addWidget(self.shopping_table)
@@ -1210,7 +1204,29 @@ class ShoppingWidget(QWidget):
             "Item", "Category", "Quantity", "Unit",
             "Last Price", "Current Price", "Avg Price", "Location", "Status", "Date Purchased"
         ])
-        self.history_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Apply universal column resizing functionality
+        history_default_column_widths = {
+            0: 180,  # Item
+            1: 120,  # Category
+            2: 80,   # Quantity
+            3: 60,   # Unit
+            4: 100,  # Last Price
+            5: 100,  # Current Price
+            6: 100,  # Avg Price
+            7: 120,  # Location
+            8: 80,   # Status
+            9: 120   # Date Purchased
+        }
+
+        # Apply column resizing with settings persistence
+        self.history_table_resizer = apply_universal_column_resizing(
+            self.history_table,
+            'shopping_history_column_settings.json',
+            history_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to shopping history table")
         layout.addWidget(self.history_table)
         
         # Update the history

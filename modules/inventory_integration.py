@@ -206,8 +206,8 @@ class InventoryIntegration:
             if not cooking_time:
                 cooking_time = 30  # Default 30 minutes
             
-            # Calculate gas usage (0.2 kg per hour of cooking)
-            gas_usage_per_hour = 0.2
+            # Calculate gas usage (0.1 kg per hour of cooking - realistic rate)
+            gas_usage_per_hour = 0.1
             total_cooking_time = cooking_time * quantity_sold  # Total minutes
             gas_usage = (total_cooking_time / 60.0) * gas_usage_per_hour  # Convert to hours and calculate usage
             

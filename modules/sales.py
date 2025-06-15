@@ -10,6 +10,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import calendar
 import os
+from utils.table_styling import apply_universal_column_resizing
 
 
 class SalesWidget(QWidget):
@@ -90,7 +91,25 @@ class SalesWidget(QWidget):
         self.sales_table.setColumnCount(6)
         self.sales_table.setHorizontalHeaderLabels(
             ["Sale ID", "Item", "Quantity", "Price/Unit", "Total", "Date"])
-        self.sales_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Apply universal column resizing functionality
+        sales_default_column_widths = {
+            0: 80,   # Sale ID
+            1: 200,  # Item
+            2: 80,   # Quantity
+            3: 120,  # Price/Unit
+            4: 120,  # Total
+            5: 120   # Date
+        }
+
+        # Apply column resizing with settings persistence
+        self.sales_table_resizer = apply_universal_column_resizing(
+            self.sales_table,
+            'sales_column_settings.json',
+            sales_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to sales table")
         layout.addWidget(self.sales_table)
 
         # Update the sales overview
@@ -326,7 +345,23 @@ class SalesWidget(QWidget):
         self.ingredients_table.setColumnCount(4)
         self.ingredients_table.setHorizontalHeaderLabels(
             ["Ingredient", "Quantity", "Unit", "In Stock"])
-        self.ingredients_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Apply universal column resizing functionality
+        ingredients_default_column_widths = {
+            0: 200,  # Ingredient
+            1: 100,  # Quantity
+            2: 80,   # Unit
+            3: 100   # In Stock
+        }
+
+        # Apply column resizing with settings persistence
+        self.ingredients_table_resizer = apply_universal_column_resizing(
+            self.ingredients_table,
+            'sales_ingredients_column_settings.json',
+            ingredients_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to sales ingredients table")
         ingredients_layout.addWidget(self.ingredients_table)
 
         layout.addWidget(ingredients_group)

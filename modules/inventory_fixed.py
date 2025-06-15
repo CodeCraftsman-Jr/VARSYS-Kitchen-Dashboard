@@ -193,6 +193,12 @@ class InventoryWidget(QWidget):
                     self.inventory_df = self.data['inventory'].copy()
                     self.apply_filters()
 
+            elif tab_name == "Expiry Tracking":
+                # Refresh expiry tracking data
+                if 'inventory' in self.data:
+                    self.inventory_df = self.data['inventory'].copy()
+                    self.update_expiry_table()
+
         except Exception as e:
             print(f"Error refreshing tab data: {e}")
 
@@ -639,7 +645,7 @@ class InventoryWidget(QWidget):
         else:
             # Enhanced fallback styling
             self.inventory_table.setSelectionBehavior(QTableWidget.SelectRows)
-            self.inventory_table.setAlternatingRowColors(True)
+            self.inventory_table.setAlternatingRowColors(False)  # Disabled to allow custom background colors
             self.inventory_table.verticalHeader().setDefaultSectionSize(55)  # Set row height
             self.inventory_table.setStyleSheet("""
                 QTableWidget {
@@ -649,7 +655,6 @@ class InventoryWidget(QWidget):
                     gridline-color: #f1f5f9;
                     selection-background-color: #dbeafe;
                     font-size: 13px;
-                    alternate-background-color: #f8fafc;
                 }
                 QTableWidget::item {
                     padding: 8px;
@@ -657,7 +662,6 @@ class InventoryWidget(QWidget):
                     min-height: 40px;
                 }
                 QTableWidget::item:selected {
-                    background-color: #dbeafe;
                     color: #1e40af;
                 }
                 QHeaderView::section {
@@ -2352,39 +2356,12 @@ class InventoryWidget(QWidget):
         for col, width in column_widths.items():
             self.expiry_table.setColumnWidth(col, width)
 
-        # Apply modern table styling
+        # Apply modern table styling with background color support
         if apply_modern_table_styling:
             apply_modern_table_styling(self.expiry_table, row_height=50)
         else:
-            self.expiry_table.setAlternatingRowColors(True)
+            self.expiry_table.setAlternatingRowColors(False)  # Disabled to allow custom background colors
             self.expiry_table.verticalHeader().setDefaultSectionSize(50)
-            self.expiry_table.setStyleSheet("""
-                QTableWidget {
-                    background-color: white;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 8px;
-                    gridline-color: #f1f5f9;
-                    selection-background-color: #dbeafe;
-                    font-size: 13px;
-                    alternate-background-color: #f8fafc;
-                }
-                QTableWidget::item {
-                    padding: 8px;
-                    border-bottom: 1px solid #f1f5f9;
-                    min-height: 40px;
-                }
-                QHeaderView::section {
-                    background-color: #f0f9ff;
-                    border: none;
-                    border-bottom: 2px solid #0ea5e9;
-                    border-right: 1px solid #e2e8f0;
-                    padding: 12px 8px;
-                    font-weight: 600;
-                    color: #374151;
-                    min-height: 40px;
-                    font-size: 13px;
-                }
-            """)
         
         # Add label to explain color coding
         color_key = QWidget()
@@ -2426,7 +2403,7 @@ class InventoryWidget(QWidget):
             working_df['expiry_date'] = pd.to_datetime(working_df['expiry_date'])
         except Exception as e:
             # If conversion fails, handle more gracefully
-            print(f"Error converting dates: {e}")
+            print(f"ERROR converting dates: {e}")
             return
         
         # Sort by expiry date
@@ -2477,15 +2454,75 @@ class InventoryWidget(QWidget):
             days_until_expiry = row['days_until_expiry']
             days_item = QTableWidgetItem(str(days_until_expiry))
             
-            # Color code based on days until expiry
+            # Color code based on days until expiry - USING TEXT COLOR, SYMBOLS AND BACKGROUND
             if days_until_expiry < 0:  # Already expired
-                days_item.setBackground(QColor(255, 200, 200))  # Light red
-                item_cell.setBackground(QColor(255, 200, 200))  # Highlight item name too
+                # Use red text color and background for expired items
+                red_color = QColor(255, 0, 0)  # Bright red text
+                red_bg = QColor(255, 200, 200)  # Light red background
+
+                # Set text color to red and make it bold
+                days_item.setForeground(red_color)
+                item_cell.setForeground(red_color)
+
+                # Set background color
+                days_item.setBackground(red_bg)
+                item_cell.setBackground(red_bg)
+
+                # Make text bold to make it more visible
+                font = days_item.font()
+                font.setBold(True)
+                days_item.setFont(font)
+                item_cell.setFont(font)
+
+                # Add visual indicator to the text itself
+                days_item.setText(f"❌ {days_until_expiry}")
+                item_cell.setText(f"❌ {row['item_name']}")
+
             elif days_until_expiry <= 7:  # Expires within a week
-                days_item.setBackground(QColor(255, 255, 150))  # Light yellow
-                item_cell.setBackground(QColor(255, 255, 150))  # Highlight item name too
+                # Use orange text color and background for expiring soon items
+                orange_color = QColor(255, 140, 0)  # Orange text
+                yellow_bg = QColor(255, 255, 150)  # Light yellow background
+
+                # Set text color to orange and make it bold
+                days_item.setForeground(orange_color)
+                item_cell.setForeground(orange_color)
+
+                # Set background color
+                days_item.setBackground(yellow_bg)
+                item_cell.setBackground(yellow_bg)
+
+                # Make text bold to make it more visible
+                font = days_item.font()
+                font.setBold(True)
+                days_item.setFont(font)
+                item_cell.setFont(font)
+
+                # Add visual indicator to the text itself
+                days_item.setText(f"⚠️ {days_until_expiry}")
+                item_cell.setText(f"⚠️ {row['item_name']}")
+
+            else:
+                # For items in good condition (>7 days), show green checkmark
+                green_color = QColor(0, 150, 0)  # Green text
+                green_bg = QColor(200, 255, 200)  # Light green background
+
+                # Set text color to green
+                days_item.setForeground(green_color)
+                item_cell.setForeground(green_color)
+
+                # Set background color
+                days_item.setBackground(green_bg)
+                item_cell.setBackground(green_bg)
+
+                # Add visual indicator to the text itself
+                days_item.setText(f"✅ {days_until_expiry}")
+                item_cell.setText(f"✅ {row['item_name']}")
             
             self.expiry_table.setItem(i, 6, days_item)
+
+        # Force table refresh to ensure colors are applied
+        self.expiry_table.viewport().update()
+        self.expiry_table.repaint()
     
     def setup_items_tab(self):
         """Set up the Items tab with item management functionality"""

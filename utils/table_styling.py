@@ -2,8 +2,11 @@
 Global table styling utilities for consistent table appearance across the application
 """
 
-from PySide6.QtWidgets import QTableWidget, QHeaderView
-from PySide6.QtCore import Qt
+import os
+import json
+from PySide6.QtWidgets import QTableWidget, QHeaderView, QAbstractItemView, QMessageBox
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFont
 
 def apply_modern_table_styling(table_widget: QTableWidget, row_height: int = 50):
     """
@@ -14,7 +17,7 @@ def apply_modern_table_styling(table_widget: QTableWidget, row_height: int = 50)
         row_height: Height for table rows (default: 50px)
     """
     
-    # Set modern table styling
+    # Set modern table styling - MODIFIED to allow custom background colors
     table_widget.setStyleSheet("""
         QTableWidget {
             background-color: white;
@@ -23,7 +26,6 @@ def apply_modern_table_styling(table_widget: QTableWidget, row_height: int = 50)
             gridline-color: #f1f5f9;
             selection-background-color: #fef2f2;
             font-size: 13px;
-            alternate-background-color: #f8fafc;
         }
         QTableWidget::item {
             padding: 12px 8px;
@@ -31,7 +33,6 @@ def apply_modern_table_styling(table_widget: QTableWidget, row_height: int = 50)
             min-height: 40px;
         }
         QTableWidget::item:selected {
-            background-color: #dbeafe;
             color: #1e40af;
         }
         QHeaderView::section {
@@ -50,8 +51,8 @@ def apply_modern_table_styling(table_widget: QTableWidget, row_height: int = 50)
         }
     """)
     
-    # Set table properties for better display
-    table_widget.setAlternatingRowColors(True)
+    # Set table properties for better display - DISABLED alternating colors to allow custom backgrounds
+    table_widget.setAlternatingRowColors(False)
     table_widget.setSelectionBehavior(QTableWidget.SelectRows)
     table_widget.setSelectionMode(QTableWidget.SingleSelection)
     
@@ -285,7 +286,7 @@ def apply_enhanced_table_styling_with_resize_cursor(table_widget: QTableWidget, 
     # Enable column resizing with cursor support
     enable_column_resizing_with_cursor(table_widget)
 
-    # Add enhanced CSS styling that includes cursor support
+    # Add enhanced CSS styling that includes cursor support - MODIFIED to allow custom background colors
     enhanced_style = f"""
         QTableWidget {{
             background-color: white;
@@ -294,7 +295,6 @@ def apply_enhanced_table_styling_with_resize_cursor(table_widget: QTableWidget, 
             gridline-color: #f1f5f9;
             selection-background-color: #fef2f2;
             font-size: 13px;
-            alternate-background-color: #f8fafc;
         }}
         QTableWidget::item {{
             padding: 12px 8px;
@@ -302,7 +302,6 @@ def apply_enhanced_table_styling_with_resize_cursor(table_widget: QTableWidget, 
             min-height: {row_height - 10}px;
         }}
         QTableWidget::item:selected {{
-            background-color: #dbeafe;
             color: #1e40af;
         }}
         QHeaderView {{
@@ -359,7 +358,6 @@ def apply_colored_table_styling(table_widget: QTableWidget, table_type: str, row
             gridline-color: #f1f5f9;
             selection-background-color: {colors['selection']};
             font-size: 13px;
-            alternate-background-color: #f8fafc;
         }}
         QTableWidget::item {{
             padding: 12px 8px;
@@ -367,11 +365,7 @@ def apply_colored_table_styling(table_widget: QTableWidget, table_type: str, row
             min-height: {row_height - 10}px;
         }}
         QTableWidget::item:selected {{
-            background-color: {colors['selection']};
             color: #1e40af;
-        }}
-        QTableWidget::item:hover {{
-            background-color: {colors['row_hover']};
         }}
         QHeaderView::section {{
             background-color: {colors['header_bg']};
@@ -389,8 +383,8 @@ def apply_colored_table_styling(table_widget: QTableWidget, table_type: str, row
         }}
     """)
     
-    # Apply common table properties
-    table_widget.setAlternatingRowColors(True)
+    # Apply common table properties - DISABLED alternating colors to allow custom backgrounds
+    table_widget.setAlternatingRowColors(False)
     table_widget.setSelectionBehavior(QTableWidget.SelectRows)
     table_widget.setSelectionMode(QTableWidget.SingleSelection)
     table_widget.verticalHeader().setDefaultSectionSize(row_height)
@@ -507,3 +501,233 @@ def create_table_button_widget(button_text: str, button_color: str, button_size:
     layout.addWidget(button)
 
     return container, button
+
+
+# ============================================================================
+# UNIVERSAL COLUMN RESIZING FUNCTIONALITY
+# ============================================================================
+
+class UniversalTableColumnResizer:
+    """
+    Universal column resizing functionality that can be applied to any table.
+    Based on the proven implementation from the inventory tab.
+    """
+
+    def __init__(self, table_widget: QTableWidget, settings_file_name: str, default_column_widths: dict = None):
+        """
+        Initialize the column resizer for a table
+
+        Args:
+            table_widget: The QTableWidget to add resizing to
+            settings_file_name: Name of the JSON file to save column settings (e.g., 'shopping_column_settings.json')
+            default_column_widths: Dict of column index to default width {0: 150, 1: 100, ...}
+        """
+        self.table_widget = table_widget
+        self.settings_file_name = settings_file_name
+        self.column_settings_file = os.path.join('data', settings_file_name)
+        self.default_column_widths = default_column_widths or {}
+        self._resize_timer = None
+
+        # Ensure data directory exists
+        os.makedirs('data', exist_ok=True)
+
+        # Apply the column resizing functionality
+        self.setup_column_resizing()
+
+    def setup_column_resizing(self):
+        """Set up column resizing functionality using the proven inventory tab pattern"""
+        try:
+            print(f"🔧 Setting up column resizing for {self.settings_file_name}...")
+
+            # Get the header
+            header = self.table_widget.horizontalHeader()
+
+            # Load saved column settings or use defaults
+            saved_settings = self.load_column_settings()
+
+            # Apply column widths FIRST
+            print("🔧 Setting column widths...")
+            for col in range(self.table_widget.columnCount()):
+                if saved_settings and f'column_{col}_width' in saved_settings:
+                    # Use saved width
+                    width = saved_settings[f'column_{col}_width']
+                    self.table_widget.setColumnWidth(col, width)
+                    print(f"   Column {col}: Using saved width {width}px")
+                else:
+                    # Use default width
+                    width = self.default_column_widths.get(col, 100)
+                    self.table_widget.setColumnWidth(col, width)
+                    print(f"   Column {col}: Using default width {width}px")
+
+            # CRITICAL: Set ALL columns to Interactive mode for manual resizing
+            print("🔧 Enabling Interactive mode for all columns...")
+            for col in range(self.table_widget.columnCount()):
+                header.setSectionResizeMode(col, QHeaderView.Interactive)
+                print(f"   Column {col}: Interactive")
+
+            # Basic header configuration
+            header.setStretchLastSection(False)
+            header.setMinimumSectionSize(30)
+            header.setDefaultAlignment(Qt.AlignLeft)
+
+            # Connect resize events for saving settings
+            header.sectionResized.connect(self.on_column_resized)
+
+            # Test that resizing is actually enabled
+            print("🔧 Testing resize modes...")
+            for col in range(min(5, self.table_widget.columnCount())):
+                mode = header.sectionResizeMode(col)
+                print(f"   Column {col} mode: {mode} (should be 1 for Interactive)")
+
+            print(f"✅ Column resizing setup complete for {self.settings_file_name}!")
+
+        except Exception as e:
+            print(f"❌ Error setting up column resizing: {e}")
+
+    def save_column_settings(self):
+        """Save column widths to file"""
+        try:
+            settings = {}
+            for col in range(self.table_widget.columnCount()):
+                settings[f'column_{col}_width'] = self.table_widget.columnWidth(col)
+
+            with open(self.column_settings_file, 'w') as f:
+                json.dump(settings, f)
+            print(f"✅ Column settings saved to {self.column_settings_file}")
+        except Exception as e:
+            print(f"❌ Error saving column settings: {e}")
+
+    def load_column_settings(self):
+        """Load column widths from file"""
+        try:
+            if os.path.exists(self.column_settings_file):
+                with open(self.column_settings_file, 'r') as f:
+                    settings = json.load(f)
+                print(f"✅ Loading saved column settings from {self.column_settings_file}...")
+                return settings
+            else:
+                print(f"📝 No saved column settings found for {self.column_settings_file}, using defaults")
+                return None
+        except Exception as e:
+            print(f"❌ Error loading column settings: {e}")
+            return None
+
+    def on_column_resized(self, logical_index, old_size, new_size):
+        """Handle column resize events and save settings"""
+        try:
+            # Save settings after a short delay to avoid too frequent saves
+            if not self._resize_timer:
+                self._resize_timer = QTimer()
+                self._resize_timer.setSingleShot(True)
+                self._resize_timer.timeout.connect(self.save_column_settings)
+
+            self._resize_timer.start(500)  # Save after 500ms of no resizing
+            print(f"📏 Column {logical_index} resized from {old_size}px to {new_size}px")
+        except Exception as e:
+            print(f"❌ Error handling column resize: {e}")
+
+    def auto_fit_columns(self):
+        """Auto-fit columns to available screen width"""
+        try:
+            print("📐 Auto-fitting columns to screen width...")
+
+            # Get available width (table width minus scrollbar and margins)
+            table_width = self.table_widget.width()
+            scrollbar_width = 20  # Approximate scrollbar width
+            margin_width = 40     # Margins and borders
+            available_width = table_width - scrollbar_width - margin_width
+
+            print(f"   📊 Table width: {table_width}px")
+            print(f"   📊 Available width: {available_width}px")
+
+            if available_width < 500:  # Minimum reasonable width
+                print("   ⚠️ Available width too small, using minimum widths")
+                available_width = 1200  # Use a reasonable default
+
+            # Calculate proportional widths
+            total_columns = self.table_widget.columnCount()
+            if total_columns > 0:
+                # Give each column a proportional width
+                base_width = available_width // total_columns
+
+                # Apply minimum width constraints
+                min_width = 60
+                base_width = max(base_width, min_width)
+
+                print(f"   📊 Base width per column: {base_width}px")
+
+                # Set column widths
+                for col in range(total_columns):
+                    self.table_widget.setColumnWidth(col, base_width)
+                    print(f"   📏 Column {col}: {base_width}px")
+
+                # Save the new settings
+                self.save_column_settings()
+
+                print("✅ Columns auto-fitted to screen width!")
+                QMessageBox.information(None, "Columns Auto-Fitted",
+                                      f"All columns have been auto-fitted to the available screen width.")
+
+        except Exception as e:
+            print(f"❌ Error auto-fitting columns: {e}")
+
+    def make_columns_wider(self):
+        """Make all columns wider for better data visibility"""
+        try:
+            print("🔍 Making columns wider...")
+
+            # Increase all column widths by 20%
+            for col in range(self.table_widget.columnCount()):
+                current_width = self.table_widget.columnWidth(col)
+                new_width = int(current_width * 1.2)
+                # Set minimum width to ensure readability
+                new_width = max(new_width, 60)
+                self.table_widget.setColumnWidth(col, new_width)
+                print(f"   📏 Column {col}: {current_width}px → {new_width}px")
+
+            # Save the new settings
+            self.save_column_settings()
+
+            print("✅ All columns made wider!")
+            QMessageBox.information(None, "Columns Widened",
+                                  "All columns have been made 20% wider for better data visibility.")
+
+        except Exception as e:
+            print(f"❌ Error making columns wider: {e}")
+
+    def reset_column_widths(self):
+        """Reset all columns to default widths"""
+        try:
+            print("↩️ Resetting column widths to defaults...")
+
+            # Apply default widths
+            for col in range(self.table_widget.columnCount()):
+                width = self.default_column_widths.get(col, 100)
+                self.table_widget.setColumnWidth(col, width)
+                print(f"   📏 Column {col}: Reset to {width}px")
+
+            # Save the new settings
+            self.save_column_settings()
+
+            print("✅ Column widths reset to defaults!")
+            QMessageBox.information(None, "Columns Reset",
+                                  "All columns have been reset to their default widths.")
+
+        except Exception as e:
+            print(f"❌ Error resetting column widths: {e}")
+
+
+def apply_universal_column_resizing(table_widget: QTableWidget, settings_file_name: str,
+                                  default_column_widths: dict = None) -> UniversalTableColumnResizer:
+    """
+    Apply universal column resizing functionality to any table widget.
+
+    Args:
+        table_widget: The QTableWidget to add resizing to
+        settings_file_name: Name of the JSON file to save column settings (e.g., 'shopping_column_settings.json')
+        default_column_widths: Dict of column index to default width {0: 150, 1: 100, ...}
+
+    Returns:
+        UniversalTableColumnResizer instance for additional control
+    """
+    return UniversalTableColumnResizer(table_widget, settings_file_name, default_column_widths)

@@ -1,5 +1,5 @@
 recipe_id,recipe_name,category,servings,prep_time,cook_time,description,ingredients,instructions
-1,Dosa With Fish Kolambu(Parai Fish),Non-Vegetarian,1,20,35,A South Indian dosa served with spicy parai fish kolambu,"Dosa batter, Fish Kolambu(Parai Fish), Oil",1. Prepare dosa using batter and oil\n2. Cook Parai Fish Kolambu\n3. Serve together
+1,Dosa With Fish Kolambu(Parai Fish),Non-Vegetarian,1,30,20,A South Indian dosa served with spicy parai fish kolambu,"Dosa batter, Fish Kolambu(Parai Fish), Oil",1. Prepare dosa using batter and oil\n2. Cook Parai Fish Kolambu\n3. Serve together
 2,Double Omelette,Vegetarian,1,5,8,A fluffy double egg omelette with basic seasoning,"Eggs, Onion, Tomato, Spices",1. Beat eggs with salt\n2. Fry onion & tomato\n3. Pour eggs and cook
 3,Egg Bhurji,Vegetarian,2,8,12,Spicy scrambled eggs with onion and tomato,"Eggs, Onion, Tomato, Green chili, Spices",1. Sauté onions & tomato\n2. Add eggs & scramble\n3. Add spices & serve
 4,Egg Curry,Non-Vegetarian,3,15,25,Boiled eggs simmered in onion-tomato gravy,"Eggs, Onion, Tomato, Spices",1. Boil eggs\n2. Prepare curry base\n3. Add eggs & simmer

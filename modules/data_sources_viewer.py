@@ -6,6 +6,7 @@ Shows all available data sources for pricing calculations
 import os
 import pandas as pd
 from datetime import datetime
+from utils.table_styling import apply_universal_column_resizing
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QTableWidget, QTableWidgetItem, QHeaderView, QFrame,
@@ -127,10 +128,49 @@ class DataSourcesViewer(QWidget):
         
         # Shopping List Tab (Priority 2 - Actual Purchase Prices)
         self.shopping_table = self.create_table(["ID", "Item Name", "Category", "Quantity", "Unit", "Purchase Price"])
+
+        # Apply universal column resizing functionality to shopping table
+        shopping_default_column_widths = {
+            0: 60,   # ID
+            1: 200,  # Item Name
+            2: 120,  # Category
+            3: 80,   # Quantity
+            4: 60,   # Unit
+            5: 120   # Purchase Price
+        }
+
+        # Apply column resizing with settings persistence
+        self.shopping_table_resizer = apply_universal_column_resizing(
+            self.shopping_table,
+            'data_sources_shopping_column_settings.json',
+            shopping_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to data sources shopping table")
         self.data_tabs.addTab(self.shopping_table, "🛒 Shopping List (Actual Purchases)")
 
         # Inventory Tab (Priority 1 - Current Stock)
         self.inventory_table = self.create_table(["ID", "Item Name", "Category", "Quantity", "Unit", "Price/Unit", "Total Value"])
+
+        # Apply universal column resizing functionality to inventory table
+        inventory_default_column_widths = {
+            0: 60,   # ID
+            1: 200,  # Item Name
+            2: 120,  # Category
+            3: 80,   # Quantity
+            4: 60,   # Unit
+            5: 120,  # Price/Unit
+            6: 120   # Total Value
+        }
+
+        # Apply column resizing with settings persistence
+        self.inventory_table_resizer = apply_universal_column_resizing(
+            self.inventory_table,
+            'data_sources_inventory_column_settings.json',
+            inventory_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to data sources inventory table")
         self.data_tabs.addTab(self.inventory_table, "🏠 Inventory (Current Stock)")
         
         parent_layout.addWidget(self.data_tabs)
@@ -165,13 +205,7 @@ class DataSourcesViewer(QWidget):
             }
         """)
         
-        # Set column resize modes
-        header = table.horizontalHeader()
-        for i in range(len(headers)):
-            if i == 1:  # Item Name column
-                header.setSectionResizeMode(i, QHeaderView.Stretch)
-            else:
-                header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        # Column resizing will be applied by the caller using apply_universal_column_resizing
         
         return table
     

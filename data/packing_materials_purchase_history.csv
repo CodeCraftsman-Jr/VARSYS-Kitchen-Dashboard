@@ -1,6 +1,11 @@
 purchase_id,material_id,material_name,purchase_date,quantity_purchased,price_per_unit,total_cost,supplier,invoice_number,notes
-1,21,Spoon,2025-06-09,100.0,1.0,100.0,MojoAgency,INV/MS/250610/0015,local dealer
-2,24,Pickle,2025-06-09,100.0,1.0,100.0,ajithbakri,INV/MS/4455562/0024,local dealer
-3,25,Silver Paper Large,2025-06-10,1.0,1.0,1.0,instaco,567484845833,local dealer
-4,25,Silver Paper Large,2025-06-10,50.0,1.8,90.0,instaco,7878787878,local dealer
-5,26,silver paper medium,2025-06-10,50.0,1.8,90.0,instaco,455745646865,local dealer
+1,21,Spoon,2025-06-09,100.0,1.50,150.0,MojoAgency,INV/MS/250610/0015,Updated pricing - disposable plastic spoons
+2,24,Pickle Container,2025-06-09,100.0,2.50,250.0,Ajith Bakery,INV/MS/4455562/0024,Updated pricing - small containers for pickles
+3,25,Silver Paper Large,2025-06-10,1.0,2.80,2.80,Instaco,567484845833,Updated pricing - aluminum foil large sheets
+4,25,Silver Paper Large,2025-06-10,50.0,2.80,140.0,Instaco,7878787878,Updated pricing - bulk purchase aluminum foil
+5,26,Silver Paper Medium,2025-06-10,50.0,2.20,110.0,Instaco,455745646865,Updated pricing - aluminum foil medium sheets
+6,1,250 ml aluminium box,2025-06-15,200.0,3.50,700.0,PackCorp,INV/PC/150625/0001,New purchase with updated Indian pricing
+7,5,Small Plastic Cover,2025-06-15,500.0,0.80,400.0,PlasticPro,INV/PP/150625/0002,New purchase with updated Indian pricing
+8,8,Small Plastic Bag,2025-06-15,1000.0,0.40,400.0,PlasticPro,INV/PP/150625/0003,New purchase with updated Indian pricing
+9,11,250ml Bottle,2025-06-15,200.0,4.20,840.0,BottleCorp,INV/BC/150625/0004,New purchase with updated Indian pricing
+10,22,Paper Cup,2025-06-15,100.0,0.85,85.0,Aayra Agency,INV/AA/150625/0005,New purchase with updated Indian pricing

@@ -467,7 +467,7 @@ class EnhancedCostBreakdownPanel(QWidget):
             packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
 
             cook_time = recipe.get('cook_time', 30)
-            electricity_cost = self.calculate_electricity_cost(cook_time)
+            electricity_cost = self.calculate_electricity_cost(cook_time, recipe_name=recipe_name)
             gas_cost = self.calculate_gas_cost(recipe_data=recipe)
             other_charges = 2.0
 
@@ -579,6 +579,47 @@ class EnhancedCostBreakdownPanel(QWidget):
             self.logger.error(f"Error getting ingredient price: {e}")
             return 5.0
 
+    def load_electricity_cost_config(self):
+        """Load electricity cost configuration from JSON file"""
+        try:
+            import json
+            import os
+
+            config_path = os.path.join('data', 'electricity_cost_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                self.logger.warning(f"Electricity cost config file not found at {config_path}, using defaults")
+                return {
+                    "electricity_settings": {
+                        "default_appliance": "Basic Kitchen Lighting",
+                        "electricity_rate_per_kwh_inr": 7.50,
+                        "minimum_cost_inr": 0.50,
+                        "use_cooking_time_only": True
+                    },
+                    "appliances": {
+                        "Basic Kitchen Lighting": {"power_consumption_kw": 0.0},
+                        "Electric Induction Cooktop": {"power_consumption_kw": 2.0},
+                        "Mixer": {"power_consumption_kw": 0.5}
+                    }
+                }
+        except Exception as e:
+            self.logger.error(f"Error loading electricity cost config: {e}")
+            return {
+                "electricity_settings": {
+                    "default_appliance": "Basic Kitchen Lighting",
+                    "electricity_rate_per_kwh_inr": 7.50,
+                    "minimum_cost_inr": 0.50,
+                    "use_cooking_time_only": True
+                },
+                "appliances": {
+                    "Basic Kitchen Lighting": {"power_consumption_kw": 0.0},
+                    "Electric Induction Cooktop": {"power_consumption_kw": 2.0},
+                    "Mixer": {"power_consumption_kw": 0.5}
+                }
+            }
+
     def get_recipe_ingredients(self, recipe_id):
         """Get detailed ingredient list for recipe"""
         try:
@@ -628,15 +669,49 @@ class EnhancedCostBreakdownPanel(QWidget):
             self.logger.error(f"Error getting recipe ingredients: {e}")
             return []
 
-    def calculate_electricity_cost(self, cook_time_minutes):
-        """Calculate electricity cost based on cooking time"""
+    def calculate_electricity_cost(self, cook_time_minutes, recipe_name=None, selected_appliance=None):
+        """Calculate electricity cost - basic ₹0.50 for all items unless specifically mapped to electric appliances"""
         try:
-            power_kw = 2.0  # 2kW average
-            rate_per_kwh = 6.0  # ₹6 per kWh
+            # Load electricity cost configuration
+            electricity_config = self.load_electricity_cost_config()
+            electricity_settings = electricity_config.get('electricity_settings', {})
+            appliances = electricity_config.get('appliances', {})
+            recipe_mapping = electricity_config.get('recipe_appliance_mapping', {})
+
+            # Get basic settings
+            rate_per_kwh = electricity_settings.get('electricity_rate_per_kwh_inr', 7.50)
+            basic_charge = electricity_settings.get('minimum_cost_inr', 0.50)  # Basic ₹0.50 for tubelight
+
+            # Check if recipe is specifically mapped to an electric appliance
+            appliance_name = selected_appliance
+            if not appliance_name and recipe_name:
+                appliance_name = recipe_mapping.get(recipe_name)
+
+            # If no specific appliance mapping, return basic charge (tubelight only)
+            if not appliance_name:
+                self.logger.debug(f"Electricity cost: {recipe_name} using basic charge (tubelight only) = Rs.{basic_charge:.2f}")
+                return basic_charge
+
+            # Calculate actual appliance cost for mapped dishes
+            appliance_data = appliances.get(appliance_name, {})
+            power_kw = appliance_data.get('power_consumption_kw', 0.0)
+
+            if power_kw == 0.0:
+                # If appliance has 0 power (like Basic Kitchen Lighting), return basic charge
+                return basic_charge
+
+            # Calculate actual electricity cost for electric appliances
             hours = cook_time_minutes / 60.0
-            return max(power_kw * hours * rate_per_kwh, 0.5)
-        except:
-            return 1.0
+            cost = power_kw * hours * rate_per_kwh
+            final_cost = max(cost, basic_charge)  # Never less than basic charge
+
+            self.logger.debug(f"Electricity cost calculated: {recipe_name} using {appliance_name} "
+                            f"({power_kw}kW) for {cook_time_minutes}min = Rs.{final_cost:.2f}")
+            return final_cost
+
+        except Exception as e:
+            self.logger.error(f"Error calculating electricity cost: {e}")
+            return 0.50  # Return basic charge on error
 
     def calculate_gas_cost(self, recipe_data=None, cook_time_minutes=None):
         """Calculate gas cost based on total preparation time (prep_time + cook_time)"""

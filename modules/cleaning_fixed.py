@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import calendar
 import os
+from utils.table_styling import apply_universal_column_resizing
 
 class CleaningWidget(QWidget):
     def safe_string_convert(self, value):
@@ -111,7 +112,26 @@ class CleaningWidget(QWidget):
         self.tasks_table.setHorizontalHeaderLabels([
             "Task", "Frequency", "Last Completed", "Next Due", "Days Left", "Priority", "Notes"
         ])
-        self.tasks_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Apply universal column resizing functionality
+        tasks_default_column_widths = {
+            0: 200,  # Task
+            1: 100,  # Frequency
+            2: 120,  # Last Completed
+            3: 120,  # Next Due
+            4: 80,   # Days Left
+            5: 80,   # Priority
+            6: 200   # Notes
+        }
+
+        # Apply column resizing with settings persistence
+        self.tasks_table_resizer = apply_universal_column_resizing(
+            self.tasks_table,
+            'cleaning_tasks_column_settings.json',
+            tasks_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to cleaning tasks table")
         layout.addWidget(self.tasks_table)
         
         # Action buttons
@@ -633,72 +653,36 @@ class CleaningWidget(QWidget):
             widget = item.widget()
             if widget:
                 widget.deleteLater()
-        
+
         # Update date header
         self.date_header = QLabel("Tasks for " + date.toString("yyyy-MM-dd"))
         self.date_header.setFont(QFont("Arial", 12, QFont.Bold))
         self.date_tasks_layout.addWidget(self.date_header)
-        
+
         # Filter tasks for the selected date
         try:
             # Make sure next_due is properly converted to datetime
             if 'next_due' in self.cleaning_df.columns:
                 if not pd.api.types.is_datetime64_any_dtype(self.cleaning_df['next_due']):
                     self.cleaning_df['next_due'] = pd.to_datetime(self.cleaning_df['next_due'], errors='coerce')
-                
+
                 # Convert QDate to Python date
                 py_date = datetime(date.year(), date.month(), date.day()).date()
-                
-                # Filter tasks for the selected date
-                tasks_for_date = self.cleaning_df[self.cleaning_df['next_due'].dt.date == py_date]
-                
-                if len(tasks_for_date) > 0:
-                    # Create a table for tasks
-                    tasks_table = QTableWidget()
-                    tasks_table.setColumnCount(3)
-                    tasks_table.setHorizontalHeaderLabels(["Task", "Priority", "Notes"])
-                    tasks_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-                    
-                    # Add rows to the table
-                    tasks_table.setRowCount(len(tasks_for_date))
-                    for i, (_, row) in enumerate(tasks_for_date.iterrows()):
-                        tasks_table.setItem(i, 0, QTableWidgetItem(self.safe_string_convert(row['task_name'])))
-                        
-                        if 'priority' in row:
-                            tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(row['priority'])))
-                        else:
-                            tasks_table.setItem(i, 1, QTableWidgetItem(""))
-                            
-                        if 'notes' in row:
-                            # Use our safe string conversion helper
-                            notes_str = self.safe_string_convert(row['notes'])
-                            tasks_table.setItem(i, 2, QTableWidgetItem(notes_str))
-                        else:
-                            tasks_table.setItem(i, 2, QTableWidgetItem(""))
-                        
-                        # Color code based on priority
-                        if 'priority' in row:
-                            priority_value = self.safe_string_convert(row['priority'])
-                            color = QColor(255, 255, 255)  # Default white
-                            if priority_value == 'High':
-                                color = QColor(255, 200, 200)  # Light red
-                            elif priority_value == 'Medium':
-                                color = QColor(255, 255, 200)  # Light yellow
-                            
-                            # Apply color to row
-                            for j in range(tasks_table.columnCount()):
-                                tasks_table.item(i, j).setBackground(color)
-                    
-                    self.date_tasks_layout.addWidget(tasks_table)
-                    
-                    # Add "Mark as Completed" button
-                    complete_button = QPushButton("Mark Selected Task as Completed")
-                    complete_button.clicked.connect(self.mark_calendar_task_completed)
-                    self.date_tasks_layout.addWidget(complete_button)
+
+                # Filter tasks due on the selected date
+                tasks_due = self.cleaning_df[self.cleaning_df['next_due'].dt.date == py_date]
+
+                # Filter tasks allotted/completed on the selected date (last_completed)
+                if 'last_completed' in self.cleaning_df.columns:
+                    if not pd.api.types.is_datetime64_any_dtype(self.cleaning_df['last_completed']):
+                        self.cleaning_df['last_completed'] = pd.to_datetime(self.cleaning_df['last_completed'], errors='coerce')
+                    tasks_allotted = self.cleaning_df[self.cleaning_df['last_completed'].dt.date == py_date]
                 else:
-                    no_tasks_label = QLabel(f"No tasks due on {date.toString('yyyy-MM-dd')}.")
-                    no_tasks_label.setAlignment(Qt.AlignCenter)
-                    self.date_tasks_layout.addWidget(no_tasks_label)
+                    tasks_allotted = pd.DataFrame()
+
+                # Create sections for due tasks and allotted tasks
+                self.create_due_tasks_section(tasks_due, date)
+                self.create_allotted_tasks_section(tasks_allotted, date)
             else:
                 no_tasks_label = QLabel("No task data available.")
                 no_tasks_label.setAlignment(Qt.AlignCenter)
@@ -707,6 +691,133 @@ class CleaningWidget(QWidget):
             error_label = QLabel(f"Error loading tasks: {str(e)}")
             error_label.setAlignment(Qt.AlignCenter)
             self.date_tasks_layout.addWidget(error_label)
+
+    def create_due_tasks_section(self, tasks_due, date):
+        """Create section for tasks due on the selected date"""
+        # Due Tasks Section
+        due_section_label = QLabel("📅 Tasks Due")
+        due_section_label.setFont(QFont("Arial", 11, QFont.Bold))
+        due_section_label.setStyleSheet("color: #d32f2f; margin-top: 10px; margin-bottom: 5px;")
+        self.date_tasks_layout.addWidget(due_section_label)
+
+        if len(tasks_due) > 0:
+            # Create a table for due tasks
+            due_tasks_table = QTableWidget()
+            due_tasks_table.setColumnCount(3)
+            due_tasks_table.setHorizontalHeaderLabels(["Task", "Priority", "Notes"])
+            due_tasks_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            due_tasks_table.setMaximumHeight(150)  # Limit height
+
+            # Add rows to the table
+            due_tasks_table.setRowCount(len(tasks_due))
+            for i, (_, row) in enumerate(tasks_due.iterrows()):
+                due_tasks_table.setItem(i, 0, QTableWidgetItem(self.safe_string_convert(row['task_name'])))
+
+                if 'priority' in row:
+                    due_tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(row['priority'])))
+                else:
+                    due_tasks_table.setItem(i, 1, QTableWidgetItem(""))
+
+                if 'notes' in row:
+                    notes_str = self.safe_string_convert(row['notes'])
+                    due_tasks_table.setItem(i, 2, QTableWidgetItem(notes_str))
+                else:
+                    due_tasks_table.setItem(i, 2, QTableWidgetItem(""))
+
+                # Color code based on priority
+                if 'priority' in row:
+                    priority_value = self.safe_string_convert(row['priority'])
+                    color = QColor(255, 255, 255)  # Default white
+                    if priority_value == 'High':
+                        color = QColor(255, 200, 200)  # Light red
+                    elif priority_value == 'Medium':
+                        color = QColor(255, 255, 200)  # Light yellow
+
+                    # Apply color to row
+                    for j in range(due_tasks_table.columnCount()):
+                        due_tasks_table.item(i, j).setBackground(color)
+
+            self.date_tasks_layout.addWidget(due_tasks_table)
+
+            # Add "Mark as Completed" button for due tasks
+            complete_button = QPushButton("Mark Selected Task as Completed")
+            complete_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #4caf50;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            complete_button.clicked.connect(self.mark_calendar_task_completed)
+            self.date_tasks_layout.addWidget(complete_button)
+        else:
+            no_due_tasks_label = QLabel(f"No tasks due on {date.toString('yyyy-MM-dd')}.")
+            no_due_tasks_label.setAlignment(Qt.AlignCenter)
+            no_due_tasks_label.setStyleSheet("color: #666; font-style: italic; padding: 10px;")
+            self.date_tasks_layout.addWidget(no_due_tasks_label)
+
+    def create_allotted_tasks_section(self, tasks_allotted, date):
+        """Create section for tasks allotted/completed on the selected date"""
+        # Allotted Tasks Section
+        allotted_section_label = QLabel("✅ Tasks Completed/Allotted")
+        allotted_section_label.setFont(QFont("Arial", 11, QFont.Bold))
+        allotted_section_label.setStyleSheet("color: #388e3c; margin-top: 15px; margin-bottom: 5px;")
+        self.date_tasks_layout.addWidget(allotted_section_label)
+
+        if len(tasks_allotted) > 0:
+            # Create a table for allotted tasks
+            allotted_tasks_table = QTableWidget()
+            allotted_tasks_table.setColumnCount(4)
+            allotted_tasks_table.setHorizontalHeaderLabels(["Task", "Priority", "Completed Time", "Notes"])
+            allotted_tasks_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            allotted_tasks_table.setMaximumHeight(150)  # Limit height
+
+            # Add rows to the table
+            allotted_tasks_table.setRowCount(len(tasks_allotted))
+            for i, (_, row) in enumerate(tasks_allotted.iterrows()):
+                allotted_tasks_table.setItem(i, 0, QTableWidgetItem(self.safe_string_convert(row['task_name'])))
+
+                if 'priority' in row:
+                    allotted_tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(row['priority'])))
+                else:
+                    allotted_tasks_table.setItem(i, 1, QTableWidgetItem(""))
+
+                # Show completion time
+                if 'last_completed' in row and pd.notnull(row['last_completed']):
+                    completed_time = pd.to_datetime(row['last_completed']).strftime('%H:%M')
+                    allotted_tasks_table.setItem(i, 2, QTableWidgetItem(completed_time))
+                else:
+                    allotted_tasks_table.setItem(i, 2, QTableWidgetItem(""))
+
+                if 'notes' in row:
+                    notes_str = self.safe_string_convert(row['notes'])
+                    allotted_tasks_table.setItem(i, 3, QTableWidgetItem(notes_str))
+                else:
+                    allotted_tasks_table.setItem(i, 3, QTableWidgetItem(""))
+
+                # Color code completed tasks with light green background
+                color = QColor(200, 255, 200)  # Light green
+                for j in range(allotted_tasks_table.columnCount()):
+                    allotted_tasks_table.item(i, j).setBackground(color)
+
+            self.date_tasks_layout.addWidget(allotted_tasks_table)
+
+            # Add info label
+            info_label = QLabel(f"✅ {len(tasks_allotted)} task(s) completed on this date")
+            info_label.setStyleSheet("color: #388e3c; font-weight: bold; padding: 5px;")
+            info_label.setAlignment(Qt.AlignCenter)
+            self.date_tasks_layout.addWidget(info_label)
+        else:
+            no_allotted_tasks_label = QLabel(f"No tasks completed on {date.toString('yyyy-MM-dd')}.")
+            no_allotted_tasks_label.setAlignment(Qt.AlignCenter)
+            no_allotted_tasks_label.setStyleSheet("color: #666; font-style: italic; padding: 10px;")
+            self.date_tasks_layout.addWidget(no_allotted_tasks_label)
     
     def mark_calendar_task_completed(self):
         # Get the tasks table from the layout

@@ -9,6 +9,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
+from utils.table_styling import apply_universal_column_resizing
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QTableWidgetItem, QHeaderView, QLabel, QPushButton,
                              QComboBox, QDateEdit, QFormLayout, QLineEdit,
@@ -1185,38 +1186,34 @@ class SalesOrderManagementWidget(QWidget):
             "Profit", "Profit %", "Status"
         ])
         
-        # Apply responsive table functionality
-        try:
-            from modules.responsive_table_utils import make_table_responsive
+        # Apply universal column resizing functionality
+        orders_default_column_widths = {
+            0: 100,  # Date
+            1: 100,  # Order ID
+            2: 180,  # Recipe
+            3: 80,   # Quantity
+            4: 100,  # Packing Cost
+            5: 100,  # Prep Cost
+            6: 100,  # Gas Charges
+            7: 100,  # Electricity
+            8: 100,  # Total Cost
+            9: 100,  # Our Pricing
+            10: 100, # Subtotal
+            11: 80,  # Discount
+            12: 100, # Final Price
+            13: 80,  # Profit
+            14: 80,  # Profit %
+            15: 80   # Status
+        }
 
-            column_priorities = {
-                0: 2,   # Date - high priority
-                1: 1,   # Order ID - highest priority
-                2: 1,   # Recipe - highest priority
-                3: 3,   # Quantity - medium priority
-                4: 5,   # Packing Cost - lowest priority
-                5: 5,   # Prep Cost - lowest priority
-                6: 5,   # Gas Charges - lowest priority
-                7: 5,   # Electricity - lowest priority
-                8: 4,   # Total Cost - low priority
-                9: 3,   # Our Pricing - medium priority
-                10: 4,  # Subtotal - low priority
-                11: 4,  # Discount - low priority
-                12: 2,  # Final Price - high priority
-                13: 2,  # Profit - high priority
-                14: 3,  # Profit % - medium priority
-                15: 4   # Status - low priority
-            }
+        # Apply column resizing with settings persistence
+        self.orders_table_resizer = apply_universal_column_resizing(
+            self.orders_table,
+            'sales_orders_column_settings.json',
+            orders_default_column_widths
+        )
 
-            column_config = {
-                'priorities': column_priorities,
-                'stretch_columns': [1, 2, 12, 13]  # Order ID, Recipe, Final Price, Profit
-            }
-
-            make_table_responsive(self.orders_table, column_config)
-
-        except ImportError:
-            self.orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        print("✅ Applied universal column resizing to sales orders table")
         
         parent_layout.addWidget(self.orders_table)
     

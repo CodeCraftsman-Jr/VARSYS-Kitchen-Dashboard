@@ -10,6 +10,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import os
 import logging
+from utils.table_styling import apply_universal_column_resizing
 
 class BudgetManager(QWidget):
     def __init__(self, data, parent=None):
@@ -83,8 +84,24 @@ class BudgetManager(QWidget):
         self.budget_table.setHorizontalHeaderLabels(["ID", "Category", "Amount", "Period"])
         self.budget_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.budget_table.setSelectionMode(QTableWidget.SingleSelection)
-        self.budget_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.budget_table.verticalHeader().setVisible(False)
+
+        # Apply universal column resizing functionality
+        budget_default_column_widths = {
+            0: 60,   # ID
+            1: 180,  # Category
+            2: 120,  # Amount
+            3: 100   # Period
+        }
+
+        # Apply column resizing with settings persistence
+        self.budget_table_resizer = apply_universal_column_resizing(
+            self.budget_table,
+            'budget_column_settings.json',
+            budget_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to budget table")
         left_layout.addWidget(self.budget_table)
         
         # Populate budget table
@@ -175,8 +192,25 @@ class BudgetManager(QWidget):
         self.expense_table.setColumnCount(5)
         self.expense_table.setHorizontalHeaderLabels(["Date", "Category", "Amount", "Source", "Notes"])
         self.expense_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.expense_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         self.expense_table.verticalHeader().setVisible(False)
+
+        # Apply universal column resizing functionality
+        expense_default_column_widths = {
+            0: 120,  # Date
+            1: 150,  # Category
+            2: 120,  # Amount
+            3: 120,  # Source
+            4: 200   # Notes
+        }
+
+        # Apply column resizing with settings persistence
+        self.expense_table_resizer = apply_universal_column_resizing(
+            self.expense_table,
+            'expense_column_settings.json',
+            expense_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to expense table")
         layout.addWidget(self.expense_table)
         
         # Populate expense table

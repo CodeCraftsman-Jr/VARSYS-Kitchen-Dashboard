@@ -10,6 +10,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from datetime import datetime, timedelta
 import calendar
 import os
+from utils.table_styling import apply_universal_column_resizing
 
 class WasteWidget(QWidget):
     def __init__(self, data, parent=None):
@@ -109,9 +110,27 @@ class WasteWidget(QWidget):
         self.waste_table.setHorizontalHeaderLabels([
             "Date", "Item", "Quantity", "Unit", "Reason", "Cost"
         ])
-        self.waste_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.waste_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.waste_table.setAlternatingRowColors(True)
+
+        # Apply universal column resizing functionality
+        waste_default_column_widths = {
+            0: 120,  # Date
+            1: 200,  # Item
+            2: 80,   # Quantity
+            3: 80,   # Unit
+            4: 150,  # Reason
+            5: 100   # Cost
+        }
+
+        # Apply column resizing with settings persistence
+        self.waste_table_resizer = apply_universal_column_resizing(
+            self.waste_table,
+            'waste_column_settings.json',
+            waste_default_column_widths
+        )
+
+        print("✅ Applied universal column resizing to waste table")
         layout.addWidget(self.waste_table)
 
         # Action buttons for waste records
@@ -491,7 +510,22 @@ class WasteWidget(QWidget):
             reason_table = QTableWidget()
             reason_table.setColumnCount(3)
             reason_table.setHorizontalHeaderLabels(["Reason", "Number of Items", "Total Cost"])
-            reason_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            # Apply universal column resizing functionality
+            reason_default_column_widths = {
+                0: 200,  # Reason
+                1: 150,  # Number of Items
+                2: 120   # Total Cost
+            }
+
+            # Apply column resizing with settings persistence
+            reason_table_resizer = apply_universal_column_resizing(
+                reason_table,
+                'waste_reason_column_settings.json',
+                reason_default_column_widths
+            )
+
+            print("✅ Applied universal column resizing to waste reason table")
             
             # Group by reason with count and sum
             # Check if waste_id column exists
