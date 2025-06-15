@@ -1,6 +1,54 @@
 {
   "notifications": [
     {
+      "id": 23,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-16T03:12:16.202701",
+      "read": false
+    },
+    {
+      "id": 22,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-16T03:12:13.209990",
+      "read": false
+    },
+    {
+      "id": 21,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-16T03:12:11.245122",
+      "read": false
+    },
+    {
+      "id": 20,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-16T03:12:09.207453",
+      "read": false
+    },
+    {
+      "id": 19,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-16T03:12:08.206109",
+      "read": false
+    },
+    {
+      "id": 18,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-16T03:12:06.215506",
+      "read": false
+    },
+    {
       "id": 17,
       "title": "Cloud Sync Progress",
       "message": "Uploaded categories - 100% complete",
@@ -137,5 +185,5 @@
       "read": false
     }
   ],
-  "last_updated": "2025-06-16T02:34:19.424602"
+  "last_updated": "2025-06-16T03:40:37.583443"
 }

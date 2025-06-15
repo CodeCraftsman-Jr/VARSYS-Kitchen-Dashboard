@@ -7,7 +7,7 @@ Software: Kitchen Dashboard (First software in VARSYS ecosystem)
 License: Proprietary - Free for limited testing period
 """
 
-__version__ = "1.0.6"
+__version__ = "1.0.5"
 __build__ = "20250615"
 __company__ = "VARSYS Solutions"
 __product__ = "Kitchen Dashboard"
@@ -19,7 +19,7 @@ __support_email__ = "support@varsys-solutions.com"
 # Version components
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
-VERSION_PATCH = 6
+VERSION_PATCH = 5
 VERSION_BUILD = 20250615
 
 # Release information

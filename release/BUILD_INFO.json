@@ -1,0 +1,15 @@
+{
+  "version": "1.0.5",
+  "build_date": "2025-06-16T03:28:46.899915",
+  "build_tool": "cx_Freeze",
+  "features": [
+    "System Tray Integration",
+    "Auto-Startup Management",
+    "Professional Path Management",
+    "Firebase Authentication",
+    "Cloud Sync",
+    "Persistent Sessions"
+  ],
+  "executable": "VARSYS_Kitchen_Dashboard.exe",
+  "company": "VARSYS Solutions"
+}

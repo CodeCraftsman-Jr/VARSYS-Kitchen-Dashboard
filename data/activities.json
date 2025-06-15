@@ -99557,5 +99557,1125 @@
     "metadata": {
       "operation_id": "offline_sync_1750021428.107342"
     }
+  },
+  {
+    "timestamp": "2025-06-16T03:12:01.786633",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "activity_tracker",
+    "action": "initialized",
+    "description": "Activity tracking system started",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:01.787412",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "application",
+    "action": "startup",
+    "description": "Kitchen Dashboard application starting",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:04.195159",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "firebase_manager",
+    "action": "firebase_initialized",
+    "description": "Firebase services initialized: fully_connected",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:04.202982",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "firebase_manager",
+    "action": "initialized",
+    "description": "Optimized Firebase manager started",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:04.270649",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "responsive_manager",
+    "action": "initialized",
+    "description": "Responsive design manager started",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:04.311869",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "pwa_manager",
+    "action": "initialized",
+    "description": "Progressive Web App manager started",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:04.360939",
+    "activity_type": "system_event",
+    "level": "info",
+    "module": "enterprise_manager",
+    "action": "initialized",
+    "description": "Enterprise features manager started",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": null
+  },
+  {
+    "timestamp": "2025-06-16T03:12:34.296922",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023754.296886"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:13:04.301360",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023784.301261"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:13:34.303760",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023814.30369"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:14:04.314089",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023844.314059"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:14:34.313471",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023874.313438"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:15:04.332685",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023904.332624"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:15:34.344453",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023934.344408"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:16:04.345752",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023964.345725"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:16:34.352765",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750023994.35269"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:17:04.359706",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024024.359651"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:17:34.373868",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024054.373835"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:18:04.468401",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024084.468381"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:18:34.479019",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024114.478968"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:19:04.506485",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024144.506447"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:19:34.510975",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024174.510925"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:20:05.108979",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024205.108959"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:20:34.769284",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024234.769259"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:21:04.773037",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024264.773012"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:21:34.816144",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024294.816114"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:22:05.018075",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024325.018041"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:22:35.035302",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024355.035033"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:23:05.035123",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024385.033883"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:23:35.044000",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024415.043971"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:24:05.073039",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024445.073022"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:24:35.079423",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024475.079395"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:25:05.093985",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024505.09396"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:25:35.114697",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024535.114647"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:26:05.317250",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024565.317221"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:26:35.312298",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024595.312218"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:27:05.319862",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024625.319834"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:27:35.314895",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024655.314851"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:28:05.312552",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024685.312518"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:28:35.367443",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024715.367395"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:29:05.329087",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024745.329065"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:29:35.335116",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024775.335086"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:30:05.405315",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024805.405294"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:30:35.639627",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024835.639585"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:31:05.669713",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024865.669677"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:31:35.694544",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024895.694493"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:32:05.788536",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024925.788512"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:32:35.797730",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024955.797696"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:33:05.824922",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750024985.824902"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:33:35.985977",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025015.984451"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:34:05.882542",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025045.882518"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:34:36.175606",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025076.175586"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:35:06.172282",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025106.172254"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:35:36.330617",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025136.330591"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:36:06.188746",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025166.188719"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:36:36.355882",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025196.355859"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:37:06.619756",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025226.619726"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:37:36.771506",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025256.771482"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:38:06.848327",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025286.848305"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:38:36.854242",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025316.854223"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:39:06.837913",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025346.837887"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:39:36.824110",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025376.824077"
+    }
+  },
+  {
+    "timestamp": "2025-06-16T03:40:06.904331",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250616_031201_713071",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750025406.904311"
+    }
   }
 ]
