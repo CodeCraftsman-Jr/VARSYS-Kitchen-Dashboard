@@ -43,9 +43,15 @@ class FirebaseSync:
             for key, df in data.items():
                 self.log_message(f"Data[{key}] has {len(df)} rows and {len(df.columns)} columns")
         
-        # Initialize Firebase
-        if FIREBASE_AVAILABLE:
-            firebase_integration.initialize_firebase()
+        # Initialize Firebase for subscription-based access
+        if self.is_firebase_available():
+            try:
+                firebase_integration.initialize_firebase()
+                self.log_message("Firebase initialized successfully for subscription model")
+            except Exception as e:
+                self.log_message(f"Firebase initialization failed: {e}", "error")
+        else:
+            self.log_message("Firebase integration is not available", "error")
     
     def add_log_callback(self, callback):
         """
@@ -81,25 +87,45 @@ class FirebaseSync:
     
     def is_firebase_available(self):
         """
-        Check if Firebase is available.
-        
+        Check if Firebase is available for subscription-based access.
+
         Returns:
             bool: True if Firebase is available, False otherwise
         """
-        # Get path to credentials file
+        # Get path to credentials files (check multiple locations)
         current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        credentials_path = os.path.join(current_dir, "firebase_credentials.json")
-        web_config_path = os.path.join(current_dir, "firebase_web_config.json")
-        
-        # Check if both credential files exist
-        creds_exist = os.path.exists(credentials_path)
-        web_config_exists = os.path.exists(web_config_path)
-        
+
+        # Check for credentials in multiple locations
+        credentials_paths = [
+            os.path.join(current_dir, "firebase_credentials.json"),
+            os.path.join(current_dir, "secure_credentials", "firebase_credentials.json")
+        ]
+
+        web_config_paths = [
+            os.path.join(current_dir, "firebase_config.json"),
+            os.path.join(current_dir, "firebase_web_config.json"),
+            os.path.join(current_dir, "secure_credentials", "firebase_web_config.json")
+        ]
+
+        # Check if any credential files exist
+        creds_exist = any(os.path.exists(path) for path in credentials_paths)
+        web_config_exists = any(os.path.exists(path) for path in web_config_paths)
+
         # Log the status for debugging
-        self.log_message(f"Checking Firebase availability: Credentials: {creds_exist}, Web Config: {web_config_exists}")
-        
-        # Both files must exist for Firebase to be fully available
-        return creds_exist and web_config_exists and FIREBASE_AVAILABLE
+        self.log_message(f"Checking Firebase availability for subscription model:")
+        self.log_message(f"  Credentials available: {creds_exist}")
+        self.log_message(f"  Web config available: {web_config_exists}")
+        self.log_message(f"  Firebase integration available: {FIREBASE_AVAILABLE}")
+
+        # Firebase is available if we have config and the integration is working
+        firebase_available = web_config_exists and FIREBASE_AVAILABLE
+
+        if firebase_available:
+            self.log_message("Firebase is available for subscription-based access")
+        else:
+            self.log_message("Firebase is not available - subscription authentication required")
+
+        return firebase_available
         
     def is_authenticated(self):
         """

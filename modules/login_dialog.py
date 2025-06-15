@@ -4,10 +4,18 @@ This module provides a login dialog for Firebase authentication.
 """
 
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                              QLineEdit, QPushButton, QMessageBox, QTabWidget,
-                              QWidget, QFormLayout, QGroupBox, QScrollArea)
+                              QLineEdit, QPushButton, QMessageBox,
+                              QFormLayout, QGroupBox, QCheckBox)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont, QGuiApplication
+from PySide6.QtGui import QFont
+from datetime import datetime
+
+# Import session manager for persistent login
+try:
+    from .session_manager import get_session_manager
+    SESSION_MANAGER_AVAILABLE = True
+except ImportError:
+    SESSION_MANAGER_AVAILABLE = False
 
 # Import responsive dialog utilities
 try:
@@ -18,14 +26,18 @@ except ImportError:
     ResponsiveDialog = QDialog
 
 class LoginDialog(ResponsiveDialog):
-    """Responsive login dialog for Firebase authentication"""
+    """Subscription-based login dialog for Kitchen Dashboard v1.0.6"""
 
-    # Signal emitted when login is successful
+    # Signals emitted for authentication events
     login_successful = Signal(dict)
+    login_failed = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, firebase_config_manager=None):
         # Initialize responsive dialog
-        super().__init__("Kitchen Dashboard - Login", parent, modal=True)
+        super().__init__("Kitchen Dashboard - Subscriber Login v1.0.6", parent, modal=True)
+
+        # Store Firebase configuration manager
+        self.firebase_config_manager = firebase_config_manager
 
         # Set minimum size for desktop
         self.setMinimumSize(400, 300)
@@ -35,6 +47,9 @@ class LoginDialog(ResponsiveDialog):
 
         # Apply additional responsive styling
         self.apply_login_responsive_styling()
+
+        # Check for existing session and auto-login if available
+        self.check_existing_session()
         
     def setup_ui(self):
         """Set up the login UI"""
@@ -65,7 +80,12 @@ class LoginDialog(ResponsiveDialog):
         self.login_password.setPlaceholderText("Enter your password")
         self.login_password.setEchoMode(QLineEdit.Password)
         login_form_layout.addRow("Password:", self.login_password)
-        
+
+        # Remember Me checkbox
+        self.remember_me_checkbox = QCheckBox("Remember me for 30 days")
+        self.remember_me_checkbox.setStyleSheet("color: #2c3e50; margin: 8px 0;")
+        login_form_layout.addRow("", self.remember_me_checkbox)
+
         # Add form to layout
         login_layout.addWidget(login_form)
         
@@ -223,11 +243,52 @@ class LoginDialog(ResponsiveDialog):
         except ImportError:
             pass  # Fallback styling already applied above
 
+    def check_existing_session(self):
+        """Check for existing valid session and auto-login if available"""
+        if not SESSION_MANAGER_AVAILABLE:
+            return
+
+        try:
+            session_manager = get_session_manager()
+            session_data = session_manager.load_session()
+
+            if session_data and session_data.get('user_info'):
+                user_info = session_data['user_info']
+                print(f"[SESSION] Found valid session for user: {user_info.get('email', 'Unknown')}")
+
+                # Update session activity
+                session_manager.update_session_activity(user_info)
+
+                # Auto-login with saved session
+                self.login_successful.emit(user_info)
+                self.accept()
+                return True
+
+        except Exception as e:
+            print(f"[SESSION] Error checking existing session: {e}")
+
+        return False
+
+    @staticmethod
+    def clear_saved_sessions(clear_remember_me=True):
+        """Clear saved sessions (for logout functionality)"""
+        if not SESSION_MANAGER_AVAILABLE:
+            return False
+
+        try:
+            session_manager = get_session_manager()
+            session_manager.clear_session(clear_remember_me=clear_remember_me)
+            print(f"[SESSION] Cleared sessions (remember_me={clear_remember_me})")
+            return True
+        except Exception as e:
+            print(f"[SESSION] Error clearing sessions: {e}")
+            return False
+
     def login(self):
-        """Handle login button click"""
-        email = self.login_email.text()
+        """Handle login button click with enhanced Firebase configuration support"""
+        email = self.login_email.text().strip()
         password = self.login_password.text()
-        
+
         # Basic validation
         if not email or not password:
             QMessageBox.warning(
@@ -236,51 +297,168 @@ class LoginDialog(ResponsiveDialog):
                 "Please enter both email and password."
             )
             return
-        
-        # Check if Firebase authentication is available
+
+        # Disable login button during authentication
+        self.login_button.setEnabled(False)
+        self.login_button.setText("Authenticating...")
+
         try:
+            # Check Firebase configuration
+            if not self.firebase_config_manager or not self.firebase_config_manager.is_configured():
+                error_msg = "Firebase is not configured. Please check your Firebase settings."
+                self.show_configuration_error(error_msg)
+                return
+
+            # Check if Firebase authentication is available
             from modules import firebase_integration
             if not firebase_integration.PYREBASE_AVAILABLE:
-                QMessageBox.warning(
-                    self,
-                    "Authentication Error",
-                    "Firebase authentication is not available. Please install pyrebase4."
-                )
+                error_msg = "Firebase authentication is not available. Please install pyrebase4."
+                self.show_authentication_error(error_msg)
                 return
-                
-            # Initialize Firebase
-            if not firebase_integration.initialize_firebase():
-                QMessageBox.warning(
-                    self,
-                    "Firebase Error",
-                    "Failed to initialize Firebase. Please check your credentials."
-                )
+
+            # Initialize Firebase with configuration
+            firebase_config = self.firebase_config_manager.get_firebase_config_dict()
+            if not firebase_integration.initialize_firebase_with_config(firebase_config):
+                error_msg = "Failed to initialize Firebase. Please check your configuration."
+                self.show_authentication_error(error_msg)
                 return
-                
-            # Attempt to sign in
+
+            # Attempt to sign in with subscriber credentials
             user = firebase_integration.sign_in_with_email(email, password)
             if user:
+                # Add additional user information for subscriber
+                user_info = {
+                    **user,
+                    'login_time': str(datetime.now()),
+                    'session_id': f"session_{datetime.now().timestamp()}",
+                    'app_version': '1.0.6',
+                    'subscription_type': 'firebase_managed',
+                    'email': email  # Ensure email is included for session management
+                }
+
+                # Save session if Remember Me is checked and session manager is available
+                if SESSION_MANAGER_AVAILABLE and self.remember_me_checkbox.isChecked():
+                    try:
+                        session_manager = get_session_manager()
+                        remember_me = self.remember_me_checkbox.isChecked()
+                        if session_manager.save_session(user_info, remember_me=remember_me):
+                            print(f"[SESSION] Session saved with remember_me={remember_me}")
+                        else:
+                            print("[SESSION] Failed to save session")
+                    except Exception as e:
+                        print(f"[SESSION] Error saving session: {e}")
+
                 # Emit signal with user info
-                self.login_successful.emit(user)
+                self.login_successful.emit(user_info)
                 self.accept()
             else:
-                QMessageBox.warning(
-                    self,
-                    "Login Failed",
-                    "Invalid email or password. Please try again."
-                )
+                error_msg = "Invalid subscriber credentials. Only users created by the administrator can access this application."
+                self.show_authentication_error(error_msg)
+
         except Exception as e:
-            QMessageBox.critical(
+            error_msg = f"An error occurred during login: {str(e)}"
+            self.show_authentication_error(error_msg)
+
+        finally:
+            # Re-enable login button
+            self.login_button.setEnabled(True)
+            self.login_button.setText("Login")
+
+    def show_configuration_error(self, message):
+        """Show configuration error - ONLINE-ONLY MODE"""
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Firebase Configuration Required")
+        msg.setText("Kitchen Dashboard v1.0.6 requires Firebase configuration.")
+        msg.setInformativeText(f"{message}\n\nThis application requires online authentication to function.")
+        msg.setIcon(QMessageBox.Critical)
+
+        configure_btn = msg.addButton("Configure Firebase", QMessageBox.ActionRole)
+        exit_btn = msg.addButton("Exit Application", QMessageBox.RejectRole)
+
+        msg.exec()
+
+        if msg.clickedButton() == configure_btn:
+            self.show_firebase_configuration()
+        else:
+            from PySide6.QtWidgets import QApplication
+            QApplication.quit()
+
+    def show_authentication_error(self, message):
+        """Show authentication error for subscription-based access"""
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Subscriber Authentication Failed")
+        msg.setText("Access Denied")
+        msg.setInformativeText(
+            f"{message}\n\n"
+            "This is a subscription-based application. Only users with accounts "
+            "created by the administrator can access the Kitchen Dashboard.\n\n"
+            "If you believe you should have access, please contact the administrator."
+        )
+        msg.setIcon(QMessageBox.Warning)
+        msg.exec()
+        self.login_failed.emit(message)
+
+    def show_firebase_configuration(self):
+        """Show Firebase configuration dialog"""
+        try:
+            from .firebase_config_widget import FirebaseConfigWidget
+            config_dialog = QDialog(self)
+            config_dialog.setWindowTitle("Firebase Configuration")
+            config_dialog.setModal(True)
+            config_dialog.resize(500, 400)
+
+            layout = QVBoxLayout(config_dialog)
+            config_widget = FirebaseConfigWidget(self.firebase_config_manager)
+            layout.addWidget(config_widget)
+
+            # Add buttons
+            button_layout = QHBoxLayout()
+            save_btn = QPushButton("Save & Continue")
+            cancel_btn = QPushButton("Cancel")
+
+            save_btn.clicked.connect(lambda: self.save_config_and_continue(config_dialog, config_widget))
+            cancel_btn.clicked.connect(config_dialog.reject)
+
+            button_layout.addWidget(save_btn)
+            button_layout.addWidget(cancel_btn)
+            layout.addLayout(button_layout)
+
+            config_dialog.exec()
+
+        except ImportError:
+            QMessageBox.information(
                 self,
-                "Login Error",
-                f"An error occurred during login: {str(e)}"
+                "Configuration",
+                "Please manually configure Firebase by editing the firebase_config.json file."
             )
+
+    def save_config_and_continue(self, dialog, config_widget):
+        """Save Firebase configuration and continue with login"""
+        if config_widget.save_configuration():
+            dialog.accept()
+            # Reload configuration
+            if self.firebase_config_manager:
+                self.firebase_config_manager.load_configuration()
+        else:
+            QMessageBox.warning(dialog, "Save Error", "Failed to save configuration. Please try again.")
     
     # Signup functionality removed as requested
     
     def reject(self):
-        """Override reject to exit application when dialog is closed"""
-        # Exit the application when the login dialog is closed/canceled
-        from PySide6.QtWidgets import QApplication
-        QApplication.quit()
-        super().reject()
+        """Override reject to exit application - ONLINE-ONLY MODE"""
+        # ONLINE-ONLY: Exit the application when login dialog is closed/canceled
+        # No offline mode is permitted
+        from PySide6.QtWidgets import QApplication, QMessageBox
+
+        # Show confirmation dialog
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Exit Application")
+        msg.setText("Kitchen Dashboard v1.0.6 requires online authentication.")
+        msg.setInformativeText("Are you sure you want to exit the application?")
+        msg.setIcon(QMessageBox.Question)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+
+        if msg.exec() == QMessageBox.Yes:
+            QApplication.quit()
+        # If No, do nothing - keep the login dialog open

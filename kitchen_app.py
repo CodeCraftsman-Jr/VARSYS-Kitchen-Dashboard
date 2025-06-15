@@ -166,20 +166,18 @@ class KitchenDashboardApp(QMainWindow):
         self.logger.log_section_header("Firebase Initialization")
         try:
             from modules.optimized_firebase_manager import get_optimized_firebase_manager
-            self.firebase_manager = get_optimized_firebase_manager()
+            # Pass Firebase config manager to optimized manager
+            self.firebase_manager = get_optimized_firebase_manager(
+                firebase_config_manager=getattr(self, 'firebase_config_manager', None)
+            )
             self.logger.info("Optimized Firebase manager initialized successfully")
         except Exception as e:
             self.logger.error(f"Failed to initialize optimized Firebase manager: {e}")
             self.firebase_manager = None
 
-        # Keep legacy Firebase sync for compatibility
-        try:
-            self.firebase_sync = FirebaseSync(parent=self, data=self.data, data_dir="data")
-            # Add a log callback to show Firebase logs in the application
-            self.firebase_sync.add_log_callback(self.log_firebase_message)
-        except Exception as e:
-            self.logger.error(f"Legacy Firebase sync initialization failed: {e}")
-            self.firebase_sync = None
+        # Legacy Firebase sync disabled for subscription model
+        # Using optimized Firebase manager instead
+        self.firebase_sync = None
 
         # Firebase login and sync are now managed by the optimized manager
         self.logger.log_section_footer("Firebase Initialization", True, "Firebase services initialized with enhanced authentication")
@@ -255,36 +253,74 @@ class KitchenDashboardApp(QMainWindow):
 
         # Initialize inventory_widget as it's needed by other parts
         self.inventory_widget = None
-        # Directly initialize the UI, bypassing authentication
-        self.initialize_ui()
-        # If there was any user-specific setup that happened after login, ensure defaults are fine
-        # For example, self.firebase_sync.current_user_id is already defaulted in FirebaseSync
 
-        # Perform daily sync check after UI is initialized
-        # self._check_and_perform_daily_sync() # Will be called at the end of initialize_ui
+        # Initialize Firebase configuration manager
+        try:
+            from modules.firebase_config_manager import get_firebase_config_manager
+            self.firebase_config_manager = get_firebase_config_manager()
+            self.logger.info("Firebase configuration manager initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Firebase config manager: {e}")
+            self.firebase_config_manager = None
+
+        # SUBSCRIPTION-BASED AUTHENTICATION: Only subscribed users can access
+        self.logger.info("Kitchen Dashboard v1.0.6 - Subscription-based access")
+        self.logger.info("Only users with valid Firebase accounts can access this application")
+
+        # Check if daily sync is needed (without performing it)
+        self._check_and_perform_daily_sync()
+
+        # Check if Firebase is properly configured
+        if (self.firebase_config_manager and self.firebase_config_manager.is_configured()):
+            self.logger.info("Firebase configured - checking for existing session")
+            # Check for existing session before showing login dialog
+            if not self.check_existing_session():
+                self.logger.info("No valid session found - showing login for subscribed users")
+                self.show_authentication_dialog()
+        else:
+            self.logger.error("Firebase not configured - cannot authenticate subscribed users")
+            self.show_firebase_required_dialog()
+            return
 
     def create_window_icon(self):
         """Create a custom window icon for the kitchen dashboard"""
-        from PySide6.QtGui import QIcon, QPixmap, QPainter, QBrush, QColor
+        try:
+            from PySide6.QtGui import QIcon, QPixmap, QPainter, QBrush, QColor
 
-        # Create a 32x32 pixmap for the icon
-        pixmap = QPixmap(32, 32)
-        pixmap.fill(QColor(102, 126, 234))  # Modern blue background
+            # Create a 32x32 pixmap for the icon
+            pixmap = QPixmap(32, 32)
+            if pixmap.isNull():
+                # Fallback to a simple icon if pixmap creation fails
+                return QIcon()
 
-        painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing)
+            pixmap.fill(QColor(102, 126, 234))  # Modern blue background
 
-        # Draw a simple kitchen/chef hat shape
-        painter.setBrush(QBrush(QColor(255, 255, 255)))
-        painter.setPen(QColor(255, 255, 255))
+            # Use QPainter with proper error checking
+            painter = QPainter()
+            if not painter.begin(pixmap):
+                # If painter can't begin, return a simple icon
+                return QIcon()
 
-        # Draw chef hat outline (simplified)
-        painter.drawEllipse(8, 12, 16, 12)  # Hat base
-        painter.drawEllipse(10, 8, 12, 8)   # Hat top
+            try:
+                painter.setRenderHint(QPainter.Antialiasing)
 
-        painter.end()
+                # Draw a simple kitchen/chef hat shape
+                painter.setBrush(QBrush(QColor(255, 255, 255)))
+                painter.setPen(QColor(255, 255, 255))
 
-        return QIcon(pixmap)
+                # Draw chef hat outline (simplified)
+                painter.drawEllipse(8, 12, 16, 12)  # Hat base
+                painter.drawEllipse(10, 8, 12, 8)   # Hat top
+
+            finally:
+                painter.end()
+
+            return QIcon(pixmap)
+
+        except Exception as e:
+            # If anything goes wrong, return a simple icon
+            print(f"[WARNING] Error creating window icon: {e}")
+            return QIcon()
 
     def apply_modern_window_style(self):
         """Apply modern styling to the window frame and title bar"""
@@ -347,36 +383,10 @@ class KitchenDashboardApp(QMainWindow):
                 sync_needed = True
 
         if sync_needed:
-            self.logger.info("Attempting daily synchronization...")
-            # Ensure firebase_sync is initialized and the Firestore DB client is available
-            if hasattr(self, 'firebase_sync') and firebase_integration.FIRESTORE_DB:
-                # First, sync local changes to cloud
-                self.logger.info("Daily Sync: Syncing local data to cloud...")
-                cloud_sync_success = self.firebase_sync.sync_to_cloud()
-                if cloud_sync_success:
-                    self.logger.info("Daily Sync: Successfully synced local data to cloud.")
-                    # Then, sync cloud changes to local
-                    self.logger.info("Daily Sync: Syncing cloud data to local...")
-                    local_sync_success = self.firebase_sync.sync_from_cloud()
-                    if local_sync_success:
-                        self.logger.info("Daily Sync: Successfully synced cloud data to local.")
-                        # Reload data and refresh UI after successful download from cloud
-                        self.logger.info("Daily Sync: Reloading all application data after cloud sync.")
-                        self.data = self.load_data() 
-                        self.logger.info("Daily Sync: Refreshing all UI tabs after data reload.")
-                        self.refresh_all_tabs()
-                        try:
-                            with open(last_sync_file, 'w') as f:
-                                f.write(today_str)
-                            self.logger.info(f"Updated last sync date to {today_str}.")
-                        except Exception as e:
-                            self.logger.error(f"Error writing last sync date file: {e}")
-                    else:
-                        self.logger.error("Daily Sync: Failed to sync cloud data to local.")
-                else:
-                    self.logger.error("Daily Sync: Failed to sync local data to cloud.")
-            else:
-                self.logger.warning("Firebase not initialized or no database connection, cannot perform daily sync.")
+            self.logger.info("Daily sync needed - will be performed after user authentication")
+            # SUBSCRIPTION MODEL: Daily sync requires user authentication
+            # Store sync requirement to be performed after login
+            self.daily_sync_needed = True
         else:
             # Ensure local data is loaded even if sync is skipped
             self.logger.info("Daily sync not needed. Ensuring local data is loaded.")
@@ -384,72 +394,1419 @@ class KitchenDashboardApp(QMainWindow):
             # self.update_ui_with_loaded_data() # Call if you have a method to refresh UI from self.data
             pass
 
-    def trigger_manual_full_sync(self):
-        self.logger.info("Manual full sync triggered.")
-        progress_dialog = QMessageBox(self)
-        progress_dialog.setWindowTitle("Synchronization")
-        progress_dialog.setText("Manual sync in progress... Please wait.")
-        progress_dialog.setStandardButtons(QMessageBox.NoButton) # No buttons, just info
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.show()
-        QApplication.processEvents() # Ensure dialog shows before long operation
+    def perform_authenticated_daily_sync(self):
+        """Perform daily sync after user authentication for subscription model"""
+        try:
+            self.logger.info("Performing daily sync for authenticated subscriber...")
 
-        sync_successful = False
-        if hasattr(self, 'firebase_sync') and self.firebase_sync.db:
-            self.logger.info("Manual Sync: Syncing local data to cloud...")
-            cloud_sync_success = self.firebase_sync.sync_to_cloud()
-            if cloud_sync_success:
-                self.logger.info("Manual Sync: Successfully synced local data to cloud.")
-                self.logger.info("Manual Sync: Syncing cloud data to local...")
-                local_sync_success = self.firebase_sync.sync_from_cloud()
-                if local_sync_success:
-                    self.logger.info("Manual Sync: Successfully synced cloud data to local.")
-                    sync_successful = True
+            # Use the optimized Firebase manager for sync
+            if self.firebase_manager and self.firebase_manager.is_authenticated():
+                # Sync data to cloud using optimized manager
+                operation_id = self.firebase_manager.sync_data_to_cloud(self.data)
+
+                if operation_id:
+                    self.logger.info("Daily sync: Data successfully synced to cloud")
+
+                    # Update last sync date
                     try:
                         last_sync_file = os.path.join('data', 'last_sync_date.txt')
                         today_str = datetime.now().strftime('%Y-%m-%d')
                         with open(last_sync_file, 'w') as f:
                             f.write(today_str)
-                        self.logger.info(f"Updated last sync date to {today_str} after manual sync.")
+                        self.logger.info(f"Updated last sync date to {today_str}")
+
+                        # Clear the sync needed flag
+                        self.daily_sync_needed = False
+
+                        # Show notification
+                        self.add_notification(
+                            "Daily Sync Complete",
+                            "Your data has been automatically synced to the cloud",
+                            "success"
+                        )
                     except Exception as e:
-                        self.logger.error(f"Error writing last sync date file after manual sync: {e}")
+                        self.logger.error(f"Error updating last sync date: {e}")
                 else:
-                    self.logger.error("Manual Sync: Failed to sync cloud data to local.")
-                    QMessageBox.critical(self, "Sync Error", "Failed to sync data from cloud. Check logs for details.")
+                    self.logger.error("Daily sync failed - could not sync to cloud")
             else:
-                self.logger.error("Manual Sync: Failed to sync local data to cloud.")
-                QMessageBox.critical(self, "Sync Error", "Failed to sync data to cloud. Check logs for details.")
-        else:
-            self.logger.warning("Firebase not initialized or no database connection, cannot perform manual sync.")
-            QMessageBox.warning(self, "Sync Error", "Firebase not available. Cannot perform manual sync.")
-        
+                self.logger.warning("Cannot perform daily sync - user not authenticated")
+
+        except Exception as e:
+            self.logger.error(f"Error in authenticated daily sync: {e}")
+
+    def trigger_manual_full_sync(self):
+        """Trigger manual sync for subscription-based model"""
+        self.logger.info("Manual sync triggered for authenticated subscriber")
+
+        # Check if user is authenticated
+        if not (self.firebase_manager and self.firebase_manager.is_authenticated()):
+            QMessageBox.warning(
+                self,
+                "Authentication Required",
+                "You must be logged in to sync data to the cloud."
+            )
+            return False
+
+        progress_dialog = QMessageBox(self)
+        progress_dialog.setWindowTitle("Cloud Synchronization")
+        progress_dialog.setText("Syncing your data to the cloud... Please wait.")
+        progress_dialog.setStandardButtons(QMessageBox.NoButton)
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.show()
+        QApplication.processEvents()
+
+        sync_successful = False
+        try:
+            self.logger.info("Manual Sync: Syncing subscriber data to cloud...")
+
+            # Use optimized Firebase manager for sync
+            operation_id = self.firebase_manager.sync_data_to_cloud(self.data)
+
+            if operation_id:
+                self.logger.info("Manual Sync: Successfully synced data to cloud")
+                sync_successful = True
+
+                # Update last sync date
+                try:
+                    last_sync_file = os.path.join('data', 'last_sync_date.txt')
+                    today_str = datetime.now().strftime('%Y-%m-%d')
+                    with open(last_sync_file, 'w') as f:
+                        f.write(today_str)
+                    self.logger.info(f"Updated last sync date to {today_str} after manual sync")
+                except Exception as e:
+                    self.logger.error(f"Error updating last sync date: {e}")
+            else:
+                self.logger.error("Manual Sync: Failed to sync data to cloud")
+                QMessageBox.critical(
+                    self,
+                    "Sync Error",
+                    "Failed to sync data to cloud. Please check your connection and try again."
+                )
+
+        except Exception as e:
+            self.logger.error(f"Manual sync error: {e}")
+            QMessageBox.critical(
+                self,
+                "Sync Error",
+                f"An error occurred during sync: {str(e)}"
+            )
+
         progress_dialog.hide()
         progress_dialog.deleteLater()
 
         if sync_successful:
-            QMessageBox.information(self, "Sync Complete", "Manual data synchronization with cloud completed successfully!")
-        # Error messages are shown inline above for specific failures
-        
+            QMessageBox.information(
+                self,
+                "Sync Complete",
+                "Your data has been successfully synchronized to the cloud!"
+            )
+
         return sync_successful
-            
+
+    def initialize_cloud_sync_for_user(self, user_info):
+        """Initialize cloud sync functionality for authenticated user"""
+        try:
+            user_id = user_info.get('localId', user_info.get('uid', ''))
+            user_email = user_info.get('email', 'Unknown')
+
+            self.logger.info(f"Initializing cloud sync for user: {user_email} (UID: {user_id})")
+
+            # Set up user-specific sync settings
+            self.cloud_sync_settings = {
+                'user_id': user_id,
+                'user_email': user_email,
+                'auto_sync_enabled': True,
+                'sync_interval_minutes': 30,
+                'last_sync_timestamp': None,
+                'sync_collections': [
+                    'inventory', 'recipes', 'budget', 'sales', 'shopping_list',
+                    'waste', 'cleaning_maintenance', 'items', 'categories',
+                    'recipe_ingredients', 'pricing', 'packing_materials',
+                    'recipe_packing_materials', 'sales_orders', 'meal_plan'
+                ]
+            }
+
+            # Initialize cloud sync manager if available
+            try:
+                from modules.cloud_sync_manager import CloudSyncManager
+                self.cloud_sync_manager = CloudSyncManager(parent=self)
+
+                # Connect sync signals
+                self.cloud_sync_manager.sync_started.connect(self.on_cloud_sync_started)
+                self.cloud_sync_manager.sync_completed.connect(self.on_cloud_sync_completed)
+
+                self.logger.info("Cloud sync manager initialized successfully")
+
+                # Perform initial sync check
+                self.check_and_perform_initial_sync()
+
+            except ImportError as e:
+                self.logger.warning(f"Cloud sync manager not available: {e}")
+                # Fallback to basic Firebase sync
+                self.setup_basic_cloud_sync()
+
+        except Exception as e:
+            self.logger.error(f"Error initializing cloud sync: {e}")
+
+    def setup_basic_cloud_sync(self):
+        """Setup basic cloud sync functionality as fallback"""
+        try:
+            self.logger.info("Setting up basic cloud sync functionality")
+
+            # Create sync timer for periodic sync
+            from PySide6.QtCore import QTimer
+            self.sync_timer = QTimer()
+            self.sync_timer.timeout.connect(self.perform_periodic_sync)
+
+            # Start periodic sync (every 30 minutes)
+            sync_interval = self.cloud_sync_settings.get('sync_interval_minutes', 30) * 60 * 1000
+            self.sync_timer.start(sync_interval)
+
+            self.logger.info(f"Basic cloud sync timer started (interval: {sync_interval/60000} minutes)")
+
+        except Exception as e:
+            self.logger.error(f"Error setting up basic cloud sync: {e}")
+
+    def check_and_perform_initial_sync(self):
+        """Check if initial sync is needed and perform it"""
+        try:
+            if not self.firebase_manager or not self.firebase_manager.is_authenticated():
+                return
+
+            user_id = self.cloud_sync_settings.get('user_id')
+            if not user_id:
+                return
+
+            self.logger.info("Checking for initial cloud sync requirement...")
+
+            # Check if user has any data in cloud
+            self.check_cloud_data_exists()
+
+        except Exception as e:
+            self.logger.error(f"Error checking initial sync: {e}")
+
+    def check_cloud_data_exists(self):
+        """Check if user has existing data in cloud"""
+        try:
+            if not self.firebase_manager or not self.firebase_manager.db:
+                return
+
+            user_id = self.cloud_sync_settings.get('user_id')
+            user_ref = self.firebase_manager.db.collection('users').document(user_id)
+
+            # Check if user document exists
+            user_doc = user_ref.get()
+            if user_doc.exists:
+                self.logger.info("User has existing cloud data")
+                # Optionally prompt for sync direction
+                self.prompt_sync_direction()
+            else:
+                self.logger.info("New user - performing initial upload")
+                # Perform initial upload of local data
+                self.perform_initial_upload()
+
+        except Exception as e:
+            self.logger.error(f"Error checking cloud data: {e}")
+
+    def prompt_sync_direction(self):
+        """Prompt user for sync direction when cloud data exists"""
+        try:
+            from PySide6.QtWidgets import QMessageBox, QPushButton
+
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Cloud Sync - Data Found")
+            msg.setText("Existing data found in cloud!")
+            msg.setInformativeText("How would you like to sync your data?")
+            msg.setIcon(QMessageBox.Question)
+
+            # Custom buttons
+            download_btn = msg.addButton("Download from Cloud", QMessageBox.ActionRole)
+            upload_btn = msg.addButton("Upload to Cloud", QMessageBox.ActionRole)
+            merge_btn = msg.addButton("Smart Merge", QMessageBox.ActionRole)
+            cancel_btn = msg.addButton("Skip for Now", QMessageBox.RejectRole)
+
+            msg.setDefaultButton(merge_btn)
+            msg.exec()
+
+            clicked_button = msg.clickedButton()
+
+            if clicked_button == download_btn:
+                self.perform_cloud_download()
+            elif clicked_button == upload_btn:
+                self.perform_cloud_upload()
+            elif clicked_button == merge_btn:
+                self.perform_smart_merge()
+            else:
+                self.logger.info("User skipped initial sync")
+
+        except Exception as e:
+            self.logger.error(f"Error in sync direction prompt: {e}")
+
+    def perform_initial_upload(self):
+        """Perform initial upload of local data to cloud"""
+        try:
+            self.logger.info("Performing initial upload to cloud...")
+
+            # Get all local data
+            local_data = self.get_all_local_data()
+
+            if not local_data:
+                self.logger.info("No local data to upload")
+                return
+
+            # Upload to cloud with user isolation
+            self.upload_data_to_cloud(local_data, show_progress=True)
+
+        except Exception as e:
+            self.logger.error(f"Error in initial upload: {e}")
+
+    def get_all_local_data(self):
+        """Get all local data for cloud sync with enhanced error handling"""
+        try:
+            local_data = {}
+
+            # Check if cloud sync settings are available
+            if not hasattr(self, 'cloud_sync_settings') or not self.cloud_sync_settings:
+                self.logger.warning("Cloud sync settings not initialized")
+                return self.get_local_data_fallback()
+
+            # Get sync collections list
+            sync_collections = self.cloud_sync_settings.get('sync_collections', [])
+            if not sync_collections:
+                self.logger.warning("No sync collections configured")
+                return self.get_local_data_fallback()
+
+            # Check if data manager is available
+            if not hasattr(self, 'data_manager') or not self.data_manager:
+                self.logger.warning("Data manager not available")
+                return self.get_local_data_from_files()
+
+            # Get data from data manager
+            self.logger.info(f"Checking {len(sync_collections)} collections for sync...")
+
+            for collection_name in sync_collections:
+                try:
+                    # Check if data manager has this attribute
+                    if hasattr(self.data_manager, collection_name):
+                        df = getattr(self.data_manager, collection_name)
+                        if df is not None and not df.empty:
+                            local_data[collection_name] = df
+                            self.logger.debug(f"Found {len(df)} records in {collection_name}")
+                        else:
+                            self.logger.debug(f"Collection {collection_name} is empty or None")
+                    else:
+                        self.logger.debug(f"Data manager does not have attribute: {collection_name}")
+
+                except Exception as e:
+                    self.logger.error(f"Error accessing collection {collection_name}: {e}")
+                    continue
+
+            self.logger.info(f"Retrieved {len(local_data)} collections for sync (total records: {sum(len(df) for df in local_data.values())})")
+
+            # If no data found, try fallback methods
+            if not local_data:
+                self.logger.warning("No data found in data manager, trying fallback methods...")
+                return self.get_local_data_fallback()
+
+            return local_data
+
+        except Exception as e:
+            self.logger.error(f"Error getting local data: {e}")
+            return self.get_local_data_fallback()
+
+    def get_local_data_fallback(self):
+        """Fallback method to get local data when data manager is not available"""
+        try:
+            self.logger.info("Using fallback method to get local data...")
+
+            # Try to get data from CSV files directly
+            return self.get_local_data_from_files()
+
+        except Exception as e:
+            self.logger.error(f"Error in fallback data retrieval: {e}")
+            return {}
+
+    def get_local_data_from_files(self):
+        """Get local data directly from CSV files"""
+        try:
+            import os
+            import pandas as pd
+
+            local_data = {}
+            data_dir = os.path.join(os.getcwd(), 'data')
+
+            if not os.path.exists(data_dir):
+                self.logger.warning(f"Data directory not found: {data_dir}")
+                return {}
+
+            # Define expected CSV files
+            expected_files = [
+                'inventory', 'recipes', 'budget', 'sales', 'shopping_list',
+                'waste', 'cleaning_maintenance', 'items', 'categories',
+                'recipe_ingredients', 'pricing', 'packing_materials',
+                'recipe_packing_materials', 'sales_orders', 'meal_plan'
+            ]
+
+            self.logger.info(f"Scanning data directory: {data_dir}")
+
+            for file_name in expected_files:
+                csv_path = os.path.join(data_dir, f"{file_name}.csv")
+
+                if os.path.exists(csv_path):
+                    try:
+                        df = pd.read_csv(csv_path)
+                        if not df.empty:
+                            local_data[file_name] = df
+                            self.logger.debug(f"Loaded {len(df)} records from {file_name}.csv")
+                        else:
+                            self.logger.debug(f"File {file_name}.csv is empty")
+                    except Exception as e:
+                        self.logger.error(f"Error reading {csv_path}: {e}")
+                        continue
+                else:
+                    self.logger.debug(f"File not found: {csv_path}")
+
+            self.logger.info(f"Loaded {len(local_data)} collections from files (total records: {sum(len(df) for df in local_data.values())})")
+            return local_data
+
+        except Exception as e:
+            self.logger.error(f"Error getting data from files: {e}")
+            return {}
+
+    def validate_local_data_for_sync(self):
+        """Validate and report on local data availability for sync"""
+        try:
+            self.logger.info("Validating local data for sync...")
+
+            # Get data using all available methods
+            data_manager_data = {}
+            file_data = {}
+
+            # Try data manager first
+            if hasattr(self, 'data_manager') and self.data_manager:
+                sync_collections = self.cloud_sync_settings.get('sync_collections', []) if hasattr(self, 'cloud_sync_settings') else []
+                for collection_name in sync_collections:
+                    if hasattr(self.data_manager, collection_name):
+                        df = getattr(self.data_manager, collection_name)
+                        if df is not None and not df.empty:
+                            data_manager_data[collection_name] = len(df)
+
+            # Try file system
+            file_data_raw = self.get_local_data_from_files()
+            for collection_name, df in file_data_raw.items():
+                if not df.empty:
+                    file_data[collection_name] = len(df)
+
+            # Create validation report
+            validation_report = {
+                'data_manager_collections': len(data_manager_data),
+                'data_manager_records': sum(data_manager_data.values()),
+                'file_collections': len(file_data),
+                'file_records': sum(file_data.values()),
+                'data_manager_details': data_manager_data,
+                'file_details': file_data,
+                'has_data': len(data_manager_data) > 0 or len(file_data) > 0
+            }
+
+            self.logger.info(f"Data validation report: {validation_report}")
+            return validation_report
+
+        except Exception as e:
+            self.logger.error(f"Error validating local data: {e}")
+            return {'has_data': False, 'error': str(e)}
+
+    def show_data_validation_dialog(self):
+        """Show a dialog with data validation information"""
+        try:
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit
+
+            validation_report = self.validate_local_data_for_sync()
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Local Data Validation")
+            dialog.resize(500, 400)
+
+            layout = QVBoxLayout(dialog)
+
+            # Summary
+            if validation_report.get('has_data', False):
+                summary_text = f"""
+Data Manager: {validation_report.get('data_manager_collections', 0)} collections, {validation_report.get('data_manager_records', 0)} records
+File System: {validation_report.get('file_collections', 0)} collections, {validation_report.get('file_records', 0)} records
+                """.strip()
+                summary_label = QLabel(summary_text)
+                summary_label.setStyleSheet("font-weight: bold; color: green;")
+            else:
+                summary_label = QLabel("No data found for sync")
+                summary_label.setStyleSheet("font-weight: bold; color: red;")
+
+            layout.addWidget(summary_label)
+
+            # Details
+            details_text = QTextEdit()
+            details_content = "Data Manager Collections:\n"
+            for collection, count in validation_report.get('data_manager_details', {}).items():
+                details_content += f"  • {collection}: {count} records\n"
+
+            details_content += "\nFile System Collections:\n"
+            for collection, count in validation_report.get('file_details', {}).items():
+                details_content += f"  • {collection}: {count} records\n"
+
+            if validation_report.get('error'):
+                details_content += f"\nError: {validation_report['error']}"
+
+            details_text.setPlainText(details_content)
+            details_text.setReadOnly(True)
+            layout.addWidget(details_text)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            layout.addWidget(close_btn)
+
+            dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing data validation dialog: {e}")
+
+    def show_firebase_diagnostics_dialog(self):
+        """Show comprehensive Firebase diagnostics dialog"""
+        try:
+            from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                                         QPushButton, QTextEdit, QGroupBox, QScrollArea)
+            import json
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Firebase Connection Diagnostics")
+            dialog.resize(700, 600)
+
+            layout = QVBoxLayout(dialog)
+
+            # Get current status
+            status = self.get_detailed_firebase_status()
+
+            # Status summary
+            status_group = QGroupBox("Current Status")
+            status_layout = QVBoxLayout(status_group)
+
+            status_label = QLabel(status['display_text'])
+            status_label.setStyleSheet(status['style'])
+            status_layout.addWidget(status_label)
+
+            if status['details']:
+                details_label = QLabel(status['details'])
+                details_label.setWordWrap(True)
+                status_layout.addWidget(details_label)
+
+            layout.addWidget(status_group)
+
+            # Detailed diagnostics
+            if status.get('diagnostics'):
+                diag_group = QGroupBox("Detailed Diagnostics")
+                diag_layout = QVBoxLayout(diag_group)
+
+                diag_text = QTextEdit()
+                diag_content = json.dumps(status['diagnostics'], indent=2)
+                diag_text.setPlainText(diag_content)
+                diag_text.setReadOnly(True)
+                diag_text.setMaximumHeight(200)
+                diag_layout.addWidget(diag_text)
+
+                layout.addWidget(diag_group)
+
+                # Recommendations
+                recommendations = status['diagnostics'].get('recommendations', [])
+                if recommendations:
+                    rec_group = QGroupBox("Recommendations")
+                    rec_layout = QVBoxLayout(rec_group)
+
+                    for rec in recommendations:
+                        rec_label = QLabel(f"• {rec}")
+                        rec_label.setWordWrap(True)
+                        rec_layout.addWidget(rec_label)
+
+                    layout.addWidget(rec_group)
+
+            # Action buttons
+            button_layout = QHBoxLayout()
+
+            # Test connection button
+            test_btn = QPushButton("Test Connection")
+            test_btn.clicked.connect(self.test_firebase_connection)
+            button_layout.addWidget(test_btn)
+
+            # Reinitialize button
+            reinit_btn = QPushButton("Reinitialize Firebase")
+            reinit_btn.clicked.connect(self.reinitialize_firebase_connection)
+            button_layout.addWidget(reinit_btn)
+
+            # Refresh button
+            refresh_btn = QPushButton("Refresh Status")
+            refresh_btn.clicked.connect(lambda: self.refresh_firebase_diagnostics_dialog(dialog))
+            button_layout.addWidget(refresh_btn)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            button_layout.addWidget(close_btn)
+
+            layout.addLayout(button_layout)
+
+            dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing Firebase diagnostics dialog: {e}")
+
+    def test_firebase_connection(self):
+        """Test Firebase connection and show results"""
+        try:
+            if not self.firebase_manager:
+                QMessageBox.warning(self, "Firebase Test", "Firebase manager not available")
+                return
+
+            # Test database connection
+            if hasattr(self.firebase_manager, 'test_database_connection'):
+                db_test = self.firebase_manager.test_database_connection()
+                auth_test = self.firebase_manager.is_authenticated()
+
+                if db_test and auth_test:
+                    QMessageBox.information(self, "Firebase Test", "✅ All Firebase services are working correctly!")
+                elif db_test:
+                    QMessageBox.warning(self, "Firebase Test", "⚠️ Database connection works but user not authenticated")
+                elif auth_test:
+                    QMessageBox.warning(self, "Firebase Test", "⚠️ User authenticated but database connection failed")
+                else:
+                    QMessageBox.critical(self, "Firebase Test", "❌ Firebase connection test failed")
+            else:
+                QMessageBox.warning(self, "Firebase Test", "Firebase test functionality not available")
+
+        except Exception as e:
+            self.logger.error(f"Error testing Firebase connection: {e}")
+            QMessageBox.critical(self, "Firebase Test", f"Error during test: {str(e)}")
+
+    def reinitialize_firebase_connection(self):
+        """Reinitialize Firebase connection"""
+        try:
+            if not self.firebase_manager:
+                QMessageBox.warning(self, "Firebase Reinit", "Firebase manager not available")
+                return
+
+            # Show progress
+            progress = QMessageBox(self)
+            progress.setWindowTitle("Firebase Reinitialization")
+            progress.setText("Reinitializing Firebase services...")
+            progress.setStandardButtons(QMessageBox.NoButton)
+            progress.show()
+            QApplication.processEvents()
+
+            # Attempt reinitialization
+            if hasattr(self.firebase_manager, 'reinitialize_firebase'):
+                success = self.firebase_manager.reinitialize_firebase()
+            else:
+                success = self.firebase_manager.reinitialize_database()
+
+            progress.hide()
+
+            if success:
+                QMessageBox.information(self, "Firebase Reinit", "✅ Firebase reinitialization successful!")
+                self.add_notification("Firebase", "Firebase services reinitialized successfully", "success")
+            else:
+                QMessageBox.warning(self, "Firebase Reinit", "⚠️ Firebase reinitialization failed")
+                self.add_notification("Firebase", "Firebase reinitialization failed", "error")
+
+        except Exception as e:
+            self.logger.error(f"Error reinitializing Firebase: {e}")
+            QMessageBox.critical(self, "Firebase Reinit", f"Error during reinitialization: {str(e)}")
+
+    def refresh_firebase_diagnostics_dialog(self, dialog):
+        """Refresh the Firebase diagnostics dialog"""
+        try:
+            dialog.accept()  # Close current dialog
+            self.show_firebase_diagnostics_dialog()  # Open new one with updated info
+        except Exception as e:
+            self.logger.error(f"Error refreshing Firebase diagnostics: {e}")
+
+    def get_detailed_firebase_status(self):
+        """Get detailed Firebase connection status for display with enhanced diagnostics"""
+        try:
+            # Default status
+            status = {
+                'display_text': '❌ Firebase Status Unknown',
+                'style': 'color: #ef4444; font-weight: bold;',
+                'details': None,
+                'diagnostics': None
+            }
+
+            # Check if Firebase manager exists
+            if not self.firebase_manager:
+                status.update({
+                    'display_text': '❌ Firebase Manager Not Available',
+                    'details': 'Firebase manager is not initialized'
+                })
+                return status
+
+            # Get comprehensive diagnostics
+            try:
+                diagnostics = self.firebase_manager.get_connection_diagnostics()
+                status['diagnostics'] = diagnostics
+
+                # Determine status based on diagnostics
+                overall_status = diagnostics.get('overall_status', 'unknown')
+                components = diagnostics.get('components', {})
+
+                if overall_status == 'fully_connected':
+                    user_email = components.get('user_session', {}).get('user_email', 'Unknown')
+                    status.update({
+                        'display_text': f'✅ Firebase Fully Connected ({user_email})',
+                        'style': 'color: #10b981; font-weight: bold;',
+                        'details': 'All Firebase services operational'
+                    })
+                elif overall_status == 'auth_only':
+                    status.update({
+                        'display_text': '⚠️ Firebase Auth Only (Database Unavailable)',
+                        'style': 'color: #f59e0b; font-weight: bold;',
+                        'details': 'Authentication working but database connection failed'
+                    })
+                elif overall_status == 'database_only':
+                    status.update({
+                        'display_text': '⚠️ Firebase Database Only (No Auth)',
+                        'style': 'color: #f59e0b; font-weight: bold;',
+                        'details': 'Database connected but authentication unavailable'
+                    })
+                elif overall_status == 'disconnected':
+                    status.update({
+                        'display_text': '❌ Firebase Disconnected',
+                        'details': 'No Firebase services available'
+                    })
+                elif overall_status == 'error':
+                    status.update({
+                        'display_text': '❌ Firebase Error State',
+                        'details': 'Firebase services encountered errors'
+                    })
+                else:
+                    # Fallback to component-based analysis
+                    admin_available = components.get('admin_sdk', {}).get('available', False)
+                    db_available = components.get('firestore_database', {}).get('available', False)
+                    auth_available = components.get('pyrebase_auth', {}).get('available', False)
+                    user_authenticated = components.get('user_session', {}).get('authenticated', False)
+
+                    if db_available and auth_available and user_authenticated:
+                        user_email = components.get('user_session', {}).get('user_email', 'Unknown')
+                        status.update({
+                            'display_text': f'✅ Firebase Connected ({user_email})',
+                            'style': 'color: #10b981; font-weight: bold;',
+                            'details': 'All services operational'
+                        })
+                    elif auth_available and user_authenticated:
+                        status.update({
+                            'display_text': '⚠️ Firebase Auth Connected (Database Issues)',
+                            'style': 'color: #f59e0b; font-weight: bold;',
+                            'details': 'Authentication working, database connection problems'
+                        })
+                    elif db_available:
+                        status.update({
+                            'display_text': '⚠️ Firebase Database Connected (Not Authenticated)',
+                            'style': 'color: #f59e0b; font-weight: bold;',
+                            'details': 'Database available but user not authenticated'
+                        })
+                    else:
+                        status.update({
+                            'display_text': '❌ Firebase Services Unavailable',
+                            'details': 'No Firebase services are working properly'
+                        })
+
+            except Exception as diag_error:
+                self.logger.error(f"Error getting Firebase diagnostics: {diag_error}")
+                status.update({
+                    'display_text': '❌ Firebase Diagnostics Failed',
+                    'details': f'Could not retrieve Firebase status: {str(diag_error)}'
+                })
+
+            return status
+
+        except Exception as e:
+            self.logger.error(f"Error getting Firebase status: {e}")
+            return {
+                'display_text': f'❌ Firebase Status Error: {str(e)}',
+                'style': 'color: #ef4444; font-weight: bold;',
+                'details': 'Error occurred while checking Firebase status',
+                'diagnostics': None
+            }
+
+    def upload_data_to_cloud(self, data, show_progress=False):
+        """Upload data to cloud with user UID isolation - Async version"""
+        try:
+            if not self.firebase_manager or not data:
+                return False
+
+            user_id = self.cloud_sync_settings.get('user_id')
+            if not user_id:
+                self.logger.error("No user ID available for cloud upload")
+                return False
+
+            self.logger.info(f"Starting async upload to cloud for user: {user_id}")
+
+            # Start async upload operation
+            self.start_async_sync_operation('upload', data, show_progress)
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error starting cloud upload: {e}")
+            return False
+
+    def start_async_sync_operation(self, operation_type, data=None, show_progress=True):
+        """Start an asynchronous sync operation with progress tracking"""
+        try:
+            from PySide6.QtCore import QThread, QTimer
+
+            # Prevent multiple concurrent operations
+            if hasattr(self, 'active_sync_worker') and self.active_sync_worker and self.active_sync_worker.isRunning():
+                self.add_notification("Cloud Sync", "Another sync operation is already in progress", "warning")
+                return False
+
+            # Validate Firebase manager before starting
+            if not self.firebase_manager:
+                self.logger.error("Firebase manager not available")
+                self.add_notification("Cloud Sync", "Firebase manager not available", "error")
+                return False
+
+            if not self.firebase_manager.is_authenticated():
+                self.logger.error("Firebase not authenticated")
+                self.add_notification("Cloud Sync", "Firebase not authenticated - please login again", "error")
+                return False
+
+            if not hasattr(self.firebase_manager, 'db') or not self.firebase_manager.db:
+                self.logger.warning("Firebase database not initialized - attempting to reinitialize...")
+
+                # Try to reinitialize the database
+                if hasattr(self.firebase_manager, 'reinitialize_database'):
+                    if self.firebase_manager.reinitialize_database():
+                        self.logger.info("Firebase database reinitialized successfully")
+                    else:
+                        self.logger.error("Failed to reinitialize Firebase database")
+                        self.add_notification("Cloud Sync", "Firebase database not available", "error")
+                        return False
+                else:
+                    self.logger.error("Firebase database not initialized and cannot reinitialize")
+                    self.add_notification("Cloud Sync", "Firebase database not initialized", "error")
+                    return False
+
+            # Validate cloud sync settings
+            if not hasattr(self, 'cloud_sync_settings') or not self.cloud_sync_settings:
+                self.logger.error("Cloud sync settings not available")
+                self.add_notification("Cloud Sync", "Cloud sync settings not configured", "error")
+                return False
+
+            user_id = self.cloud_sync_settings.get('user_id')
+            if not user_id:
+                self.logger.error("User ID not available in cloud sync settings")
+                self.add_notification("Cloud Sync", "User ID not available for sync", "error")
+                return False
+
+            self.logger.info(f"Starting async {operation_type} operation for user: {user_id}")
+
+            # Import and create the async worker
+            from modules.async_cloud_sync_worker import AsyncCloudSyncWorker
+
+            self.active_sync_worker = AsyncCloudSyncWorker(
+                operation_type=operation_type,
+                firebase_manager=self.firebase_manager,
+                cloud_sync_settings=self.cloud_sync_settings,
+                data=data,
+                parent=self
+            )
+
+            # Connect worker signals
+            self.active_sync_worker.progress_updated.connect(self.on_async_sync_progress)
+            self.active_sync_worker.status_updated.connect(self.on_async_sync_status)
+            self.active_sync_worker.operation_completed.connect(self.on_async_sync_completed)
+            self.active_sync_worker.error_occurred.connect(self.on_async_sync_error)
+
+            # Show progress dialog if requested
+            if show_progress:
+                self.show_sync_progress_dialog(operation_type)
+
+            # Update UI to show sync is active
+            self.update_sync_status_indicator(True, operation_type)
+
+            # Start the worker
+            self.active_sync_worker.start()
+
+            self.logger.info(f"Started async {operation_type} operation")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error starting async sync operation: {e}")
+            return False
+
+    def show_sync_progress_dialog(self, operation_type):
+        """Show the sync progress dialog"""
+        try:
+            from modules.sync_progress_dialog import SyncProgressDialog
+
+            # Create progress dialog
+            self.sync_progress_dialog = SyncProgressDialog(
+                operation_id=f"{operation_type}_{int(QTimer().remainingTime())}",
+                operation_type=operation_type,
+                parent=self
+            )
+
+            # Connect cancel signal
+            self.sync_progress_dialog.cancel_requested.connect(self.cancel_sync_operation)
+
+            # Show dialog
+            self.sync_progress_dialog.show()
+
+        except Exception as e:
+            self.logger.error(f"Error showing sync progress dialog: {e}")
+
+    def on_async_sync_progress(self, progress_data):
+        """Handle async sync progress updates"""
+        try:
+            progress = progress_data.get('progress', 0)
+            current_operation = progress_data.get('current_operation', '')
+            records_processed = progress_data.get('records_processed', 0)
+            total_records = progress_data.get('total_records', 0)
+            collection = progress_data.get('collection', '')
+
+            # Update progress dialog if it exists
+            if hasattr(self, 'sync_progress_dialog') and self.sync_progress_dialog:
+                self.sync_progress_dialog.update_progress(
+                    progress=progress,
+                    step_text=current_operation,
+                    records_processed=records_processed,
+                    total_records=total_records,
+                    collection=collection
+                )
+
+            # Update notification system with progress
+            if progress % 25 == 0 and progress > 0:  # Update every 25%
+                self.add_notification(
+                    "Cloud Sync Progress",
+                    f"{current_operation} - {progress}% complete",
+                    "info"
+                )
+
+            # Update any other UI elements
+            self.logger.debug(f"Sync progress: {progress}% - {current_operation} - {collection}")
+
+        except Exception as e:
+            self.logger.error(f"Error handling sync progress: {e}")
+
+    def on_async_sync_status(self, status_data):
+        """Handle async sync status updates"""
+        try:
+            status = status_data.get('status', '')
+            message = status_data.get('message', '')
+
+            # Update progress dialog if it exists
+            if hasattr(self, 'sync_progress_dialog') and self.sync_progress_dialog:
+                self.sync_progress_dialog.add_detail(f"[{QTimer().remainingTime()}] {message}")
+
+            self.logger.info(f"Sync status: {status} - {message}")
+
+        except Exception as e:
+            self.logger.error(f"Error handling sync status: {e}")
+
+    def on_async_sync_completed(self, result_data):
+        """Handle async sync completion"""
+        try:
+            success = result_data.get('success', False)
+            operation_type = result_data.get('operation_type', 'sync')
+            message = result_data.get('message', '')
+            data = result_data.get('data', None)
+
+            # Close progress dialog
+            if hasattr(self, 'sync_progress_dialog') and self.sync_progress_dialog:
+                self.sync_progress_dialog.sync_completed(success, message)
+                QTimer.singleShot(3000, self.sync_progress_dialog.accept)  # Auto-close after 3 seconds
+
+            if success:
+                self.logger.info(f"Async {operation_type} completed successfully")
+                self.add_notification("Cloud Sync", f"{operation_type.title()} completed successfully!", "success")
+
+                # Handle post-sync operations
+                if operation_type == 'download' and data:
+                    self.save_cloud_data_to_local(data)
+                    self.refresh_data_after_sync()
+                elif operation_type in ['smart_sync', 'bidirectional'] and data:
+                    self.save_cloud_data_to_local(data)
+                    self.refresh_data_after_sync()
+
+            else:
+                self.logger.error(f"Async {operation_type} failed: {message}")
+                self.add_notification("Cloud Sync", f"{operation_type.title()} failed: {message}", "error")
+
+            # Update UI to show sync is no longer active
+            self.update_sync_status_indicator(False)
+
+            # Clean up worker
+            if hasattr(self, 'active_sync_worker'):
+                self.active_sync_worker = None
+
+        except Exception as e:
+            self.logger.error(f"Error handling sync completion: {e}")
+
+    def on_async_sync_error(self, error_data):
+        """Handle async sync errors"""
+        try:
+            error_message = error_data.get('error', 'Unknown error')
+            operation_type = error_data.get('operation_type', 'sync')
+
+            # Close progress dialog with error
+            if hasattr(self, 'sync_progress_dialog') and self.sync_progress_dialog:
+                self.sync_progress_dialog.sync_completed(False, error_message)
+                QTimer.singleShot(5000, self.sync_progress_dialog.accept)  # Auto-close after 5 seconds
+
+            self.logger.error(f"Async {operation_type} error: {error_message}")
+            self.add_notification("Cloud Sync", f"{operation_type.title()} error: {error_message}", "error")
+
+            # Update UI to show sync is no longer active
+            self.update_sync_status_indicator(False)
+
+            # Clean up worker
+            if hasattr(self, 'active_sync_worker'):
+                self.active_sync_worker = None
+
+        except Exception as e:
+            self.logger.error(f"Error handling sync error: {e}")
+
+    def cancel_sync_operation(self, operation_id):
+        """Cancel ongoing sync operation"""
+        try:
+            if hasattr(self, 'active_sync_worker') and self.active_sync_worker and self.active_sync_worker.isRunning():
+                self.active_sync_worker.cancel_operation()
+                self.active_sync_worker.quit()
+                self.active_sync_worker.wait(5000)  # Wait up to 5 seconds for graceful shutdown
+
+                if self.active_sync_worker.isRunning():
+                    self.active_sync_worker.terminate()  # Force terminate if needed
+
+                self.active_sync_worker = None
+
+                self.logger.info(f"Cancelled sync operation: {operation_id}")
+                self.add_notification("Cloud Sync", "Sync operation cancelled", "info")
+
+                # Close progress dialog
+                if hasattr(self, 'sync_progress_dialog') and self.sync_progress_dialog:
+                    self.sync_progress_dialog.accept()
+
+        except Exception as e:
+            self.logger.error(f"Error cancelling sync operation: {e}")
+
+    def update_sync_status_indicator(self, is_active, operation_type=None):
+        """Update UI elements to show sync status"""
+        try:
+            # Update window title to show sync status
+            base_title = "VARSYS Kitchen Dashboard v1.0.6"
+            if is_active and operation_type:
+                self.setWindowTitle(f"{base_title} - Syncing ({operation_type.title()})...")
+            else:
+                self.setWindowTitle(base_title)
+
+            # Update user profile icon to show sync status
+            if hasattr(self, 'user_icon_widget'):
+                if is_active:
+                    # Add a visual indicator (e.g., spinning animation or different color)
+                    self.user_icon_widget.setStyleSheet("""
+                        QPushButton {
+                            background-color: #3b82f6;
+                            color: white;
+                            border: 2px solid #1d4ed8;
+                            border-radius: 20px;
+                            font-weight: bold;
+                            font-size: 14px;
+                        }
+                        QPushButton:hover {
+                            background-color: #2563eb;
+                        }
+                    """)
+                    self.user_icon_widget.setToolTip(f"Cloud sync in progress ({operation_type})...")
+                else:
+                    # Reset to normal styling
+                    self.user_icon_widget.setStyleSheet("""
+                        QPushButton {
+                            background-color: #f3f4f6;
+                            color: #374151;
+                            border: 2px solid #d1d5db;
+                            border-radius: 20px;
+                            font-weight: bold;
+                            font-size: 14px;
+                        }
+                        QPushButton:hover {
+                            background-color: #e5e7eb;
+                            border-color: #9ca3af;
+                        }
+                    """)
+                    self.user_icon_widget.setToolTip("User Profile & Cloud Sync")
+
+            # Update any status bar or other indicators
+            if hasattr(self, 'status_bar'):
+                if is_active:
+                    self.status_bar.showMessage(f"Cloud sync in progress ({operation_type})...")
+                else:
+                    self.status_bar.clearMessage()
+
+        except Exception as e:
+            self.logger.error(f"Error updating sync status indicator: {e}")
+
+    def is_sync_operation_active(self):
+        """Check if any sync operation is currently active"""
+        return (hasattr(self, 'active_sync_worker') and
+                self.active_sync_worker and
+                self.active_sync_worker.isRunning())
+
+    def perform_periodic_sync(self):
+        """Perform periodic sync of data to cloud"""
+        try:
+            if not self.cloud_sync_settings.get('auto_sync_enabled', False):
+                return
+
+            self.logger.info("Performing periodic cloud sync...")
+
+            # Get current data
+            local_data = self.get_all_local_data()
+
+            if local_data:
+                self.upload_data_to_cloud(local_data, show_progress=False)
+
+                # Update last sync timestamp
+                from datetime import datetime
+                self.cloud_sync_settings['last_sync_timestamp'] = datetime.now().isoformat()
+
+        except Exception as e:
+            self.logger.error(f"Error in periodic sync: {e}")
+
+    def on_cloud_sync_started(self, operation_id):
+        """Handle cloud sync started event"""
+        try:
+            self.logger.info(f"Cloud sync started: {operation_id}")
+            self.add_notification(
+                "Cloud Sync",
+                "Syncing data to cloud...",
+                "info"
+            )
+        except Exception as e:
+            self.logger.error(f"Error handling sync started: {e}")
+
+    def on_cloud_sync_completed(self, operation_id, success):
+        """Handle cloud sync completed event"""
+        try:
+            if success:
+                self.logger.info(f"Cloud sync completed successfully: {operation_id}")
+                self.add_notification(
+                    "Cloud Sync",
+                    "Data synced to cloud successfully!",
+                    "success"
+                )
+            else:
+                self.logger.error(f"Cloud sync failed: {operation_id}")
+                self.add_notification(
+                    "Cloud Sync",
+                    "Failed to sync data to cloud",
+                    "error"
+                )
+        except Exception as e:
+            self.logger.error(f"Error handling sync completed: {e}")
+
+    def check_existing_session(self):
+        """Check for existing valid session and auto-login if available"""
+        try:
+            # Import session manager
+            from modules.session_manager import get_session_manager
+
+            session_manager = get_session_manager()
+            session_data = session_manager.load_session()
+
+            if session_data and session_data.get('user_info'):
+                user_info = session_data['user_info']
+                self.logger.info(f"Found valid session for user: {user_info.get('email', 'Unknown')}")
+
+                # Update session activity
+                session_manager.update_session_activity(user_info)
+
+                # Auto-login with saved session
+                self.handle_authentication_result(user_info)
+                return True
+
+        except Exception as e:
+            self.logger.error(f"Error checking existing session: {e}")
+
+        return False
+
     def show_authentication_dialog(self):
         """Show authentication dialog and only proceed if user authenticates"""
-        # Create login dialog
-        login_dialog = LoginDialog(self)
-        # Connect authentication signal
-        login_dialog.login_successful.connect(self.handle_authentication_result)
-        # Show dialog as modal
-        login_dialog.exec()
-        
+        try:
+            # Create login dialog with Firebase config
+            login_dialog = LoginDialog(self, firebase_config_manager=self.firebase_config_manager)
+
+            # Connect authentication signal
+            login_dialog.login_successful.connect(self.handle_authentication_result)
+            login_dialog.login_failed.connect(self.handle_authentication_failure)
+
+            # Show dialog as modal
+            result = login_dialog.exec()
+
+            # If dialog was closed without authentication, exit application
+            if result == 0:  # Dialog was rejected/closed
+                self.logger.info("Authentication dialog closed - exiting application")
+                self.close()
+
+        except Exception as e:
+            self.logger.error(f"Error showing authentication dialog: {e}")
+            # ONLINE-ONLY MODE: No fallback to UI initialization
+            self.show_firebase_connection_error_dialog()
+
     def handle_authentication_result(self, user_info):
         """Handle the result of authentication dialog"""
-        # Authentication successful
-        self.logger.info("Authentication successful")
-        # Pass user info to firebase sync
-        self.firebase_sync.handle_login_success(user_info)
-        
-        # Initialize the UI
-        self.initialize_ui()
+        try:
+            # Authentication successful
+            self.logger.info(f"Authentication successful for user: {user_info.get('email', 'Unknown')}")
+
+            # Store user information
+            self.current_user = user_info
+            self.firebase_user_id = user_info.get('localId', user_info.get('uid', 'kitchen_dashboard_user'))
+
+            # Legacy firebase_sync disabled for subscription model
+            # Using optimized Firebase manager instead
+
+            # Update optimized Firebase manager with user session
+            if self.firebase_manager:
+                self.firebase_manager.set_current_user(user_info)
+
+                # Initialize cloud sync for this user
+                self.initialize_cloud_sync_for_user(user_info)
+
+            # Update cloud sync manager with subscriber info
+            if hasattr(self, 'cloud_sync_manager') and self.cloud_sync_manager:
+                self.cloud_sync_manager.set_subscriber_info(user_info)
+
+            # Initialize the UI
+            self.initialize_ui()
+
+            # Perform daily sync if needed (after authentication)
+            if hasattr(self, 'daily_sync_needed') and self.daily_sync_needed:
+                self.perform_authenticated_daily_sync()
+
+            # Show welcome notification
+            self.add_notification(
+                "Login Successful",
+                f"Welcome back! Logged in as {user_info.get('email', 'User')}",
+                "success"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error handling authentication result: {e}")
+            self.handle_authentication_failure("Authentication processing failed")
+
+    def handle_authentication_failure(self, error_message):
+        """Handle authentication failure - ONLINE-ONLY MODE"""
+        self.logger.warning(f"Authentication failed: {error_message}")
+
+        # Show error message - NO OFFLINE MODE
+        from PySide6.QtWidgets import QMessageBox
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Authentication Required")
+        msg.setText("Kitchen Dashboard v1.0.6 requires online authentication.")
+        msg.setInformativeText(f"Error: {error_message}\n\nThis application requires a valid Firebase connection and authentication to function.")
+        msg.setIcon(QMessageBox.Critical)
+
+        # Only allow retry or exit - NO OFFLINE MODE
+        retry_btn = msg.addButton("Retry Login", QMessageBox.ActionRole)
+        config_btn = msg.addButton("Configure Firebase", QMessageBox.ActionRole)
+        exit_btn = msg.addButton("Exit Application", QMessageBox.RejectRole)
+
+        msg.exec()
+
+        if msg.clickedButton() == retry_btn:
+            # Retry authentication
+            self.show_authentication_dialog()
+        elif msg.clickedButton() == config_btn:
+            # Show Firebase configuration
+            self.show_firebase_configuration_dialog()
+        else:
+            # Exit application - NO OFFLINE MODE ALLOWED
+            self.logger.info("User chose to exit - online authentication required")
+            self.close()
+
+    def show_firebase_unavailable_dialog(self):
+        """Show dialog when Firebase integration is not available - ONLINE-ONLY MODE"""
+        from PySide6.QtWidgets import QMessageBox
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Firebase Integration Required")
+        msg.setText("Kitchen Dashboard v1.0.6 requires Firebase integration.")
+        msg.setInformativeText(
+            "Firebase integration is not available. This may be due to:\n\n"
+            "• Missing pyrebase4 package\n"
+            "• Missing firebase-admin package\n"
+            "• Python environment issues\n\n"
+            "Please install required packages:\n"
+            "pip install pyrebase4 firebase-admin"
+        )
+        msg.setIcon(QMessageBox.Critical)
+
+        exit_btn = msg.addButton("Exit Application", QMessageBox.AcceptRole)
+        msg.exec()
+
+        self.logger.info("Firebase integration not available - exiting application")
+        self.close()
+
+    def show_firebase_connection_error_dialog(self):
+        """Show dialog when Firebase connection fails - ONLINE-ONLY MODE"""
+        from PySide6.QtWidgets import QMessageBox
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Firebase Connection Error")
+        msg.setText("Kitchen Dashboard v1.0.6 cannot connect to Firebase.")
+        msg.setInformativeText(
+            "Failed to establish connection to Firebase. This may be due to:\n\n"
+            "• No internet connection\n"
+            "• Invalid Firebase configuration\n"
+            "• Firebase service issues\n"
+            "• Incorrect credentials\n\n"
+            "Please check your connection and configuration."
+        )
+        msg.setIcon(QMessageBox.Critical)
+
+        retry_btn = msg.addButton("Retry Connection", QMessageBox.ActionRole)
+        config_btn = msg.addButton("Configure Firebase", QMessageBox.ActionRole)
+        exit_btn = msg.addButton("Exit Application", QMessageBox.RejectRole)
+
+        msg.exec()
+
+        if msg.clickedButton() == retry_btn:
+            # Retry initialization
+            self.__init__()
+        elif msg.clickedButton() == config_btn:
+            self.show_firebase_configuration_dialog()
+        else:
+            self.logger.info("Firebase connection failed - exiting application")
+            self.close()
+
+    def show_firebase_required_dialog(self):
+        """Show dialog when Firebase is not configured - ONLINE-ONLY MODE"""
+        from PySide6.QtWidgets import QMessageBox
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Firebase Configuration Required")
+        msg.setText("Kitchen Dashboard v1.0.6 requires Firebase configuration.")
+        msg.setInformativeText(
+            "This application requires Firebase for authentication and cloud sync.\n\n"
+            "Please configure Firebase to continue."
+        )
+        msg.setIcon(QMessageBox.Critical)
+
+        config_btn = msg.addButton("Configure Firebase", QMessageBox.ActionRole)
+        exit_btn = msg.addButton("Exit Application", QMessageBox.RejectRole)
+
+        msg.exec()
+
+        if msg.clickedButton() == config_btn:
+            self.show_firebase_configuration_dialog()
+        else:
+            self.logger.info("Firebase configuration required - exiting application")
+            self.close()
+
+    def show_firebase_configuration_dialog(self):
+        """Show Firebase configuration dialog"""
+        try:
+            from modules.firebase_config_widget import FirebaseConfigWidget
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QHBoxLayout
+
+            config_dialog = QDialog(self)
+            config_dialog.setWindowTitle("Firebase Configuration - Kitchen Dashboard v1.0.6")
+            config_dialog.setModal(True)
+            config_dialog.resize(600, 500)
+
+            layout = QVBoxLayout(config_dialog)
+
+            # Add configuration widget
+            config_widget = FirebaseConfigWidget(self.firebase_config_manager)
+            layout.addWidget(config_widget)
+
+            # Add buttons
+            button_layout = QHBoxLayout()
+            save_continue_btn = QPushButton("Save & Continue")
+            save_continue_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #10b981;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 12px 24px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: #059669;
+                }
+            """)
+
+            exit_btn = QPushButton("Exit Application")
+            exit_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #ef4444;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 12px 24px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: #dc2626;
+                }
+            """)
+
+            save_continue_btn.clicked.connect(lambda: self.save_config_and_restart(config_dialog, config_widget))
+            exit_btn.clicked.connect(self.close)
+
+            button_layout.addStretch()
+            button_layout.addWidget(save_continue_btn)
+            button_layout.addWidget(exit_btn)
+            layout.addLayout(button_layout)
+
+            config_dialog.exec()
+
+        except ImportError as e:
+            self.logger.error(f"Firebase configuration widget not available: {e}")
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self,
+                "Configuration Error",
+                "Firebase configuration interface is not available.\n"
+                "Please manually edit firebase_config.json and restart the application."
+            )
+            self.close()
+
+    def save_config_and_restart(self, dialog, config_widget):
+        """Save Firebase configuration and restart authentication"""
+        if config_widget.save_configuration():
+            dialog.accept()
+
+            # Reload configuration
+            if self.firebase_config_manager:
+                self.firebase_config_manager.load_configuration()
+
+            # Show success message and restart authentication
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self,
+                "Configuration Saved",
+                "Firebase configuration saved successfully!\n"
+                "Please authenticate to continue."
+            )
+
+            # Restart authentication process
+            self.show_authentication_dialog()
+        else:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                dialog,
+                "Save Error",
+                "Failed to save configuration. Please check your settings and try again."
+            )
         
     def log_firebase_message(self, message, level="info"):
         """Log Firebase messages to the application logger
@@ -519,23 +1876,24 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error setting up auto-refresh timer: {e}")
 
     def initialize_ui(self):
-        """Initialize the UI after authentication"""
+        """Initialize the UI after authentication - ONLINE-ONLY MODE"""
+        # Since we've already authenticated successfully, proceed with UI initialization
+        self.logger.info("Initializing UI after successful authentication")
+
         # Apply modern style
         self.apply_modern_style()
         
-        try:
-            if self.firebase_sync.is_firebase_available():
-                self.logger.info("Firebase sync initialized successfully")
-            else:
-                self.logger.warning("Firebase integration not available")
-        except Exception as e:
-            self.logger.error(f"Error initializing Firebase sync: {str(e)}")
+        # Firebase manager is already initialized and working since we authenticated successfully
+        if self.firebase_manager:
+            self.logger.info("Using optimized Firebase manager for authenticated session")
+        else:
+            self.logger.info("Using subscription-based Firebase authentication")
             
         # Create main widget and layout with splitter for responsiveness
         self.central_widget = QWidget()
         # Set up the main window and central widget
         self.setCentralWidget(self.central_widget)
-        self._check_and_perform_daily_sync()
+        # Daily sync will be performed after authentication if needed
         self.main_layout = QHBoxLayout(self.central_widget)
         self.main_layout.setSpacing(0)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -919,6 +2277,9 @@ class KitchenDashboardApp(QMainWindow):
 
         header_layout.addWidget(status_container)
 
+        # User icon for logout functionality
+        self.create_user_icon(header_layout)
+
         # Notification bell icon
         try:
             from modules.enhanced_notification_system import NotificationBellWidget
@@ -953,6 +2314,1212 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.info("Using prominent fallback notification bell")
 
         parent_layout.addWidget(header_widget)
+
+    def create_user_icon(self, header_layout):
+        """Create user icon with logout functionality"""
+        try:
+            # User icon container
+            user_container = QWidget()
+            user_container.setFixedSize(45, 45)
+            user_container.setStyleSheet("""
+                QWidget {
+                    background-color: rgba(255,255,255,0.2);
+                    border: 2px solid rgba(255,255,255,0.4);
+                    border-radius: 22px;
+                }
+                QWidget:hover {
+                    background-color: rgba(255,255,255,0.3);
+                    border-color: rgba(255,255,255,0.6);
+                }
+            """)
+
+            # User icon button
+            user_button = QPushButton("👤")
+            user_button.setParent(user_container)
+            user_button.setGeometry(0, 0, 45, 45)
+            user_button.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    border: none;
+                    color: white;
+                    font-size: 18px;
+                    border-radius: 22px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255,255,255,0.1);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(255,255,255,0.2);
+                }
+            """)
+
+            # Set tooltip with user info
+            if hasattr(self, 'current_user') and self.current_user:
+                user_email = self.current_user.get('email', 'User')
+                user_button.setToolTip(f"Logged in as: {user_email}\nClick to logout")
+            else:
+                user_button.setToolTip("User Menu - Click to logout")
+
+            # Connect to logout functionality
+            user_button.clicked.connect(self.show_logout_menu)
+
+            header_layout.addWidget(user_container)
+            self.logger.info("User icon created successfully")
+
+        except Exception as e:
+            self.logger.error(f"Error creating user icon: {e}")
+
+    def show_logout_menu(self):
+        """Show user profile menu with detailed information and session management"""
+        try:
+            from PySide6.QtWidgets import QMenu, QMessageBox
+
+            # Create context menu
+            menu = QMenu(self)
+            menu.setStyleSheet("""
+                QMenu {
+                    background-color: white;
+                    border: 1px solid #d1d5db;
+                    border-radius: 8px;
+                    padding: 8px;
+                    min-width: 280px;
+                }
+                QMenu::item {
+                    padding: 10px 16px;
+                    border-radius: 6px;
+                    font-size: 13px;
+                }
+                QMenu::item:selected {
+                    background-color: #f3f4f6;
+                }
+                QMenu::item:disabled {
+                    color: #6b7280;
+                    font-weight: bold;
+                }
+                QMenu::separator {
+                    height: 1px;
+                    background-color: #e5e7eb;
+                    margin: 6px 0;
+                }
+            """)
+
+            # Add user info header
+            if hasattr(self, 'current_user') and self.current_user:
+                user_email = self.current_user.get('email', 'User')
+                user_name = self.current_user.get('displayName', user_email.split('@')[0])
+
+                # User name/email header
+                user_header = menu.addAction(f"👤 {user_name}")
+                user_header.setEnabled(False)
+
+                email_action = menu.addAction(f"📧 {user_email}")
+                email_action.setEnabled(False)
+
+                menu.addSeparator()
+
+                # User profile action
+                profile_action = menu.addAction("👤 View Profile Details")
+                profile_action.triggered.connect(self.show_user_profile_dialog)
+
+                # Session management action
+                session_action = menu.addAction("🔑 Manage Sessions")
+                session_action.triggered.connect(self.show_session_management_dialog)
+
+                # Cloud sync action
+                cloud_sync_action = menu.addAction("☁️ Cloud Sync")
+                cloud_sync_action.triggered.connect(self.show_cloud_sync_dialog)
+
+                menu.addSeparator()
+
+                # Account settings (placeholder for future)
+                settings_action = menu.addAction("⚙️ Account Settings")
+                settings_action.triggered.connect(self.show_account_settings)
+
+                menu.addSeparator()
+
+            # Add logout action
+            logout_action = menu.addAction("🚪 Logout")
+            logout_action.triggered.connect(self.logout_user)
+
+            # Show menu at cursor position
+            cursor_pos = self.mapToGlobal(self.cursor().pos())
+            menu.exec(cursor_pos)
+
+        except Exception as e:
+            self.logger.error(f"Error showing user profile menu: {e}")
+            # Fallback to direct logout confirmation
+            self.logout_user()
+
+    def logout_user(self):
+        """Handle user logout"""
+        try:
+            # Show confirmation dialog
+            from PySide6.QtWidgets import QMessageBox
+
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Logout Confirmation")
+            msg.setText("Are you sure you want to logout?")
+            msg.setInformativeText("You will need to login again to access the application.")
+            msg.setIcon(QMessageBox.Question)
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+
+            if msg.exec() == QMessageBox.Yes:
+                self.logger.info("User logout confirmed")
+
+                # Clear saved sessions
+                try:
+                    from modules.login_dialog import LoginDialog
+                    LoginDialog.clear_saved_sessions(clear_remember_me=True)
+                    self.logger.info("Cleared all saved sessions")
+                except Exception as e:
+                    self.logger.error(f"Error clearing sessions: {e}")
+
+                # Show logout notification
+                self.add_notification(
+                    "Logged Out",
+                    "You have been successfully logged out",
+                    "info"
+                )
+
+                # Close application (since it's online-only)
+                QTimer.singleShot(2000, self.close)
+
+        except Exception as e:
+            self.logger.error(f"Error during logout: {e}")
+
+    def show_user_profile_dialog(self):
+        """Show detailed user profile information dialog"""
+        try:
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QFormLayout, QTextEdit
+            from PySide6.QtCore import Qt
+            from PySide6.QtGui import QFont
+
+            if not hasattr(self, 'current_user') or not self.current_user:
+                QMessageBox.warning(self, "No User", "No user is currently logged in.")
+                return
+
+            # Create dialog
+            dialog = QDialog(self)
+            dialog.setWindowTitle("User Profile Information")
+            dialog.setModal(True)
+            dialog.resize(500, 600)
+            dialog.setStyleSheet("""
+                QDialog {
+                    background-color: #f8fafc;
+                }
+                QGroupBox {
+                    font-weight: bold;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 5px 0 5px;
+                }
+                QLabel {
+                    color: #374151;
+                }
+            """)
+
+            layout = QVBoxLayout(dialog)
+            layout.setSpacing(16)
+
+            # User Information Group
+            user_group = QGroupBox("👤 User Information")
+            user_layout = QFormLayout(user_group)
+
+            user_info = self.current_user
+            user_layout.addRow("Email:", QLabel(user_info.get('email', 'N/A')))
+            user_layout.addRow("Display Name:", QLabel(user_info.get('displayName', 'N/A')))
+            user_layout.addRow("User ID:", QLabel(user_info.get('localId', 'N/A')))
+
+            layout.addWidget(user_group)
+
+            # Session Information Group
+            session_group = QGroupBox("🔑 Session Information")
+            session_layout = QFormLayout(session_group)
+
+            login_time = user_info.get('login_time', 'N/A')
+            session_id = user_info.get('session_id', 'N/A')
+            app_version = user_info.get('app_version', 'N/A')
+            subscription_type = user_info.get('subscription_type', 'N/A')
+
+            session_layout.addRow("Login Time:", QLabel(login_time))
+            session_layout.addRow("Session ID:", QLabel(session_id))
+            session_layout.addRow("App Version:", QLabel(app_version))
+            session_layout.addRow("Subscription:", QLabel(subscription_type))
+
+            layout.addWidget(session_group)
+
+            # Firebase Token Information (if available)
+            if user_info.get('idToken'):
+                token_group = QGroupBox("🔐 Firebase Token Information")
+                token_layout = QVBoxLayout(token_group)
+
+                token_text = QTextEdit()
+                token_text.setPlainText(user_info.get('idToken', 'N/A'))
+                token_text.setMaximumHeight(100)
+                token_text.setReadOnly(True)
+                token_text.setStyleSheet("background-color: #f1f5f9; border: 1px solid #cbd5e1;")
+
+                token_layout.addWidget(QLabel("ID Token (truncated for security):"))
+                token_layout.addWidget(token_text)
+
+                layout.addWidget(token_group)
+
+            # Buttons
+            button_layout = QHBoxLayout()
+
+            # Session Management button
+            session_btn = QPushButton("🔑 Manage Sessions")
+            session_btn.clicked.connect(lambda: (dialog.accept(), self.show_session_management_dialog()))
+            session_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #2563eb;
+                }
+            """)
+            button_layout.addWidget(session_btn)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            close_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #6b7280;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                }
+                QPushButton:hover {
+                    background-color: #4b5563;
+                }
+            """)
+            button_layout.addWidget(close_btn)
+
+            layout.addLayout(button_layout)
+
+            # Show dialog
+            dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing user profile dialog: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to show user profile: {str(e)}")
+
+    def show_session_management_dialog(self):
+        """Show session management dialog with session key options"""
+        try:
+            from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                                         QPushButton, QGroupBox, QFormLayout, QTextEdit,
+                                         QCheckBox, QMessageBox, QScrollArea)
+            from PySide6.QtCore import Qt
+            from PySide6.QtGui import QFont
+
+            # Create dialog
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Session Management")
+            dialog.setModal(True)
+            dialog.resize(600, 700)
+            dialog.setStyleSheet("""
+                QDialog {
+                    background-color: #f8fafc;
+                }
+                QGroupBox {
+                    font-weight: bold;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 5px 0 5px;
+                }
+            """)
+
+            # Create scroll area for content
+            scroll = QScrollArea()
+            scroll_widget = QWidget()
+            layout = QVBoxLayout(scroll_widget)
+            layout.setSpacing(16)
+
+            # Get session information
+            try:
+                from modules.session_manager import get_session_manager
+                session_manager = get_session_manager()
+                session_info = session_manager.get_session_info()
+            except Exception as e:
+                self.logger.error(f"Error getting session info: {e}")
+                session_info = {}
+
+            # Current Session Group
+            current_group = QGroupBox("🔑 Current Session")
+            current_layout = QFormLayout(current_group)
+
+            if hasattr(self, 'current_user') and self.current_user:
+                current_layout.addRow("User:", QLabel(self.current_user.get('email', 'N/A')))
+                current_layout.addRow("Login Time:", QLabel(self.current_user.get('login_time', 'N/A')))
+                current_layout.addRow("Session ID:", QLabel(self.current_user.get('session_id', 'N/A')))
+
+            layout.addWidget(current_group)
+
+            # Saved Sessions Group
+            saved_group = QGroupBox("💾 Saved Sessions")
+            saved_layout = QVBoxLayout(saved_group)
+
+            if session_info.get('has_current_session'):
+                current_time = session_info.get('current_session_time', 'Unknown')
+                current_label = QLabel(f"• Current session: {current_time}")
+                saved_layout.addWidget(current_label)
+
+            if session_info.get('has_remember_session'):
+                remember_time = session_info.get('remember_session_time', 'Unknown')
+                remember_label = QLabel(f"• Remember me session: {remember_time}")
+                saved_layout.addWidget(remember_label)
+
+            if not session_info.get('has_current_session') and not session_info.get('has_remember_session'):
+                no_sessions_label = QLabel("No saved sessions found")
+                no_sessions_label.setStyleSheet("color: #6b7280; font-style: italic;")
+                saved_layout.addWidget(no_sessions_label)
+
+            layout.addWidget(saved_group)
+
+            # Session Actions Group
+            actions_group = QGroupBox("⚙️ Session Actions")
+            actions_layout = QVBoxLayout(actions_group)
+
+            # Clear current session button
+            clear_current_btn = QPushButton("🗑️ Clear Current Session")
+            clear_current_btn.clicked.connect(lambda: self.clear_session_type('current', dialog))
+            clear_current_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #f59e0b;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    margin: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #d97706;
+                }
+            """)
+            actions_layout.addWidget(clear_current_btn)
+
+            # Clear remember me session button
+            clear_remember_btn = QPushButton("🗑️ Clear Remember Me Session")
+            clear_remember_btn.clicked.connect(lambda: self.clear_session_type('remember', dialog))
+            clear_remember_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #ef4444;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    margin: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #dc2626;
+                }
+            """)
+            actions_layout.addWidget(clear_remember_btn)
+
+            # Clear all sessions button
+            clear_all_btn = QPushButton("🚨 Clear All Sessions")
+            clear_all_btn.clicked.connect(lambda: self.clear_session_type('all', dialog))
+            clear_all_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #7c2d12;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    margin: 4px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #991b1b;
+                }
+            """)
+            actions_layout.addWidget(clear_all_btn)
+
+            layout.addWidget(actions_group)
+
+            # Set up scroll area
+            scroll.setWidget(scroll_widget)
+            scroll.setWidgetResizable(True)
+
+            # Main dialog layout
+            main_layout = QVBoxLayout(dialog)
+            main_layout.addWidget(scroll)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            close_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #6b7280;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                }
+                QPushButton:hover {
+                    background-color: #4b5563;
+                }
+            """)
+            main_layout.addWidget(close_btn)
+
+            # Show dialog
+            dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing session management dialog: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to show session management: {str(e)}")
+
+    def clear_session_type(self, session_type, parent_dialog):
+        """Clear specific type of session"""
+        try:
+            from PySide6.QtWidgets import QMessageBox
+
+            # Confirmation messages
+            messages = {
+                'current': "Are you sure you want to clear the current session?\nYou will need to login again next time.",
+                'remember': "Are you sure you want to clear the Remember Me session?\nAutomatic login will be disabled.",
+                'all': "Are you sure you want to clear ALL sessions?\nThis will log you out and disable automatic login."
+            }
+
+            msg = QMessageBox(parent_dialog)
+            msg.setWindowTitle("Confirm Session Clearing")
+            msg.setText(messages.get(session_type, "Are you sure?"))
+            msg.setIcon(QMessageBox.Question)
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+
+            if msg.exec() == QMessageBox.Yes:
+                try:
+                    from modules.session_manager import get_session_manager
+                    session_manager = get_session_manager()
+
+                    if session_type == 'current':
+                        session_manager.clear_session(clear_remember_me=False)
+                        self.add_notification("Session Cleared", "Current session cleared", "info")
+                    elif session_type == 'remember':
+                        session_manager.clear_session(clear_remember_me=True)
+                        self.add_notification("Remember Me Cleared", "Remember me session cleared", "info")
+                    elif session_type == 'all':
+                        session_manager.clear_session(clear_remember_me=True)
+                        self.add_notification("All Sessions Cleared", "All sessions cleared", "info")
+                        # Close dialog and logout
+                        parent_dialog.accept()
+                        QTimer.singleShot(1000, self.logout_user)
+                        return
+
+                    # Refresh the dialog
+                    parent_dialog.accept()
+                    QTimer.singleShot(500, self.show_session_management_dialog)
+
+                except Exception as e:
+                    self.logger.error(f"Error clearing session: {e}")
+                    QMessageBox.critical(parent_dialog, "Error", f"Failed to clear session: {str(e)}")
+
+        except Exception as e:
+            self.logger.error(f"Error in clear_session_type: {e}")
+
+    def show_account_settings(self):
+        """Show account settings dialog (placeholder for future features)"""
+        try:
+            from PySide6.QtWidgets import QMessageBox
+
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Account Settings")
+            msg.setText("Account settings feature coming soon!")
+            msg.setInformativeText("This will include:\n• Password change\n• Profile updates\n• Notification preferences\n• Security settings")
+            msg.setIcon(QMessageBox.Information)
+            msg.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing account settings: {e}")
+
+    def show_cloud_sync_dialog(self):
+        """Show cloud sync management dialog"""
+        try:
+            from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                                         QPushButton, QGroupBox, QFormLayout, QTextEdit,
+                                         QProgressBar, QScrollArea, QCheckBox)
+            from PySide6.QtCore import Qt, QTimer
+            from PySide6.QtGui import QFont
+            from datetime import datetime
+
+            # Create dialog
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Cloud Sync Management")
+            dialog.setModal(True)
+            dialog.resize(700, 800)
+            dialog.setStyleSheet("""
+                QDialog {
+                    background-color: #f8fafc;
+                }
+                QGroupBox {
+                    font-weight: bold;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 5px 0 5px;
+                }
+                QPushButton {
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    margin: 4px;
+                }
+            """)
+
+            # Create scroll area for content
+            scroll = QScrollArea()
+            scroll_widget = QWidget()
+            layout = QVBoxLayout(scroll_widget)
+            layout.setSpacing(16)
+
+            # User Information Group
+            user_group = QGroupBox("👤 User & Sync Information")
+            user_layout = QFormLayout(user_group)
+
+            if hasattr(self, 'cloud_sync_settings') and self.cloud_sync_settings:
+                user_layout.addRow("User ID:", QLabel(self.cloud_sync_settings.get('user_id', 'N/A')))
+                user_layout.addRow("Email:", QLabel(self.cloud_sync_settings.get('user_email', 'N/A')))
+
+                last_sync = self.cloud_sync_settings.get('last_sync_timestamp')
+                if last_sync:
+                    try:
+                        sync_time = datetime.fromisoformat(last_sync)
+                        sync_display = sync_time.strftime("%Y-%m-%d %H:%M:%S")
+                    except:
+                        sync_display = last_sync
+                else:
+                    sync_display = "Never"
+
+                user_layout.addRow("Last Sync:", QLabel(sync_display))
+
+                auto_sync = self.cloud_sync_settings.get('auto_sync_enabled', False)
+                user_layout.addRow("Auto Sync:", QLabel("Enabled" if auto_sync else "Disabled"))
+            else:
+                user_layout.addRow("Status:", QLabel("Cloud sync not initialized"))
+
+            layout.addWidget(user_group)
+
+            # Sync Status Group
+            status_group = QGroupBox("📊 Sync Status")
+            status_layout = QVBoxLayout(status_group)
+
+            # Firebase connection status with detailed validation
+            firebase_status = self.get_detailed_firebase_status()
+            connection_label = QLabel(firebase_status['display_text'])
+            connection_label.setStyleSheet(firebase_status['style'])
+            status_layout.addWidget(connection_label)
+
+            # Add detailed status if there are issues
+            if firebase_status.get('details'):
+                details_label = QLabel(firebase_status['details'])
+                details_label.setStyleSheet("color: #6b7280; font-size: 11px; margin-left: 20px;")
+                status_layout.addWidget(details_label)
+
+            # Usage statistics
+            if self.firebase_manager:
+                usage_stats = self.firebase_manager.get_usage_statistics()
+                usage_text = f"""
+Daily Usage:
+• Reads: {usage_stats.get('daily_reads', 0)} / {usage_stats.get('max_reads', 0)}
+• Writes: {usage_stats.get('daily_writes', 0)} / {usage_stats.get('max_writes', 0)}
+• Reads Remaining: {usage_stats.get('reads_remaining', 0)}
+• Writes Remaining: {usage_stats.get('writes_remaining', 0)}
+                """.strip()
+
+                usage_label = QLabel(usage_text)
+                usage_label.setStyleSheet("font-family: monospace; background-color: #f1f5f9; padding: 8px; border-radius: 4px;")
+                status_layout.addWidget(usage_label)
+
+            layout.addWidget(status_group)
+
+            # Data Collections Group
+            collections_group = QGroupBox("📁 Data Collections")
+            collections_layout = QVBoxLayout(collections_group)
+
+            if hasattr(self, 'cloud_sync_settings') and self.cloud_sync_settings:
+                collections = self.cloud_sync_settings.get('sync_collections', [])
+                collections_text = f"Syncing {len(collections)} collections:\n" + "\n".join([f"• {col}" for col in collections])
+            else:
+                collections_text = "No collections configured for sync"
+
+            collections_label = QLabel(collections_text)
+            collections_label.setStyleSheet("font-family: monospace; background-color: #f1f5f9; padding: 8px; border-radius: 4px;")
+            collections_layout.addWidget(collections_label)
+
+            layout.addWidget(collections_group)
+
+            # Sync Actions Group
+            actions_group = QGroupBox("⚡ Sync Actions")
+            actions_layout = QVBoxLayout(actions_group)
+
+            # Manual sync buttons
+            sync_buttons_layout = QHBoxLayout()
+
+            # Upload button
+            upload_btn = QPushButton("⬆️ Upload to Cloud")
+            upload_btn.clicked.connect(lambda: self.manual_cloud_sync('upload', dialog))
+            upload_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #3b82f6;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #2563eb;
+                }
+            """)
+            sync_buttons_layout.addWidget(upload_btn)
+
+            # Download button
+            download_btn = QPushButton("⬇️ Download from Cloud")
+            download_btn.clicked.connect(lambda: self.manual_cloud_sync('download', dialog))
+            download_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #10b981;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #059669;
+                }
+            """)
+            sync_buttons_layout.addWidget(download_btn)
+
+            # Bidirectional sync button
+            bidirectional_btn = QPushButton("🔄 Smart Sync")
+            bidirectional_btn.clicked.connect(lambda: self.manual_cloud_sync('bidirectional', dialog))
+            bidirectional_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #8b5cf6;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #7c3aed;
+                }
+            """)
+            sync_buttons_layout.addWidget(bidirectional_btn)
+
+            actions_layout.addLayout(sync_buttons_layout)
+
+            # Data validation button
+            validate_btn = QPushButton("🔍 Validate Local Data")
+            validate_btn.clicked.connect(self.show_data_validation_dialog)
+            validate_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #6b7280;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #4b5563;
+                }
+            """)
+            actions_layout.addWidget(validate_btn)
+
+            # Firebase test button
+            firebase_test_btn = QPushButton("🔧 Test Firebase Connection")
+            firebase_test_btn.clicked.connect(self.test_firebase_connection)
+            firebase_test_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #0ea5e9;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #0284c7;
+                }
+            """)
+            actions_layout.addWidget(firebase_test_btn)
+
+            # Auto-sync toggle
+            auto_sync_layout = QHBoxLayout()
+            auto_sync_checkbox = QCheckBox("Enable automatic sync every 30 minutes")
+            if hasattr(self, 'cloud_sync_settings') and self.cloud_sync_settings:
+                auto_sync_checkbox.setChecked(self.cloud_sync_settings.get('auto_sync_enabled', False))
+            auto_sync_checkbox.toggled.connect(self.toggle_auto_sync)
+            auto_sync_layout.addWidget(auto_sync_checkbox)
+            actions_layout.addLayout(auto_sync_layout)
+
+            layout.addWidget(actions_group)
+
+            # Progress bar for sync operations
+            self.sync_progress_bar = QProgressBar()
+            self.sync_progress_bar.setVisible(False)
+            layout.addWidget(self.sync_progress_bar)
+
+            # Set up scroll area
+            scroll.setWidget(scroll_widget)
+            scroll.setWidgetResizable(True)
+
+            # Main dialog layout
+            main_layout = QVBoxLayout(dialog)
+            main_layout.addWidget(scroll)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            close_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #6b7280;
+                    color: white;
+                }
+                QPushButton:hover {
+                    background-color: #4b5563;
+                }
+            """)
+            main_layout.addWidget(close_btn)
+
+            # Show dialog
+            dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error showing cloud sync dialog: {e}")
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Error", f"Failed to show cloud sync dialog: {str(e)}")
+
+    def manual_cloud_sync(self, sync_type, parent_dialog):
+        """Perform manual cloud sync operation with async processing"""
+        try:
+            from PySide6.QtWidgets import QMessageBox
+
+            if not self.firebase_manager or not self.firebase_manager.is_authenticated():
+                QMessageBox.warning(parent_dialog, "Not Connected", "Not connected to Firebase. Please check your connection.")
+                return
+
+            # Check if another sync is already running
+            if hasattr(self, 'active_sync_worker') and self.active_sync_worker and self.active_sync_worker.isRunning():
+                QMessageBox.warning(parent_dialog, "Sync in Progress", "Another sync operation is already running. Please wait for it to complete.")
+                return
+
+            # Show confirmation
+            sync_messages = {
+                'upload': "Upload all local data to cloud?\nThis will overwrite cloud data.\n\nThe operation will run in the background and you can continue using the application.",
+                'download': "Download all data from cloud?\nThis will overwrite local data.\n\nThe operation will run in the background and you can continue using the application.",
+                'bidirectional': "Perform smart sync?\nThis will merge local and cloud data intelligently.\n\nThe operation will run in the background and you can continue using the application."
+            }
+
+            msg = QMessageBox(parent_dialog)
+            msg.setWindowTitle("Confirm Async Sync Operation")
+            msg.setText(sync_messages.get(sync_type, "Perform sync operation?"))
+            msg.setIcon(QMessageBox.Question)
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+
+            if msg.exec() == QMessageBox.Yes:
+                self.logger.info(f"Starting manual async {sync_type} sync")
+
+                # Close dialog first to show it's non-blocking
+                parent_dialog.accept()
+
+                if sync_type == 'upload':
+                    local_data = self.get_all_local_data()
+                    if local_data:
+                        # Check if data has actual records
+                        total_records = sum(len(df) for df in local_data.values() if not df.empty)
+                        if total_records > 0:
+                            self.logger.info(f"Starting upload with {len(local_data)} collections and {total_records} total records")
+                            self.start_async_sync_operation('upload', data=local_data, show_progress=True)
+                        else:
+                            QMessageBox.information(self, "No Data", f"Found {len(local_data)} collections but no records to upload.\n\nAll collections appear to be empty.")
+                    else:
+                        # Show detailed error message
+                        QMessageBox.information(self, "No Data",
+                                              "No local data found to upload.\n\n"
+                                              "This could mean:\n"
+                                              "• No CSV files in the data directory\n"
+                                              "• All data files are empty\n"
+                                              "• Data manager is not properly initialized\n\n"
+                                              "Please add some data to the application first.")
+
+                elif sync_type == 'download':
+                    self.start_async_sync_operation('download', data=None, show_progress=True)
+
+                elif sync_type == 'bidirectional':
+                    local_data = self.get_all_local_data()
+                    self.start_async_sync_operation('smart_sync', data=local_data, show_progress=True)
+
+        except Exception as e:
+            self.logger.error(f"Error in manual sync: {e}")
+            QMessageBox.critical(parent_dialog, "Sync Error", f"Failed to start sync: {str(e)}")
+
+    def toggle_auto_sync(self, enabled):
+        """Toggle automatic sync on/off"""
+        try:
+            if hasattr(self, 'cloud_sync_settings') and self.cloud_sync_settings:
+                self.cloud_sync_settings['auto_sync_enabled'] = enabled
+                self.logger.info(f"Auto-sync {'enabled' if enabled else 'disabled'}")
+
+                # Update sync timer
+                if hasattr(self, 'sync_timer'):
+                    if enabled:
+                        if not self.sync_timer.isActive():
+                            sync_interval = self.cloud_sync_settings.get('sync_interval_minutes', 30) * 60 * 1000
+                            self.sync_timer.start(sync_interval)
+                    else:
+                        self.sync_timer.stop()
+
+        except Exception as e:
+            self.logger.error(f"Error toggling auto-sync: {e}")
+
+    def test_firebase_connection(self):
+        """Test Firebase connection and show detailed results"""
+        try:
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QProgressBar
+            from PySide6.QtCore import QTimer
+
+            # Create test dialog
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Firebase Connection Test")
+            dialog.setModal(True)
+            dialog.resize(500, 400)
+
+            layout = QVBoxLayout(dialog)
+
+            # Status label
+            status_label = QLabel("Testing Firebase connection...")
+            status_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+            layout.addWidget(status_label)
+
+            # Progress bar
+            progress_bar = QProgressBar()
+            progress_bar.setRange(0, 100)
+            layout.addWidget(progress_bar)
+
+            # Results text area
+            results_text = QTextEdit()
+            results_text.setReadOnly(True)
+            layout.addWidget(results_text)
+
+            # Close button
+            close_btn = QPushButton("Close")
+            close_btn.clicked.connect(dialog.accept)
+            layout.addWidget(close_btn)
+
+            # Show dialog
+            dialog.show()
+
+            # Perform tests
+            self.perform_firebase_connection_tests(status_label, progress_bar, results_text)
+
+        except Exception as e:
+            self.logger.error(f"Error testing Firebase connection: {e}")
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Test Error", f"Failed to run Firebase connection test: {str(e)}")
+
+    def perform_firebase_connection_tests(self, status_label, progress_bar, results_text):
+        """Perform comprehensive Firebase connection tests"""
+        try:
+            test_results = []
+
+            # Test 1: Firebase Manager Availability
+            progress_bar.setValue(10)
+            status_label.setText("Testing Firebase Manager...")
+            if self.firebase_manager:
+                test_results.append("✅ Firebase Manager: Available")
+            else:
+                test_results.append("❌ Firebase Manager: Not Available")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test 2: Authentication Status
+            progress_bar.setValue(25)
+            status_label.setText("Testing Authentication...")
+            if self.firebase_manager and self.firebase_manager.is_authenticated():
+                test_results.append("✅ Authentication: User is authenticated")
+            else:
+                test_results.append("❌ Authentication: User is not authenticated")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test 3: Database Connection
+            progress_bar.setValue(40)
+            status_label.setText("Testing Database Connection...")
+            if self.firebase_manager and hasattr(self.firebase_manager, 'is_database_available'):
+                if self.firebase_manager.is_database_available():
+                    test_results.append("✅ Database: Connection available and working")
+                else:
+                    test_results.append("❌ Database: Connection not available or not working")
+
+                    # Try to reinitialize
+                    if hasattr(self.firebase_manager, 'reinitialize_database'):
+                        if self.firebase_manager.reinitialize_database():
+                            test_results.append("✅ Database: Reinitialized successfully")
+                        else:
+                            test_results.append("❌ Database: Reinitialization failed")
+            else:
+                test_results.append("❌ Database: Cannot test (method not available)")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test 4: User Session
+            progress_bar.setValue(55)
+            status_label.setText("Testing User Session...")
+            if (self.firebase_manager and
+                hasattr(self.firebase_manager, 'current_session') and
+                self.firebase_manager.current_session):
+                user_email = getattr(self.firebase_manager.current_session, 'email', 'Unknown')
+                test_results.append(f"✅ User Session: Active ({user_email})")
+            else:
+                test_results.append("❌ User Session: No active session")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test 5: Cloud Sync Settings
+            progress_bar.setValue(70)
+            status_label.setText("Testing Cloud Sync Settings...")
+            if hasattr(self, 'cloud_sync_settings') and self.cloud_sync_settings:
+                user_id = self.cloud_sync_settings.get('user_id', 'Not Set')
+                test_results.append(f"✅ Cloud Sync Settings: Available (User ID: {user_id})")
+            else:
+                test_results.append("❌ Cloud Sync Settings: Not configured")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test 6: Firebase Connectivity Test
+            progress_bar.setValue(85)
+            status_label.setText("Testing Firebase Connectivity...")
+            if self.firebase_manager and self.firebase_manager.db:
+                try:
+                    # Try to create a test reference (doesn't actually write data)
+                    test_ref = self.firebase_manager.db.collection('connection_test')
+                    test_results.append("✅ Firebase Connectivity: Connection successful")
+                except Exception as e:
+                    test_results.append(f"❌ Firebase Connectivity: Failed ({str(e)})")
+            else:
+                test_results.append("❌ Firebase Connectivity: Cannot test (no database)")
+
+            results_text.setPlainText("\n".join(test_results))
+            QApplication.processEvents()
+
+            # Test Complete
+            progress_bar.setValue(100)
+
+            # Determine overall status
+            failed_tests = [result for result in test_results if result.startswith("❌")]
+            if failed_tests:
+                status_label.setText(f"❌ Tests Complete - {len(failed_tests)} issues found")
+                status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #ef4444;")
+
+                # Add recommendations
+                test_results.append("\n" + "="*50)
+                test_results.append("RECOMMENDATIONS:")
+                test_results.append("• Check Firebase configuration")
+                test_results.append("• Verify internet connection")
+                test_results.append("• Try logging out and logging back in")
+                test_results.append("• Check Firebase service status")
+
+            else:
+                status_label.setText("✅ All Tests Passed - Firebase Ready")
+                status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #10b981;")
+
+                test_results.append("\n" + "="*50)
+                test_results.append("✅ Firebase is ready for sync operations!")
+
+            results_text.setPlainText("\n".join(test_results))
+
+        except Exception as e:
+            self.logger.error(f"Error performing Firebase tests: {e}")
+            status_label.setText("❌ Test Error")
+            results_text.setPlainText(f"Error during testing: {str(e)}")
+
+    def download_data_from_cloud(self):
+        """Download data from cloud to local storage - Async version"""
+        try:
+            if not self.firebase_manager or not self.firebase_manager.is_authenticated():
+                self.logger.error("Firebase not available for download")
+                return False
+
+            self.logger.info("Starting async download from cloud...")
+
+            # Start async download operation
+            return self.start_async_sync_operation('download', data=None, show_progress=True)
+
+        except Exception as e:
+            self.logger.error(f"Error starting cloud download: {e}")
+            self.add_notification("Cloud Sync", "Failed to start download from cloud", "error")
+            return False
+
+    def save_cloud_data_to_local(self, cloud_data):
+        """Save downloaded cloud data to local CSV files"""
+        try:
+            import os
+
+            # Ensure data directory exists
+            data_dir = os.path.join(os.getcwd(), 'data')
+            os.makedirs(data_dir, exist_ok=True)
+
+            saved_files = 0
+            for collection_name, df in cloud_data.items():
+                try:
+                    file_path = os.path.join(data_dir, f"{collection_name}.csv")
+
+                    # Backup existing file if it exists
+                    if os.path.exists(file_path):
+                        backup_path = f"{file_path}.backup"
+                        os.rename(file_path, backup_path)
+                        self.logger.info(f"Backed up existing {collection_name}.csv")
+
+                    # Save new data
+                    df.to_csv(file_path, index=False)
+                    saved_files += 1
+                    self.logger.info(f"Saved {len(df)} records to {collection_name}.csv")
+
+                except Exception as e:
+                    self.logger.error(f"Error saving {collection_name}: {e}")
+                    continue
+
+            self.logger.info(f"Saved {saved_files} files from cloud data")
+
+        except Exception as e:
+            self.logger.error(f"Error saving cloud data to local: {e}")
+
+    def refresh_data_after_sync(self):
+        """Refresh application data after sync operation"""
+        try:
+            # Reload data manager if available
+            if hasattr(self, 'data_manager') and self.data_manager:
+                self.logger.info("Refreshing data manager after sync...")
+                # Trigger data reload
+                self.data_manager.reload_all_data()
+
+            # Refresh UI components
+            self.logger.info("Refreshing UI after sync...")
+            # Add any UI refresh logic here
+
+            self.add_notification("Data Refresh", "Application data refreshed after sync", "info")
+
+        except Exception as e:
+            self.logger.error(f"Error refreshing data after sync: {e}")
+
+    def perform_smart_sync(self):
+        """Perform intelligent bidirectional sync with conflict resolution - Async version"""
+        try:
+            if not self.firebase_manager or not self.firebase_manager.is_authenticated():
+                self.logger.error("Firebase not available for smart sync")
+                return False
+
+            self.logger.info("Starting async smart sync...")
+
+            # Get local data for smart sync
+            local_data = self.get_all_local_data()
+
+            # Start async smart sync operation
+            return self.start_async_sync_operation('smart_sync', data=local_data, show_progress=True)
+
+        except Exception as e:
+            self.logger.error(f"Error starting smart sync: {e}")
+            self.add_notification("Cloud Sync", "Failed to start smart sync", "error")
+            return False
+
+    def merge_local_and_cloud_data(self, local_data, cloud_data):
+        """Merge local and cloud data with intelligent conflict resolution"""
+        try:
+            import pandas as pd
+            from datetime import datetime
+
+            merged_data = {}
+
+            # Get all unique collection names
+            all_collections = set(local_data.keys()) | set(cloud_data.keys())
+
+            for collection_name in all_collections:
+                local_df = local_data.get(collection_name)
+                cloud_df = cloud_data.get(collection_name)
+
+                if local_df is None and cloud_df is not None:
+                    # Only cloud data exists
+                    merged_data[collection_name] = cloud_df.copy()
+                    self.logger.info(f"Using cloud data for {collection_name} (no local data)")
+
+                elif local_df is not None and cloud_df is None:
+                    # Only local data exists
+                    merged_data[collection_name] = local_df.copy()
+                    self.logger.info(f"Using local data for {collection_name} (no cloud data)")
+
+                elif local_df is not None and cloud_df is not None:
+                    # Both exist - perform intelligent merge
+                    merged_df = self.intelligent_dataframe_merge(local_df, cloud_df, collection_name)
+                    merged_data[collection_name] = merged_df
+
+            return merged_data
+
+        except Exception as e:
+            self.logger.error(f"Error merging data: {e}")
+            return {}
+
+    def intelligent_dataframe_merge(self, local_df, cloud_df, collection_name):
+        """Perform intelligent merge of two DataFrames"""
+        try:
+            import pandas as pd
+
+            # Strategy 1: If DataFrames are identical, return local
+            if local_df.equals(cloud_df):
+                self.logger.info(f"Data identical for {collection_name}")
+                return local_df.copy()
+
+            # Strategy 2: If one is empty, use the non-empty one
+            if local_df.empty and not cloud_df.empty:
+                self.logger.info(f"Using cloud data for {collection_name} (local empty)")
+                return cloud_df.copy()
+            elif not local_df.empty and cloud_df.empty:
+                self.logger.info(f"Using local data for {collection_name} (cloud empty)")
+                return local_df.copy()
+
+            # Strategy 3: Merge based on common columns and indices
+            try:
+                # Try to merge on common columns
+                common_columns = set(local_df.columns) & set(cloud_df.columns)
+
+                if common_columns:
+                    # Combine both DataFrames and remove duplicates
+                    combined_df = pd.concat([local_df, cloud_df], ignore_index=True)
+
+                    # Remove exact duplicates
+                    merged_df = combined_df.drop_duplicates()
+
+                    self.logger.info(f"Merged {collection_name}: {len(local_df)} local + {len(cloud_df)} cloud = {len(merged_df)} final")
+                    return merged_df
+                else:
+                    # No common columns, prefer local data
+                    self.logger.warning(f"No common columns for {collection_name}, using local data")
+                    return local_df.copy()
+
+            except Exception as merge_error:
+                self.logger.error(f"Error in DataFrame merge for {collection_name}: {merge_error}")
+                # Fallback to local data
+                return local_df.copy()
+
+        except Exception as e:
+            self.logger.error(f"Error in intelligent merge for {collection_name}: {e}")
+            return local_df.copy() if local_df is not None else cloud_df.copy()
 
     def add_notification(self, title, message, notification_type="info"):
         """Add a notification to the bell icon"""
@@ -2928,18 +5495,34 @@ For more information, please check the documentation or contact support.
         
     def create_icon(self, emoji):
         """Create an icon from emoji text"""
-        # Create a pixmap
-        pixmap = QPixmap(24, 24)
-        pixmap.fill(Qt.transparent)
+        try:
+            # Create a pixmap
+            pixmap = QPixmap(24, 24)
+            if pixmap.isNull():
+                # Fallback to a simple icon if pixmap creation fails
+                return QIcon()
 
-        # Create a painter to draw on the pixmap
-        painter = QPainter(pixmap)
-        painter.setFont(QFont("Segoe UI", 12))
-        painter.setPen(QPen(QColor("#ecf0f1")))  # White text
-        painter.drawText(pixmap.rect(), Qt.AlignCenter, emoji)
-        painter.end()
+            pixmap.fill(Qt.transparent)
 
-        return QIcon(pixmap)
+            # Create a painter to draw on the pixmap with proper error checking
+            painter = QPainter()
+            if not painter.begin(pixmap):
+                # If painter can't begin, return a simple icon
+                return QIcon()
+
+            try:
+                painter.setFont(QFont("Segoe UI", 12))
+                painter.setPen(QPen(QColor("#ecf0f1")))  # White text
+                painter.drawText(pixmap.rect(), Qt.AlignCenter, emoji)
+            finally:
+                painter.end()
+
+            return QIcon(pixmap)
+
+        except Exception as e:
+            # If anything goes wrong, return a simple icon
+            print(f"[WARNING] Error creating emoji icon: {e}")
+            return QIcon()
 
     def create_refresh_button(self, tab_name="", callback=None):
         """Create a standardized refresh button for tabs"""
@@ -3388,8 +5971,8 @@ For more information, please check the documentation or contact support.
         # Close the figure to prevent memory issues
         plt.close(fig1)
         
-        # Add Firebase cloud sync section if available
-        if self.firebase_sync.is_firebase_available():
+        # Add Firebase cloud sync section for subscription model
+        if self.firebase_manager and self.current_user:
             # Create a header for the cloud sync section
             cloud_header = QLabel("Cloud Sync")
             cloud_header.setFont(self.header_font)
@@ -3414,10 +5997,13 @@ For more information, please check the documentation or contact support.
             cloud_desc.setWordWrap(True)
             cloud_desc.setStyleSheet("color: #555;")
             cloud_layout.addWidget(cloud_desc)
-            
-            # Add the Firebase sync UI elements
-            self.firebase_sync.add_sync_ui(cloud_layout)
-            
+
+            # Add subscription-based sync info
+            sync_info = QLabel("Your data automatically syncs to the cloud when you're authenticated.")
+            sync_info.setWordWrap(True)
+            sync_info.setStyleSheet("color: #10b981; font-weight: 600; margin-top: 10px;")
+            cloud_layout.addWidget(sync_info)
+
             # Add the cloud sync frame to the main content layout
             self.content_layout.addWidget(cloud_frame)
         

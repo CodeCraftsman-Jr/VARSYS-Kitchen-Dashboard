@@ -1,2 +1,2 @@
 date,order_id,recipe,quantity,packing_materials,packing_cost,preparation_materials,preparation_cost,gas_charges,electricity_charges,total_cost_making,our_pricing,subtotal,discount,final_price_after_discount,profit,profit_percentage
-2025-06-15,ORD-20250615201052,Coffee,1,Standard packaging,5.0,Ingredients for Coffee,20.0,2.0,1.5,28.5,60.0,60.0,0.0,60.0,31.5,52.5
+2025-06-15,ORD-20250615201052,Coffee,1.0,Standard packaging,5.0,Ingredients for Coffee,20.0,2.0,1.5,28.5,60.0,60.0,0.0,60.0,31.5,52.5

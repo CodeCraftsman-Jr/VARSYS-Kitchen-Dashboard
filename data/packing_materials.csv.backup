@@ -1,0 +1,23 @@
+material_id,material_name,category,size,unit,cost_per_unit,current_stock,minimum_stock,supplier,notes,date_added
+1,250 ml aluminium box,Boxes,Small,pieces,3.50,200,20,PackCorp,For small items - Updated Indian pricing,2025-01-15
+2,500 ml aluminium box,Boxes,Medium,pieces,5.80,75,15,PackCorp,For medium items - Updated Indian pricing,2025-01-15
+3,750 ml aluminium box,Boxes,Large,pieces,8.20,50,10,PackCorp,For large items - Updated Indian pricing,2025-01-15
+4,1000 ml aluminium box,Boxes,XL,pieces,12.50,25,5,PackCorp,For bulk items - Updated Indian pricing,2025-01-15
+5,Small Plastic Cover,Plastic Covers,Small,pieces,0.80,500,100,PlasticPro,Transparent covers - Updated pricing,2025-01-15
+6,Medium Plastic Cover,Plastic Covers,Medium,pieces,1.20,400,80,PlasticPro,Transparent covers - Updated pricing,2025-01-15
+7,Large Plastic Cover,Plastic Covers,Large,pieces,1.80,300,60,PlasticPro,Transparent covers - Updated pricing,2025-01-15
+8,Small Plastic Bag,Plastic Bags,Small,pieces,0.40,1000,200,PlasticPro,Food grade bags - Updated pricing,2025-01-15
+9,Medium Plastic Bag,Plastic Bags,Medium,pieces,0.65,800,150,PlasticPro,Food grade bags - Updated pricing,2025-01-15
+10,Large Plastic Bag,Plastic Bags,Large,pieces,0.95,600,120,PlasticPro,Food grade bags - Updated pricing,2025-01-15
+11,250ml Bottle,Bottles,250ml,pieces,4.20,200,40,BottleCorp,Glass bottles - Updated pricing,2025-01-15
+12,500ml Bottle,Bottles,500ml,pieces,6.80,150,30,BottleCorp,Glass bottles - Updated pricing,2025-01-15
+13,1L Bottle,Bottles,1L,pieces,9.50,100,20,BottleCorp,Glass bottles - Updated pricing,2025-01-15
+20,Extra Large plastic cover,Plastic Covers,XL,pieces,2.20,300,50,PaperPro,Non eco Friendly - Updated pricing,2025-01-15
+21,Spoon,Cutlery,small,pieces,1.50,150,10,MojoAgency,Disposable plastic spoons - Updated pricing,2025-06-09
+22,Paper Cup,Cutlery,small,pieces,0.85,50,10,Aayra Agency,Disposable paper cups - Updated pricing,2025-06-09
+23,Tiny Pouch,Plastic Covers,smallest,packs,0.30,50,10,Ajitha Company,Small plastic pouches - Updated pricing,2025-06-09
+24,Pickle Container,Containers,small,pieces,2.50,200,8,Ajith Bakery,Small containers for pickles - Updated pricing,2025-06-09
+25,Silver Paper Large,Paper Sheet,large,pieces,2.80,151,10,Instaco,Aluminum foil large sheets - Updated pricing,2025-06-09
+26,Silver Paper Medium,Paper Sheet,medium,pieces,2.20,150,10,Instaco,Aluminum foil medium sheets - Updated pricing,2025-06-09
+27,Tea Cup,Cutlery,small,pieces,1.20,200,10,Rajesh,Disposable tea cups - Updated pricing,2025-06-10
+28,Tea Cup Medium,Cutlery,medium,pieces,1.60,100,10,Rajesh,Medium disposable tea cups - Updated pricing,2025-06-10

@@ -289,16 +289,28 @@ def initialize_firebase():
     # Get the absolute path to the project root directory
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    # Path to the Firebase credentials JSON file
-    credentials_path = os.path.join(current_dir, "firebase_credentials.json")
-    
+    # Look for Firebase credentials file in multiple locations
+    credentials_paths = [
+        os.path.join(current_dir, "firebase_credentials.json"),
+        os.path.join(current_dir, "secure_credentials", "firebase_credentials.json")
+    ]
+
     # Log the initialization process
     log_info("Initializing Firebase integration...")
-    log_info(f"Looking for credentials at: {credentials_path}")
-    
+
+    credentials_path = None
+    for path in credentials_paths:
+        log_info(f"Looking for credentials at: {path}")
+        if os.path.exists(path):
+            credentials_path = path
+            log_info(f"Found Firebase credentials at: {path}")
+            break
+
     # Check if the credentials file exists
-    if not os.path.exists(credentials_path):
-        log_error(f"Firebase credentials file not found at: {credentials_path}")
+    if not credentials_path:
+        log_error("Firebase credentials file not found in any of these locations:")
+        for path in credentials_paths:
+            log_error(f"  - {path}")
         FIREBASE_AVAILABLE = False
         return False
     
@@ -320,22 +332,60 @@ def initialize_firebase():
         
         # Initialize Pyrebase for authentication if available
         if PYREBASE_AVAILABLE:
-            # Try to load the web config for Pyrebase
-            web_config_path = os.path.join(current_dir, "firebase_web_config.json")
-            
-            if os.path.exists(web_config_path):
-                log_info(f"Loading Firebase web config from: {web_config_path}")
-                with open(web_config_path, 'r') as f:
-                    web_config = json.load(f)
-                
+            # Try to load from main firebase_config.json first
+            main_config_path = os.path.join(current_dir, "firebase_config.json")
+            web_config = None
+
+            if os.path.exists(main_config_path):
+                try:
+                    log_info(f"Loading main Firebase config from: {main_config_path}")
+                    with open(main_config_path, 'r') as f:
+                        main_config = json.load(f)
+
+                    firebase_config = main_config.get('firebase', {})
+                    if firebase_config and firebase_config.get('apiKey') and firebase_config.get('projectId'):
+                        web_config = firebase_config
+                        log_info("Using Firebase config from main configuration file")
+                    else:
+                        log_warning("Main Firebase config is invalid or incomplete")
+                except Exception as e:
+                    log_error(f"Error loading main Firebase config: {e}")
+
+            # Fallback to web config files only if main config is not available
+            if not web_config:
+                web_config_paths = [
+                    os.path.join(current_dir, "firebase_web_config.json"),
+                    os.path.join(current_dir, "secure_credentials", "firebase_web_config.json")
+                ]
+
+                for path in web_config_paths:
+                    if os.path.exists(path):
+                        try:
+                            log_info(f"Loading Firebase web config from: {path}")
+                            with open(path, 'r') as f:
+                                config = json.load(f)
+
+                            if config and config.get('apiKey') and config.get('projectId'):
+                                web_config = config
+                                break
+                            else:
+                                log_warning(f"Invalid Firebase config in {path}")
+                        except Exception as e:
+                            log_error(f"Error loading Firebase config from {path}: {e}")
+
+            if web_config:
                 log_info("Initializing Pyrebase for authentication...")
                 FIREBASE_APP = pyrebase.initialize_app(web_config)
                 FIREBASE_AUTH = FIREBASE_APP.auth()
             else:
-                log_warning(f"Firebase web config not found at: {web_config_path}")
-                log_warning("Authentication will not work without web config.")
+                log_error("No valid Firebase web configuration found")
+                log_error("Authentication will not work without valid web config")
+                FIREBASE_AVAILABLE = False
+                return False
         else:
             log_warning("Pyrebase not available, user authentication will not work.")
+            FIREBASE_AVAILABLE = False
+            return False
         
         # Set global flag that Firebase is available
         FIREBASE_AVAILABLE = True
@@ -347,12 +397,102 @@ def initialize_firebase():
         FIREBASE_AVAILABLE = False
         return False
 
+def initialize_firebase_with_config(firebase_config):
+    """Initialize Firebase with provided configuration dictionary for v1.0.6"""
+    global FIREBASE_APP, FIRESTORE_DB, FIREBASE_AUTH, FIREBASE_AVAILABLE
+
+    try:
+        # Check if pyrebase is available
+        if not PYREBASE_AVAILABLE:
+            log_error("Pyrebase is not available. Please install pyrebase4.")
+            FIREBASE_AVAILABLE = False
+            return False
+
+        # Validate configuration more strictly
+        if not firebase_config:
+            log_error("No Firebase configuration provided")
+            FIREBASE_AVAILABLE = False
+            return False
+
+        required_fields = ['apiKey', 'authDomain', 'projectId']
+        missing_fields = []
+
+        for field in required_fields:
+            if not firebase_config.get(field) or firebase_config.get(field).strip() == '':
+                missing_fields.append(field)
+
+        if missing_fields:
+            log_error(f"Invalid Firebase configuration - missing required fields: {', '.join(missing_fields)}")
+            FIREBASE_AVAILABLE = False
+            return False
+
+        log_info("Initializing Firebase with provided configuration...")
+
+        # Initialize Pyrebase app with provided config
+        FIREBASE_APP = pyrebase.initialize_app(firebase_config)
+        FIREBASE_AUTH = FIREBASE_APP.auth()
+
+        # Initialize Firestore database (if available)
+        try:
+            FIRESTORE_DB = FIREBASE_APP.database()
+            log_info("Firebase Realtime Database initialized successfully with provided config")
+        except Exception as e:
+            log_warning(f"Firebase Realtime Database initialization failed: {e}")
+            FIRESTORE_DB = None
+
+        # Set global flag that Firebase is available
+        FIREBASE_AVAILABLE = True
+        log_info("Firebase initialization successful with provided config!")
+
+        return True
+    except Exception as e:
+        log_error("Failed to initialize Firebase with provided config", e)
+        FIREBASE_AVAILABLE = False
+        return False
+
+def sign_in_with_email(email, password):
+    """Sign in user with email and password for v1.0.6 with improved error handling"""
+    if not FIREBASE_AVAILABLE or not FIREBASE_AUTH:
+        log_error("Firebase authentication is not available")
+        return None
+
+    try:
+        log_info(f"Attempting to sign in user: {email}")
+        user = FIREBASE_AUTH.sign_in_with_email_and_password(email, password)
+        log_info("User authentication successful!")
+        return user
+    except requests.exceptions.HTTPError as e:
+        # Parse detailed error message from Firebase
+        error_json = e.args[1] if len(e.args) > 1 else "{}"
+        try:
+            import json
+            error_data = json.loads(error_json)
+            error_message = error_data.get('error', {}).get('message', 'Unknown error')
+            log_error(f"Authentication failed for user {email}: {error_message}")
+
+            # Log specific error details for debugging
+            if "INVALID_LOGIN_CREDENTIALS" in error_message:
+                log_error("Invalid email or password provided")
+            elif "EMAIL_NOT_FOUND" in error_message:
+                log_error("No user account found with this email")
+            elif "INVALID_PASSWORD" in error_message:
+                log_error("Incorrect password")
+            elif "USER_DISABLED" in error_message:
+                log_error("User account has been disabled")
+
+        except:
+            log_error(f"Authentication failed for user: {email} with HTTP error", e)
+        return None
+    except Exception as e:
+        log_error(f"Authentication failed for user: {email}", e)
+        return None
+
 def authenticate_user(email, password):
     """Authenticate a user with Firebase"""
     if not FIREBASE_AVAILABLE or not PYREBASE_AVAILABLE:
         log_error("Firebase or Pyrebase is not available. Cannot authenticate user.")
         return None
-    
+
     try:
         log_info(f"Authenticating user: {email}")
         # Sign in the user

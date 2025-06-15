@@ -1,20 +1,20 @@
 category_id,category_name,description
-1,Grains,"Rice, pasta, wheat, etc."
-2,Baking,"Flour, sugar, baking powder, etc."
-3,Spices,"Salt, herbs, spices, powders"
-4,Oils,"Cooking oils, ghee, butter"
-5,Meat,"Beef, pork, lamb, etc."
-6,Poultry,"Chicken, turkey, duck, etc."
-7,Vegetables,Fresh vegetables
-8,Dairy,"Milk, cheese, yogurt, etc."
-9,Fruits,Fresh fruits
-10,Legumes,"Beans, lentils, chickpeas, etc."
-11,Prepared Foods,"Cooked items, chutneys, gravies"
-12,Beverages,"Tea, coffee, milk drinks"
-13,Nuts & Seeds,"Cashews, peanuts, sesame seeds"
-14,Condiments,"Sauces, pastes, pickles"
-15,Seafood,"Fish, prawns, shellfish"
-16,Eggs,"Chicken eggs, duck eggs"
-17,Bread & Bakery,"Bread, naan, chapathi"
-18,Sweeteners,"Sugar, jaggery, honey"
-20,Aromatics,Items with unknown category
+1.0,Grains,"Rice, pasta, wheat, etc."
+2.0,Baking,"Flour, sugar, baking powder, etc."
+3.0,Spices,"Salt, herbs, spices, powders"
+4.0,Oils,"Cooking oils, ghee, butter"
+5.0,Meat,"Beef, pork, lamb, etc."
+6.0,Poultry,"Chicken, turkey, duck, etc."
+7.0,Vegetables,Fresh vegetables
+8.0,Dairy,"Milk, cheese, yogurt, etc."
+9.0,Fruits,Fresh fruits
+10.0,Legumes,"Beans, lentils, chickpeas, etc."
+11.0,Prepared Foods,"Cooked items, chutneys, gravies"
+12.0,Beverages,"Tea, coffee, milk drinks"
+13.0,Nuts & Seeds,"Cashews, peanuts, sesame seeds"
+14.0,Condiments,"Sauces, pastes, pickles"
+15.0,Seafood,"Fish, prawns, shellfish"
+16.0,Eggs,"Chicken eggs, duck eggs"
+17.0,Bread & Bakery,"Bread, naan, chapathi"
+18.0,Sweeteners,"Sugar, jaggery, honey"
+20.0,Aromatics,Items with unknown category

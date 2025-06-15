@@ -168,8 +168,26 @@ class CloudSyncManager(QWidget):
         self.status_timer.timeout.connect(self.update_status)
         self.status_timer.start(5000)  # Update every 5 seconds
         
-        self.logger.info("Cloud Sync Manager initialized")
-    
+        self.logger.info("Cloud Sync Manager initialized for subscription-based access")
+
+    def set_subscriber_info(self, user_info: dict):
+        """Set subscriber information for data isolation"""
+        if user_info:
+            self.current_user_id = user_info.get('localId', user_info.get('uid'))
+            self.user_email = user_info.get('email')
+            self.subscription_active = True
+
+            # Update Firebase manager with user context
+            if self.firebase_manager:
+                self.firebase_manager.set_current_user(user_info)
+
+            self.logger.info(f"Subscriber authenticated: {self.user_email}")
+            self.add_history_entry(f"👤 Subscriber authenticated: {self.user_email}")
+
+            # Update UI to show subscriber info
+            if hasattr(self, 'current_operation_label'):
+                self.current_operation_label.setText(f"Ready for sync - User: {self.user_email}")
+
     def init_ui(self):
         """Initialize the user interface"""
         layout = QVBoxLayout(self)
