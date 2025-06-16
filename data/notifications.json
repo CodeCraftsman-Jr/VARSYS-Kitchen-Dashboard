@@ -1,6 +1,78 @@
 {
   "notifications": [
     {
+      "id": 32,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-16T05:17:33.078080",
+      "read": false
+    },
+    {
+      "id": 31,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-16T05:17:31.047037",
+      "read": false
+    },
+    {
+      "id": 30,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:29.051823",
+      "read": false
+    },
+    {
+      "id": 29,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:28.061969",
+      "read": false
+    },
+    {
+      "id": 28,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:26.040910",
+      "read": false
+    },
+    {
+      "id": 27,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-16T05:17:17.381691",
+      "read": false
+    },
+    {
+      "id": 26,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:15.409460",
+      "read": false
+    },
+    {
+      "id": 25,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:14.355228",
+      "read": false
+    },
+    {
+      "id": 24,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-16T05:17:12.367212",
+      "read": false
+    },
+    {
       "id": 23,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
@@ -185,5 +257,5 @@
       "read": false
     }
   ],
-  "last_updated": "2025-06-16T03:40:37.583443"
+  "last_updated": "2025-06-16T05:17:33.078672"
 }

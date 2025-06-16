@@ -1,102 +1,127 @@
-#!/usr/bin/env python3
 """
-Enhanced cx_Freeze setup script for VARSYS Kitchen Dashboard
-Creates a professional, standalone executable with all dependencies
-Includes system tray integration and auto-startup capabilities
+Professional cx_Freeze build setup for Kitchen Dashboard
+Compatible with Python 3.12 and 3.13
 """
 
 import sys
 import os
 from cx_Freeze import setup, Executable
+import platform
 
-# Get the directory of this script
-script_dir = os.path.dirname(os.path.abspath(__file__))
+# Application metadata
+APP_NAME = "VARSYS Kitchen Dashboard"
+APP_VERSION = "1.0.6"
+APP_DESCRIPTION = "Professional Kitchen Management System with Firebase Cloud Sync"
+APP_AUTHOR = "VARSYS"
+APP_COPYRIGHT = "Copyright (c) 2025 VARSYS"
 
-# Enhanced package list with system tray and Windows integration
-build_options = {
-    'packages': [
-        # Core Python packages
-        'os', 'sys', 'json', 'sqlite3', 'datetime', 'logging', 'platform', 'uuid',
-        'pathlib', 'tempfile', 'shutil', 'subprocess', 'threading', 'time',
-        'ctypes', 'ctypes.wintypes', 'atexit', 'signal', 'winreg',
+# Main script
+MAIN_SCRIPT = "kitchen_app.py"
 
-        # Scientific computing packages
-        'pandas', 'numpy', 'matplotlib',
+# Icon file
+ICON_FILE = "assets/icons/vasanthkitchen.ico"
 
-        # GUI packages with system tray support
-        'PySide6', 'PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',
-
-        # Image and file handling
-        'PIL', 'openpyxl',
-
-        # Network and security
-        'requests', 'urllib3', 'ssl', 'certifi', 'cryptography',
-
-        # Additional packages
-        'tqdm', 'dateutil'
+# Build options for cx_Freeze
+build_exe_options = {
+    # Include all necessary packages
+    "packages": [
+        "pandas", "numpy", "matplotlib", "seaborn", "openpyxl",
+        "PySide6", "PySide6.QtWidgets", "PySide6.QtCore", "PySide6.QtGui",
+        "matplotlib.backends.backend_qtagg",
+        "firebase_admin", "pyrebase4", "requests", "urllib3", "certifi",
+        "PIL", "tqdm", "dateutil", "sklearn",
+        "jwt", "cryptography", "loguru", "json5"
     ],
 
-    'excludes': [
-        # Exclude unnecessary packages to reduce size
-        'tkinter', 'unittest', 'test', 'tests', 'distutils', 'setuptools', 'pip',
-        'scipy', 'IPython', 'jupyter', 'notebook', 'sphinx', 'pytest',
-        'numpy.core._methods', 'numpy.lib.format', 'pandas._libs.tslibs.base'
+    # Include all files from these directories
+    "include_files": [
+        ("data/", "data/"),
+        ("modules/", "modules/"),
+        ("utils/", "utils/"),
+        ("assets/", "assets/"),
+        ("secure_credentials/", "secure_credentials/"),
+        ("logs/", "logs/"),
+        ("firebase_config.json", "firebase_config.json"),
+        ("firebase_web_config.json", "firebase_web_config.json"),
+        ("jwt_secret.key", "jwt_secret.key"),
+        ("requirements.txt", "requirements.txt"),
+        ("README.md", "README.md"),
+        ("LICENSE", "LICENSE"),
+        ("__version__.py", "__version__.py"),
+        ("version.py", "version.py"),
+        ("config.py", "config.py"),
+        ("varsys_config.py", "varsys_config.py"),
+        ("varsys_branding.py", "varsys_branding.py")
     ],
 
-    'include_files': [
-        # Include essential directories and files that exist
-        ('modules/', 'modules/'),
-        ('utils/', 'utils/'),
-        ('data/', 'data/'),
-        ('assets/', 'assets/'),
-        ('secure_credentials/', 'secure_credentials/'),
-        ('firebase_web_config.json', 'firebase_web_config.json'),
-        ('README.md', 'README.md'),
-        ('requirements.txt', 'requirements.txt'),
-        ('LICENSE', 'LICENSE'),
-        ('version.py', 'version.py'),
-        ('__version__.py', '__version__.py'),
-        ('config.py', 'config.py'),
-        ('manifest.json', 'manifest.json'),
+    # Exclude unnecessary packages to reduce size
+    "excludes": [
+        "tkinter", "unittest", "test", "distutils", "setuptools",
+        "email", "html", "http", "urllib", "xml", "xmlrpc",
+        "pydoc", "doctest", "argparse", "difflib", "inspect",
+        "pdb", "profile", "pstats", "timeit", "trace"
     ],
 
-    # Include additional modules that might be missed
-    'includes': [
-        'matplotlib.backends.backend_qtagg',
-    ],
+    # Include DLLs and dependencies
+    "zip_include_packages": ["*"],
+    "zip_exclude_packages": [],
 
-    # Optimize packaging
-    'zip_include_packages': ['encodings', 'importlib', 'collections'],
-    'optimize': 2,
-    'build_exe': 'build/exe',
+    # Build directory
+    "build_exe": "build/exe.win-amd64-3.12" if sys.version_info[:2] == (3, 12) else "build/exe.win-amd64-3.13",
+
+    # Optimize for size and performance
+    "optimize": 2
 }
 
-# GUI applications require a different base on Windows
-base = 'Win32GUI' if sys.platform == 'win32' else None
+# MSI installer options
+bdist_msi_options = {
+    "upgrade_code": "{12345678-1234-5678-9012-123456789012}",
+    "add_to_path": False,
+    "initial_target_dir": r"[ProgramFilesFolder]\VARSYS\Kitchen Dashboard",
+    "install_icon": ICON_FILE
+}
 
-# Create the main executable configuration
-main_executable = Executable(
-    'kitchen_app.py',
+# Create executable
+base = None
+if platform.system() == "Windows":
+    base = "Win32GUI"  # Hide console window
+
+# Define the executable
+executable = Executable(
+    script=MAIN_SCRIPT,
     base=base,
-    target_name='VARSYS_Kitchen_Dashboard.exe',
-    icon='assets/icons/vasanthkitchen.ico',
-    copyright='Copyright (C) 2025 VARSYS Solutions',
-    shortcut_name='VARSYS Kitchen Dashboard',
-    shortcut_dir='DesktopFolder',
+    icon=ICON_FILE,
+    target_name="VARSYS_Kitchen_Dashboard.exe",
+    copyright=APP_COPYRIGHT,
+    trademarks="VARSYS Kitchen Dashboard"
 )
 
-executables = [main_executable]
-
-# Enhanced setup configuration
+# Setup configuration
 setup(
-    name='VARSYS Kitchen Dashboard',
-    version="1.0.6",
-    description='Professional Kitchen Management System with Cloud Sync',
-    long_description='A comprehensive kitchen management solution with Firebase integration, subscription-based access, and professional Windows integration.',
-    author='VARSYS Solutions',
-    author_email='support@varsys.com',
-    url='https://github.com/varsys/kitchen-dashboard',
-    license='Commercial',
-    options={'build_exe': build_options},
-    executables=executables
+    name=APP_NAME,
+    version=APP_VERSION,
+    description=APP_DESCRIPTION,
+    author=APP_AUTHOR,
+    options={
+        "build_exe": build_exe_options,
+        "bdist_msi": bdist_msi_options
+    },
+    executables=[executable]
 )
+
+print(f"""
+=== Build Configuration ===
+Application: {APP_NAME} v{APP_VERSION}
+Python Version: {sys.version}
+Platform: {platform.system()} {platform.architecture()[0]}
+Build Tool: cx_Freeze
+Icon: {ICON_FILE}
+Output: VARSYS_Kitchen_Dashboard.exe
+
+To build:
+1. Install dependencies: py -3.12 -m pip install -r requirements.txt
+2. Build executable: py -3.12 setup_cx_freeze.py build
+3. Create installer: py -3.12 setup_cx_freeze.py bdist_msi
+
+For Python 3.13, replace 'py -3.12' with 'python' (if 3.13 is default)
+""")

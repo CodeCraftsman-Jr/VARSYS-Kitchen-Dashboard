@@ -1,57 +1,35 @@
-#!/usr/bin/env python3
 """
-Minimal cx_Freeze setup for VARSYS Kitchen Dashboard
-Just the basics to get it working
+Minimal cx_Freeze setup for Kitchen Dashboard
 """
 
-import sys
-import os
 from cx_Freeze import setup, Executable
+import os
 
-# Minimal build options
-build_options = {
-    'packages': [
-        # Only the most essential packages
-        'PySide6.QtWidgets', 'PySide6.QtCore', 'PySide6.QtGui',
-        'pandas', 'matplotlib', 'numpy'
-    ],
-    
-    'excludes': [
-        'tkinter', 'unittest', 'test', 'tests'
-    ],
-    
-    'include_files': [
-        # Only include files that definitely exist
-        ('modules/', 'modules/'),
-        ('data/', 'data/'),
-        ('assets/', 'assets/'),
-    ],
-    
-    'optimize': 0,  # No optimization to avoid issues
+# Minimal build options - only essential packages
+build_exe_options = {
+    "packages": ["pandas", "PySide6", "matplotlib"],
+    "include_files": [
+        ("data/", "data/"),
+        ("modules/", "modules/"),
+        ("utils/", "utils/")
+    ] if os.path.exists("data") else [],
+    "excludes": ["tkinter", "unittest", "test"],
 }
 
-# Check for optional files
-if os.path.exists('utils/'):
-    build_options['include_files'].append(('utils/', 'utils/'))
-
-if os.path.exists('README.md'):
-    build_options['include_files'].append(('README.md', 'README.md'))
-
-# GUI base for Windows
-base = 'Win32GUI' if sys.platform == 'win32' else None
-
-# Simple executable
+# Create executable
 executable = Executable(
-    'kitchen_app.py',
-    base=base,
-    target_name='VARSYS_Kitchen_Dashboard.exe',
-    icon='assets/icons/vasanthkitchen.ico' if os.path.exists('assets/icons/vasanthkitchen.ico') else None
+    script="kitchen_app.py",
+    base="Win32GUI",
+    target_name="VARSYS_Kitchen_Dashboard.exe"
 )
 
-# Minimal setup
+# Setup
 setup(
-    name='VARSYS Kitchen Dashboard',
+    name="VARSYS Kitchen Dashboard",
     version="1.0.6",
-    options={'build_exe': build_options},
+    description="Kitchen Management System",
+    options={"build_exe": build_exe_options},
     executables=[executable]
 )
+
+print("Minimal build configuration loaded")

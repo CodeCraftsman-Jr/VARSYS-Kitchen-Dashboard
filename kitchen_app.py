@@ -1,5 +1,22 @@
 import sys
 import os
+
+# Fix Python paths for frozen application (cx_Freeze)
+if getattr(sys, 'frozen', False):
+    # Running in a frozen application
+    current_dir = os.path.dirname(sys.executable)
+    sys.path.insert(0, current_dir)
+    sys.path.insert(0, os.path.join(current_dir, 'modules'))
+    sys.path.insert(0, os.path.join(current_dir, 'utils'))
+    sys.path.insert(0, os.path.join(current_dir, 'tests'))
+    print("✓ Fixed Python paths for frozen application")
+else:
+    # Running in development
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, current_dir)
+    sys.path.insert(0, os.path.join(current_dir, 'modules'))
+    sys.path.insert(0, os.path.join(current_dir, 'utils'))
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -24,7 +41,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton, 
 from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QFont, QColor, QIcon, QPalette, QPainter, QPen, QPixmap
 
-# Import modules
+# Import modules - use standard imports for IDE compatibility
 from modules.settings_fixed import SettingsWidget
 from modules.shopping_fixed import ShoppingWidget
 from modules.logs_viewer import LogsViewerWidget
@@ -60,6 +77,8 @@ except ImportError:
     UpdateManager = None
     get_updater = None
     version_manager = None
+
+print("✓ All imports completed with fallback handling for frozen application")
 
 # Simple fix for category dropdowns has been integrated into the inventory module
 
