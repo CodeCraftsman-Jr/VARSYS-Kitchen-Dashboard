@@ -10,8 +10,8 @@ from datetime import datetime
 from typing import Dict, Optional, Tuple
 
 # Current version information
-__version__ = "1.0.6"
-__build__ = "2025.01.15"
+__version__ = "1.1.1"
+__build__ = "2025.06.16"
 __author__ = "VARSYS"
 __description__ = "Professional Kitchen Management Dashboard with Firebase Login & Cloud Sync"
 

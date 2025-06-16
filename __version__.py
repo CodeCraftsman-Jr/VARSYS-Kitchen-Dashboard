@@ -7,20 +7,20 @@ Software: Kitchen Dashboard (First software in VARSYS ecosystem)
 License: Proprietary - Free for limited testing period
 """
 
-__version__ = "1.0.6"
-__build__ = "20250615"
+__version__ = "1.1.1"
+__build__ = "20250616"
 __company__ = "VARSYS Solutions"
 __product__ = "Kitchen Dashboard"
-__description__ = "Professional Kitchen Management System"
+__description__ = "Professional Kitchen Management System with Firebase Authentication & Cloud Sync"
 __copyright__ = "© 2025 VARSYS Solutions. All rights reserved."
 __website__ = "https://github.com/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard"
 __support_email__ = "support@varsys-solutions.com"
 
 # Version components
 VERSION_MAJOR = 1
-VERSION_MINOR = 0
-VERSION_PATCH = 6
-VERSION_BUILD = 20250615
+VERSION_MINOR = 1
+VERSION_PATCH = 1
+VERSION_BUILD = 20250616
 
 # Release information
 RELEASE_TYPE = "stable"  # alpha, beta, rc, stable
@@ -32,9 +32,9 @@ UPDATE_CHECK_URL = "https://api.github.com/repos/CodeCraftsman-Jr/VARSYS-Kitchen
 DOWNLOAD_BASE_URL = "https://github.com/CodeCraftsman-Jr/VARSYS-Kitchen-Dashboard/releases/download"
 
 # Feature flags for ecosystem
-FIREBASE_ENABLED = False  # Disabled for initial release
-SUBSCRIPTION_REQUIRED = False  # Will be enabled in future versions
-MULTI_USER_SUPPORT = False  # Will be enabled when Firebase is re-enabled
+FIREBASE_ENABLED = True  # Enabled for v1.1.1 with full cloud sync
+SUBSCRIPTION_REQUIRED = True  # Enabled for subscription-based access
+MULTI_USER_SUPPORT = True  # Enabled with Firebase authentication
 
 # Compatibility information
 MIN_PYTHON_VERSION = "3.8"

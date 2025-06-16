@@ -283,7 +283,7 @@ class KitchenDashboardApp(QMainWindow):
             self.firebase_config_manager = None
 
         # SUBSCRIPTION-BASED AUTHENTICATION: Only subscribed users can access
-        self.logger.info("Kitchen Dashboard v1.0.6 - Subscription-based access")
+        self.logger.info("Kitchen Dashboard v1.1.1 - Subscription-based access")
         self.logger.info("Only users with valid Firebase accounts can access this application")
 
         # Check if daily sync is needed (without performing it)

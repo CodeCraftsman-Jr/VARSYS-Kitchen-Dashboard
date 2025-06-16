@@ -26,7 +26,7 @@ executable = Executable(
 # Setup
 setup(
     name="VARSYS Kitchen Dashboard",
-    version="1.0.6",
+    version="1.1.1",
     description="Kitchen Management System",
     options={"build_exe": build_exe_options},
     executables=[executable]

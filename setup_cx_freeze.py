@@ -10,8 +10,8 @@ import platform
 
 # Application metadata
 APP_NAME = "VARSYS Kitchen Dashboard"
-APP_VERSION = "1.0.6"
-APP_DESCRIPTION = "Professional Kitchen Management System with Firebase Cloud Sync"
+APP_VERSION = "1.1.1"
+APP_DESCRIPTION = "Professional Kitchen Management System with Firebase Authentication & Cloud Sync"
 APP_AUTHOR = "VARSYS"
 APP_COPYRIGHT = "Copyright (c) 2025 VARSYS"
 
@@ -23,14 +23,16 @@ ICON_FILE = "assets/icons/vasanthkitchen.ico"
 
 # Build options for cx_Freeze
 build_exe_options = {
-    # Include all necessary packages
+    # Include all necessary packages (Firebase enabled for v1.1.1)
     "packages": [
         "pandas", "numpy", "matplotlib", "seaborn", "openpyxl",
         "PySide6", "PySide6.QtWidgets", "PySide6.QtCore", "PySide6.QtGui",
         "matplotlib.backends.backend_qtagg",
-        "firebase_admin", "pyrebase4", "requests", "urllib3", "certifi",
+        # Firebase packages (enabled)
+        "firebase_admin", "pyrebase", "google.cloud.firestore", "google.auth",
+        "requests", "urllib3", "certifi",
         "PIL", "tqdm", "dateutil", "sklearn",
-        "jwt", "cryptography", "loguru", "json5"
+        "jwt", "cryptography", "loguru", "json5", "dotenv"
     ],
 
     # Include all files from these directories

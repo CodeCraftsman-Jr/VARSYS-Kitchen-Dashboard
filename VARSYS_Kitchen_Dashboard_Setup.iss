@@ -3,7 +3,7 @@
 ; Created for cx_Freeze build output
 
 #define MyAppName "VARSYS Kitchen Dashboard"
-#define MyAppVersion "1.0.5"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "VARSYS Technologies"
 #define MyAppURL "https://github.com/VARSYS/Kitchen-Dashboard"
 #define MyAppExeName "VARSYS_Kitchen_Dashboard.exe"

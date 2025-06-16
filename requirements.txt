@@ -7,7 +7,7 @@ pillow>=9.0.0
 PySide6>=6.0.0
 # pyinstaller>=5.8.0  # Removed due to circular dependency issues
 
-# Firebase integration (disabled for initial release)
+# Firebase integration (enabled for v1.1.1)
 firebase-admin>=6.0.0
 pyrebase4>=4.5.0
 
