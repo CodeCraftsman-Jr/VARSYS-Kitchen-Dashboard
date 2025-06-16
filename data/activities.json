@@ -103385,5 +103385,23 @@
     "metadata": {
       "operation_id": "offline_sync_1750104361.584462"
     }
+  },
+  {
+    "timestamp": "2025-06-17T01:36:31.602869",
+    "activity_type": "system_event",
+    "level": "debug",
+    "module": "pwa_manager",
+    "action": "sync_offline_data_start",
+    "description": "Started sync_offline_data",
+    "user_id": "anonymous",
+    "session_id": "session_20250617_013529_741843",
+    "data_before": null,
+    "data_after": null,
+    "execution_time": null,
+    "error_details": null,
+    "stack_trace": null,
+    "metadata": {
+      "operation_id": "offline_sync_1750104391.602869"
+    }
   }
 ]
