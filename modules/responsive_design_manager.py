@@ -9,10 +9,10 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QScrollArea, QFrame, QGridLayout,
-                             QSizePolicy, QSpacerItem, QStackedWidget)
-from PySide6.QtCore import Qt, Signal, QTimer, QSize, QRect, QPropertyAnimation, QEasingCurve
+                             QSizePolicy, QSpacerItem, QStackedWidget, QHeaderView)
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QRect, QPropertyAnimation, QEasingCurve, QObject
 from PySide6.QtGui import QFont, QFontMetrics, QScreen, QGuiApplication
 
 # Import activity tracker
@@ -109,7 +109,7 @@ class ResponsiveWidget(QWidget):
         """Override in subclasses to adapt to layout mode"""
         pass
 
-class ResponsiveDesignManager:
+class ResponsiveDesignManager(QObject):
     """
     Responsive design manager that:
     - Detects device type and screen size
@@ -118,11 +118,12 @@ class ResponsiveDesignManager:
     - Handles touch optimization
     - Manages layout transitions
     """
-    
+
     device_type_changed = Signal(DeviceType)
     layout_mode_changed = Signal(LayoutMode)
-    
+
     def __init__(self):
+        super().__init__()
         self.logger = logging.getLogger(__name__)
         
         # Current state

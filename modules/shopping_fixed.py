@@ -75,6 +75,19 @@ class ShoppingWidget(QWidget):
         # Connect tab change event to refresh data
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
+    def load_data(self):
+        """Load and refresh shopping data"""
+        try:
+            # Refresh the shopping dataframe from the main data
+            if 'shopping_list' in self.data:
+                self.shopping_df = self.data['shopping_list'].copy()
+                self.update_shopping_list()
+                print(f"✅ Shopping data loaded: {len(self.shopping_df)} items")
+            else:
+                print("⚠️ No shopping_list data found in data dictionary")
+        except Exception as e:
+            print(f"❌ Error loading shopping data: {e}")
+
     def on_tab_changed(self, index):
         """Handle tab change events to refresh data"""
         try:

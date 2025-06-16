@@ -34,7 +34,7 @@ class LoginDialog(ResponsiveDialog):
 
     def __init__(self, parent=None, firebase_config_manager=None):
         # Initialize responsive dialog
-        super().__init__("Kitchen Dashboard - Subscriber Login v1.0.6", parent, modal=True)
+        super().__init__(title="Kitchen Dashboard - Subscriber Login v1.0.6", parent=parent, modal=True)
 
         # Store Firebase configuration manager
         self.firebase_config_manager = firebase_config_manager

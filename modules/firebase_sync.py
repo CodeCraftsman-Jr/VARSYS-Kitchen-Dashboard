@@ -41,7 +41,16 @@ class FirebaseSync:
         else:
             self.log_message(f"Data parameter contains {len(data)} items: {', '.join(data.keys())}")
             for key, df in data.items():
-                self.log_message(f"Data[{key}] has {len(df)} rows and {len(df.columns)} columns")
+                try:
+                    # Check if it's a DataFrame
+                    if hasattr(df, 'columns') and hasattr(df, '__len__'):
+                        self.log_message(f"Data[{key}] has {len(df)} rows and {len(df.columns)} columns")
+                    elif isinstance(df, dict):
+                        self.log_message(f"Data[{key}] is a dictionary with {len(df)} items")
+                    else:
+                        self.log_message(f"Data[{key}] is of type {type(df)}")
+                except Exception as e:
+                    self.log_message(f"Error logging data info for {key}: {e}", "warning")
         
         # Initialize Firebase for subscription-based access
         if self.is_firebase_available():

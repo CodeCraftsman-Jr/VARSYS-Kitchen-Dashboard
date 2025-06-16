@@ -161,7 +161,7 @@ class TestRunner(QThread):
             modules_dir = os.path.join(parent_dir, 'modules')
             sys.path.insert(0, modules_dir)
 
-            from inventory_fixed import InventoryWidget
+            from modules.inventory_fixed import InventoryWidget
             
             # Create sample inventory data
             sample_data = pd.DataFrame({
@@ -174,7 +174,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            inventory_widget = InventoryWidget(self.app, {'inventory': sample_data})
+            inventory_widget = InventoryWidget({'inventory': sample_data})
             assert inventory_widget is not None, "Inventory widget creation failed"
             
             # Test data loading
@@ -199,7 +199,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            shopping_widget = ShoppingWidget(self.app, {'shopping_list': sample_data})
+            shopping_widget = ShoppingWidget({'shopping_list': sample_data})
             assert shopping_widget is not None, "Shopping widget creation failed"
             
         except ImportError:
@@ -208,7 +208,7 @@ class TestRunner(QThread):
     def test_pricing_module(self):
         """Test pricing module functionality"""
         try:
-            from modules.pricing_management import PricingWidget
+            from modules.pricing_management import PricingManagementWidget
             
             # Create sample pricing data
             sample_recipes = pd.DataFrame({
@@ -233,7 +233,7 @@ class TestRunner(QThread):
             }
             
             # Test widget creation
-            pricing_widget = PricingWidget(self.app, data)
+            pricing_widget = PricingManagementWidget(data)
             assert pricing_widget is not None, "Pricing widget creation failed"
             
         except ImportError:
@@ -255,7 +255,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            sales_widget = EnhancedSalesWidget(self.app, {'sales': sample_data})
+            sales_widget = EnhancedSalesWidget({'sales': sample_data})
             assert sales_widget is not None, "Sales widget creation failed"
             
         except ImportError:
@@ -276,7 +276,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            cleaning_widget = CleaningWidget(self.app, {'cleaning_maintenance': sample_data})
+            cleaning_widget = CleaningWidget({'cleaning_maintenance': sample_data})
             assert cleaning_widget is not None, "Cleaning widget creation failed"
             
         except ImportError:
@@ -288,7 +288,7 @@ class TestRunner(QThread):
             from modules.settings_fixed import SettingsWidget
             
             # Test widget creation
-            settings_widget = SettingsWidget(self.app, self.app.data)
+            settings_widget = SettingsWidget(main_app=self.app, parent=None, data=self.app.data)
             assert settings_widget is not None, "Settings widget creation failed"
             
         except ImportError:
@@ -298,17 +298,19 @@ class TestRunner(QThread):
         """Test Firebase integration"""
         try:
             from modules.firebase_sync import FirebaseSync
-            
-            # Test Firebase sync creation
-            firebase_sync = FirebaseSync(self.app, self.app.data, "data")
+
+            # Test Firebase sync creation with correct constructor
+            firebase_sync = FirebaseSync(parent=self.app)
             assert firebase_sync is not None, "Firebase sync creation failed"
-            
+
             # Test availability check
             is_available = firebase_sync.is_firebase_available()
             assert isinstance(is_available, bool), "Firebase availability check failed"
-            
+
         except ImportError:
             raise Exception("Firebase integration module not available")
+        except Exception as e:
+            raise Exception(f"Firebase integration test failed: {str(e)}")
 
     def test_notification_system(self):
         """Test notification system"""
@@ -371,7 +373,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            packing_widget = PackingMaterialsWidget(self.app, {'packing_materials': sample_data})
+            packing_widget = PackingMaterialsWidget({'packing_materials': sample_data})
             assert packing_widget is not None, "Packing materials widget creation failed"
             
         except ImportError:
@@ -396,7 +398,7 @@ class TestRunner(QThread):
     def test_meal_planning(self):
         """Test meal planning functionality"""
         try:
-            from modules.fixed_meal_planning import MealPlanningWidget
+            from modules.fixed_meal_planning import FixedMealPlanningWidget
             
             # Create sample meal plan data
             sample_data = pd.DataFrame({
@@ -407,7 +409,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            meal_widget = MealPlanningWidget(self.app, {'meal_plan': sample_data})
+            meal_widget = FixedMealPlanningWidget({'meal_plan': sample_data})
             assert meal_widget is not None, "Meal planning widget creation failed"
             
         except ImportError:
@@ -428,7 +430,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            budget_widget = EnhancedBudgetWidget(self.app, {'budget': sample_data})
+            budget_widget = EnhancedBudgetWidget({'budget': sample_data})
             assert budget_widget is not None, "Budget widget creation failed"
             
         except ImportError:
@@ -451,7 +453,7 @@ class TestRunner(QThread):
             })
             
             # Test widget creation
-            waste_widget = WasteWidget(self.app, {'waste': sample_data})
+            waste_widget = WasteWidget({'waste': sample_data})
             assert waste_widget is not None, "Waste widget creation failed"
             
         except ImportError:

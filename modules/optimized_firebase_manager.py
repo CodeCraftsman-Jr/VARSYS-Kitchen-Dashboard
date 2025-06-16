@@ -147,7 +147,7 @@ class OptimizedFirebaseManager(QObject):
                         # Test database connection with comprehensive testing
                         # Skip the connection test during initialization to avoid hanging
                         # We'll test the connection later when actually needed
-                        self.logger.info("✅ Firestore client initialized - connection will be tested on first use")
+                        self.logger.info("[OK] Firestore client initialized - connection will be tested on first use")
                         admin_initialized = True
                         break
 
@@ -181,7 +181,7 @@ class OptimizedFirebaseManager(QObject):
 
                         self.pyrebase_app = pyrebase.initialize_app(config)
                         self.auth_instance = self.pyrebase_app.auth()
-                        self.logger.info("✅ Pyrebase initialized successfully")
+                        self.logger.info("[OK] Pyrebase initialized successfully")
                         auth_initialized = True
                         break
 
@@ -190,24 +190,24 @@ class OptimizedFirebaseManager(QObject):
                         continue
 
             if not auth_initialized:
-                self.logger.error("❌ Pyrebase initialization failed with all config files")
+                self.logger.error("[ERROR] Pyrebase initialization failed with all config files")
 
             # Validate initialization and provide detailed status
             initialization_success = False
             if self.db and self.auth_instance:
-                self.logger.info("✅ Full Firebase initialization successful (Admin SDK + Pyrebase)")
+                self.logger.info("[OK] Full Firebase initialization successful (Admin SDK + Pyrebase)")
                 initialization_success = True
                 self.firebase_status = "fully_connected"
             elif self.auth_instance:
-                self.logger.warning("⚠️ Partial Firebase initialization (Pyrebase only - limited functionality)")
+                self.logger.warning("[WARNING] Partial Firebase initialization (Pyrebase only - limited functionality)")
                 initialization_success = True
                 self.firebase_status = "auth_only"
             elif self.db:
-                self.logger.warning("⚠️ Partial Firebase initialization (Database only - no authentication)")
+                self.logger.warning("[WARNING] Partial Firebase initialization (Database only - no authentication)")
                 initialization_success = True
                 self.firebase_status = "database_only"
             else:
-                self.logger.error("❌ Firebase initialization failed - no services available")
+                self.logger.error("[ERROR] Firebase initialization failed - no services available")
                 initialization_success = False
                 self.firebase_status = "disconnected"
 

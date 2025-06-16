@@ -136,6 +136,19 @@ class InventoryWidget(QWidget):
         # Connect tab change event to refresh data
         self.tabs.currentChanged.connect(self.on_tab_changed)
 
+    def load_data(self):
+        """Load and refresh inventory data"""
+        try:
+            # Refresh the inventory dataframe from the main data
+            if 'inventory' in self.data:
+                self.inventory_df = self.data['inventory'].copy()
+                self.apply_filters()  # Use apply_filters instead of update_table
+                print(f"✅ Inventory data loaded: {len(self.inventory_df)} items")
+            else:
+                print("⚠️ No inventory data found in data dictionary")
+        except Exception as e:
+            print(f"❌ Error loading inventory data: {e}")
+
     def save_column_settings(self):
         """Save column widths to file"""
         try:

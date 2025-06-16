@@ -1,261 +1,805 @@
 {
   "notifications": [
     {
-      "id": 32,
-      "title": "Packing Materials",
-      "message": "Packing materials module loaded successfully",
-      "type": "info",
-      "timestamp": "2025-06-16T05:17:33.078080",
-      "read": false
-    },
-    {
-      "id": 31,
-      "title": "Update System Ready",
-      "message": "Automatic update checking is now active. Updates will be checked periodically.",
-      "type": "info",
-      "timestamp": "2025-06-16T05:17:31.047037",
-      "read": false
-    },
-    {
-      "id": 30,
-      "title": "Category Sync Complete",
-      "message": "Categories synchronized across 3 modules. 0 entries added.",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:29.051823",
-      "read": false
-    },
-    {
-      "id": 29,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:28.061969",
-      "read": false
-    },
-    {
-      "id": 28,
-      "title": "Login Successful",
-      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:26.040910",
-      "read": false
-    },
-    {
-      "id": 27,
-      "title": "Update System Ready",
-      "message": "Automatic update checking is now active. Updates will be checked periodically.",
-      "type": "info",
-      "timestamp": "2025-06-16T05:17:17.381691",
-      "read": false
-    },
-    {
-      "id": 26,
-      "title": "Category Sync Complete",
-      "message": "Categories synchronized across 3 modules. 0 entries added.",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:15.409460",
-      "read": false
-    },
-    {
-      "id": 25,
-      "title": "Welcome to Kitchen Dashboard",
-      "message": "All systems are operational. Enhanced features are now available!",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:14.355228",
-      "read": false
-    },
-    {
-      "id": 24,
-      "title": "Login Successful",
-      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
-      "type": "success",
-      "timestamp": "2025-06-16T05:17:12.367212",
-      "read": false
-    },
-    {
-      "id": 23,
+      "id": 101,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
       "type": "info",
-      "timestamp": "2025-06-16T03:12:16.202701",
+      "timestamp": "2025-06-17T01:35:42.869789",
       "read": false
     },
     {
-      "id": 22,
+      "id": 101,
       "title": "Packing Materials",
       "message": "Packing materials module loaded successfully",
       "type": "info",
-      "timestamp": "2025-06-16T03:12:13.209990",
+      "timestamp": "2025-06-17T01:35:39.867918",
       "read": false
     },
     {
-      "id": 21,
+      "id": 101,
       "title": "Update System Ready",
       "message": "Automatic update checking is now active. Updates will be checked periodically.",
       "type": "info",
-      "timestamp": "2025-06-16T03:12:11.245122",
+      "timestamp": "2025-06-17T01:35:37.870669",
       "read": false
     },
     {
-      "id": 20,
+      "id": 101,
       "title": "Category Sync Complete",
       "message": "Categories synchronized across 3 modules. 0 entries added.",
       "type": "success",
-      "timestamp": "2025-06-16T03:12:09.207453",
+      "timestamp": "2025-06-17T01:35:35.906663",
       "read": false
     },
     {
-      "id": 19,
+      "id": 101,
       "title": "Welcome to Kitchen Dashboard",
       "message": "All systems are operational. Enhanced features are now available!",
       "type": "success",
-      "timestamp": "2025-06-16T03:12:08.206109",
+      "timestamp": "2025-06-17T01:35:34.859510",
       "read": false
     },
     {
-      "id": 18,
+      "id": 101,
       "title": "Login Successful",
       "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
       "type": "success",
-      "timestamp": "2025-06-16T03:12:06.215506",
+      "timestamp": "2025-06-17T01:35:32.868354",
       "read": false
     },
     {
-      "id": 17,
-      "title": "Cloud Sync Progress",
-      "message": "Uploaded categories - 100% complete",
-      "type": "info",
-      "timestamp": "2025-06-16T02:33:26.302547",
-      "read": false
-    },
-    {
-      "id": 16,
-      "title": "Cloud Sync Progress",
-      "message": "Upload completed - 100% complete",
-      "type": "info",
-      "timestamp": "2025-06-16T02:33:26.299089",
-      "read": false
-    },
-    {
-      "id": 15,
-      "title": "Cloud Sync Progress",
-      "message": "Smart sync completed - 100% complete",
-      "type": "info",
-      "timestamp": "2025-06-16T02:33:26.292766",
-      "read": false
-    },
-    {
-      "id": 14,
-      "title": "Data Refresh",
-      "message": "Application data refreshed after sync",
-      "type": "info",
-      "timestamp": "2025-06-16T02:33:26.281246",
-      "read": false
-    },
-    {
-      "id": 13,
-      "title": "Cloud Sync",
-      "message": "Smart_Sync completed successfully!",
-      "type": "success",
-      "timestamp": "2025-06-16T02:33:26.131081",
-      "read": false
-    },
-    {
-      "id": 12,
-      "title": "Cloud Sync",
-      "message": "Upload completed successfully!",
-      "type": "success",
-      "timestamp": "2025-06-16T02:33:26.127236",
-      "read": false
-    },
-    {
-      "id": 11,
-      "title": "Cloud Sync Progress",
-      "message": "Merging data... - 50% complete",
-      "type": "info",
-      "timestamp": "2025-06-16T02:33:02.343368",
-      "read": false
-    },
-    {
-      "id": 10,
+      "id": 101,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
       "type": "info",
-      "timestamp": "2025-06-16T02:32:21.923907",
+      "timestamp": "2025-06-17T01:30:19.023292",
       "read": false
     },
     {
-      "id": 9,
+      "id": 101,
       "title": "Packing Materials",
       "message": "Packing materials module loaded successfully",
       "type": "info",
-      "timestamp": "2025-06-16T02:32:19.057250",
+      "timestamp": "2025-06-17T01:30:15.977740",
       "read": false
     },
     {
-      "id": 8,
+      "id": 101,
       "title": "Update System Ready",
       "message": "Automatic update checking is now active. Updates will be checked periodically.",
       "type": "info",
-      "timestamp": "2025-06-16T02:32:14.007269",
+      "timestamp": "2025-06-17T01:30:13.990115",
       "read": false
     },
     {
-      "id": 7,
+      "id": 101,
       "title": "Category Sync Complete",
       "message": "Categories synchronized across 3 modules. 0 entries added.",
       "type": "success",
-      "timestamp": "2025-06-16T02:32:13.959511",
+      "timestamp": "2025-06-17T01:30:12.000917",
       "read": false
     },
     {
-      "id": 6,
+      "id": 101,
       "title": "Welcome to Kitchen Dashboard",
       "message": "All systems are operational. Enhanced features are now available!",
       "type": "success",
-      "timestamp": "2025-06-16T02:32:13.925124",
+      "timestamp": "2025-06-17T01:30:10.975501",
       "read": false
     },
     {
-      "id": 5,
+      "id": 101,
       "title": "Login Successful",
       "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
       "type": "success",
-      "timestamp": "2025-06-16T02:32:13.625316",
+      "timestamp": "2025-06-17T01:30:08.978557",
       "read": false
     },
     {
-      "id": 4,
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T01:28:03.027610",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T01:28:00.015451",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:27:58.035343",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:27:56.117755",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:27:55.017086",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:27:53.023283",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:24:41.057496",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:24:39.069404",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:24:38.047805",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:24:36.056601",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T01:22:20.159246",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T01:22:17.158973",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:22:15.164489",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:22:13.321240",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:22:12.166905",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:22:10.164487",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T01:19:06.440441",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T01:19:02.949084",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:19:00.803032",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:18:58.797911",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:18:57.950733",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:18:55.804327",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T01:11:14.895464",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T01:11:11.903478",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:11:09.899861",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:11:07.910216",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:11:06.897510",
+      "read": false
+    },
+    {
+      "id": 101,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:11:04.905362",
+      "read": false
+    },
+    {
+      "id": 100,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T01:05:32.012028",
+      "read": false
+    },
+    {
+      "id": 99,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T01:05:29.575694",
+      "read": false
+    },
+    {
+      "id": 98,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T01:05:27.016330",
+      "read": false
+    },
+    {
+      "id": 97,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T01:05:25.022024",
+      "read": false
+    },
+    {
+      "id": 96,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T01:05:24.003348",
+      "read": false
+    },
+    {
+      "id": 95,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T01:05:22.025647",
+      "read": false
+    },
+    {
+      "id": 94,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:57:53.840144",
+      "read": false
+    },
+    {
+      "id": 93,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:57:52.813840",
+      "read": false
+    },
+    {
+      "id": 92,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:57:50.816721",
+      "read": false
+    },
+    {
+      "id": 91,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:53:20.798371",
+      "read": false
+    },
+    {
+      "id": 90,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:53:19.804210",
+      "read": false
+    },
+    {
+      "id": 89,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:53:17.795101",
+      "read": false
+    },
+    {
+      "id": 88,
+      "title": "Update Check",
+      "message": "Checking for updates manually...",
+      "type": "info",
+      "timestamp": "2025-06-17T00:42:07.884708",
+      "read": false
+    },
+    {
+      "id": 87,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T00:41:49.610747",
+      "read": false
+    },
+    {
+      "id": 86,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:41:45.412852",
+      "read": false
+    },
+    {
+      "id": 85,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:41:43.450145",
+      "read": false
+    },
+    {
+      "id": 84,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:41:41.881187",
+      "read": false
+    },
+    {
+      "id": 83,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:41:40.406389",
+      "read": false
+    },
+    {
+      "id": 82,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:41:38.426828",
+      "read": false
+    },
+    {
+      "id": 81,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:39:22.176066",
+      "read": false
+    },
+    {
+      "id": 80,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:39:21.161361",
+      "read": false
+    },
+    {
+      "id": 79,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:39:19.166887",
+      "read": false
+    },
+    {
+      "id": 78,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T00:28:33.773366",
+      "read": false
+    },
+    {
+      "id": 77,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:28:30.690264",
+      "read": false
+    },
+    {
+      "id": 76,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:28:28.775622",
+      "read": false
+    },
+    {
+      "id": 75,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:28:26.652785",
+      "read": false
+    },
+    {
+      "id": 74,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:28:25.693089",
+      "read": false
+    },
+    {
+      "id": 73,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:28:23.653684",
+      "read": false
+    },
+    {
+      "id": 72,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:22:43.205295",
+      "read": false
+    },
+    {
+      "id": 71,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:22:41.231257",
+      "read": false
+    },
+    {
+      "id": 70,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:22:39.229276",
+      "read": false
+    },
+    {
+      "id": 69,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:22:38.210417",
+      "read": false
+    },
+    {
+      "id": 68,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:22:36.208861",
+      "read": false
+    },
+    {
+      "id": 67,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T00:14:54.576343",
+      "read": false
+    },
+    {
+      "id": 66,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:14:51.575035",
+      "read": false
+    },
+    {
+      "id": 65,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:14:49.577391",
+      "read": false
+    },
+    {
+      "id": 64,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:14:47.577796",
+      "read": false
+    },
+    {
+      "id": 63,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:14:46.570396",
+      "read": false
+    },
+    {
+      "id": 62,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:14:44.568821",
+      "read": false
+    },
+    {
+      "id": 61,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T00:13:29.940576",
+      "read": false
+    },
+    {
+      "id": 60,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:13:26.952075",
+      "read": false
+    },
+    {
+      "id": 59,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:13:24.960809",
+      "read": false
+    },
+    {
+      "id": 58,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:13:24.118472",
+      "read": false
+    },
+    {
+      "id": 57,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:13:21.946860",
+      "read": false
+    },
+    {
+      "id": 56,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:13:19.957223",
+      "read": false
+    },
+    {
+      "id": 55,
+      "title": "Test Notification",
+      "message": "This is a test message",
+      "type": "info",
+      "timestamp": "2025-06-17T00:05:57.919530",
+      "read": false
+    },
+    {
+      "id": 54,
+      "title": "Recipe Scaling",
+      "message": "Recipe scaling feature is now available in Pricing tab",
+      "type": "info",
+      "timestamp": "2025-06-17T00:05:44.092989",
+      "read": false
+    },
+    {
+      "id": 53,
+      "title": "Packing Materials",
+      "message": "Packing materials module loaded successfully",
+      "type": "info",
+      "timestamp": "2025-06-17T00:05:41.088234",
+      "read": false
+    },
+    {
+      "id": 52,
+      "title": "Update System Ready",
+      "message": "Automatic update checking is now active. Updates will be checked periodically.",
+      "type": "info",
+      "timestamp": "2025-06-17T00:05:36.142762",
+      "read": false
+    },
+    {
+      "id": 51,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-17T00:05:36.114084",
+      "read": false
+    },
+    {
+      "id": 50,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-17T00:05:36.082495",
+      "read": false
+    },
+    {
+      "id": 49,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-17T00:05:35.881617",
+      "read": false
+    },
+    {
+      "id": 48,
       "title": "Daily Sync Complete",
       "message": "Your data has been automatically synced to the cloud",
       "type": "success",
-      "timestamp": "2025-06-16T02:32:13.622472",
+      "timestamp": "2025-06-17T00:05:35.879473",
       "read": false
     },
     {
-      "id": 3,
+      "id": 47,
       "title": "Recipe Scaling",
       "message": "Recipe scaling feature is now available in Pricing tab",
       "type": "info",
-      "timestamp": "2025-06-16T02:06:49.781905",
+      "timestamp": "2025-06-16T23:42:38.761006",
       "read": false
     },
     {
-      "id": 2,
+      "id": 46,
       "title": "Packing Materials",
       "message": "Packing materials module loaded successfully",
       "type": "info",
-      "timestamp": "2025-06-16T02:06:46.791441",
+      "timestamp": "2025-06-16T23:42:33.868233",
       "read": false
     },
     {
-      "id": 1,
+      "id": 45,
       "title": "Update System Ready",
       "message": "Automatic update checking is now active. Updates will be checked periodically.",
       "type": "info",
-      "timestamp": "2025-06-16T02:06:44.797037",
+      "timestamp": "2025-06-16T23:42:31.860752",
+      "read": false
+    },
+    {
+      "id": 44,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-16T23:42:29.901971",
+      "read": false
+    },
+    {
+      "id": 43,
+      "title": "Welcome to Kitchen Dashboard",
+      "message": "All systems are operational. Enhanced features are now available!",
+      "type": "success",
+      "timestamp": "2025-06-16T23:42:28.843746",
+      "read": false
+    },
+    {
+      "id": 42,
+      "title": "Login Successful",
+      "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
+      "type": "success",
+      "timestamp": "2025-06-16T23:42:26.860171",
+      "read": false
+    },
+    {
+      "id": 41,
+      "title": "Category Sync Complete",
+      "message": "Categories synchronized across 3 modules. 0 entries added.",
+      "type": "success",
+      "timestamp": "2025-06-16T23:39:27.935793",
       "read": false
     }
   ],
-  "last_updated": "2025-06-16T05:17:33.078672"
+  "last_updated": "2025-06-17T01:36:32.111458"
 }

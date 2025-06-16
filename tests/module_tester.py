@@ -186,23 +186,23 @@ class ModuleTester:
         """Test inventory module"""
         try:
             from modules.inventory_fixed import InventoryWidget
-            
+
             sample_data = self.create_sample_inventory_data()
             data = {'inventory': sample_data}
-            
-            # Test widget creation
-            widget = InventoryWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = InventoryWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             # Test data loading
             widget.load_data()
-            
+
             # Test table population
             if hasattr(widget, 'table'):
                 assert widget.table.rowCount() > 0, "Table should have data"
-                
+
             self.logger.info("Inventory module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Inventory module not available")
             
@@ -210,60 +210,60 @@ class ModuleTester:
         """Test shopping module"""
         try:
             from modules.shopping_fixed import ShoppingWidget
-            
+
             sample_data = self.create_sample_shopping_data()
             data = {'shopping_list': sample_data}
-            
-            # Test widget creation
-            widget = ShoppingWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = ShoppingWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             # Test data loading
             widget.load_data()
-            
+
             self.logger.info("Shopping module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Shopping module not available")
             
     def test_pricing_module(self):
         """Test pricing module"""
         try:
-            from modules.pricing_management import PricingWidget
-            
+            from modules.pricing_management import PricingManagementWidget
+
             recipes, ingredients = self.create_sample_recipe_data()
             inventory_data = self.create_sample_inventory_data()
-            
+
             data = {
                 'recipes': recipes,
                 'recipe_ingredients': ingredients,
                 'inventory': inventory_data,
                 'packing_materials': pd.DataFrame()
             }
-            
-            # Test widget creation
-            widget = PricingWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = PricingManagementWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Pricing module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Pricing module not available")
             
     def test_sales_module(self):
         """Test sales module"""
         try:
-            from modules.enhanced_sales import EnhancedSalesWidget
-            
+            from modules.sales import SalesWidget
+
             sample_data = self.create_sample_sales_data()
             data = {'sales': sample_data}
-            
-            # Test widget creation
-            widget = EnhancedSalesWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, inventory_widget, parent)
+            widget = SalesWidget(data, None, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Sales module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Sales module not available")
             
@@ -271,7 +271,7 @@ class ModuleTester:
         """Test cleaning module"""
         try:
             from modules.cleaning_fixed import CleaningWidget
-            
+
             sample_data = pd.DataFrame({
                 'task_id': range(1, 11),
                 'task_name': [
@@ -285,15 +285,15 @@ class ModuleTester:
                 'priority': ['High'] * 3 + ['Medium'] * 4 + ['Low'] * 3,
                 'notes': [''] * 10
             })
-            
+
             data = {'cleaning_maintenance': sample_data}
-            
-            # Test widget creation
-            widget = CleaningWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = CleaningWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Cleaning module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Cleaning module not available")
             
@@ -301,21 +301,21 @@ class ModuleTester:
         """Test settings module"""
         try:
             from modules.settings_fixed import SettingsWidget
-            
-            # Test widget creation
-            widget = SettingsWidget(self.app, self.app.data)
+
+            # Test widget creation - FIXED: correct argument order (main_app, parent, data)
+            widget = SettingsWidget(main_app=self.app, parent=self.app, data=self.app.data)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Settings module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Settings module not available")
             
     def test_meal_planning_module(self):
         """Test meal planning module"""
         try:
-            from modules.fixed_meal_planning import MealPlanningWidget
-            
+            from modules.fixed_meal_planning import FixedMealPlanningWidget
+
             sample_data = pd.DataFrame({
                 'day': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] * 3,
                 'meal_type': ['Breakfast'] * 7 + ['Lunch'] * 7 + ['Dinner'] * 7,
@@ -329,23 +329,33 @@ class ModuleTester:
                 'prep_time': [10] * 7 + [15] * 7 + [30] * 7,
                 'cook_time': [5] * 7 + [10] * 7 + [25] * 7
             })
-            
+
             data = {'meal_plan': sample_data}
-            
-            # Test widget creation
-            widget = MealPlanningWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = FixedMealPlanningWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Meal planning module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Meal planning module not available")
             
     def test_budget_module(self):
         """Test budget module"""
         try:
-            from modules.enhanced_budget import EnhancedBudgetWidget
-            
+            # Try to import budget widget - check multiple possible modules
+            budget_widget = None
+            try:
+                from modules.enhanced_budget import EnhancedBudgetWidget
+                budget_widget_class = EnhancedBudgetWidget
+            except ImportError:
+                try:
+                    from modules.budget import BudgetWidget
+                    budget_widget_class = BudgetWidget
+                except ImportError:
+                    raise Exception("No budget module available")
+
             sample_data = pd.DataFrame({
                 'budget_id': range(1, 11),
                 'category': [
@@ -356,15 +366,15 @@ class ModuleTester:
                 'period': ['Monthly'] * 10,
                 'date': [datetime.now().date()] * 10
             })
-            
+
             data = {'budget': sample_data}
-            
-            # Test widget creation
-            widget = EnhancedBudgetWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = budget_widget_class(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Budget module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Budget module not available")
             
@@ -372,7 +382,7 @@ class ModuleTester:
         """Test waste module"""
         try:
             from modules.waste import WasteWidget
-            
+
             sample_data = pd.DataFrame({
                 'waste_id': range(1, 11),
                 'item_name': [
@@ -389,15 +399,15 @@ class ModuleTester:
                 'cost': [60, 100, 50, 80, 40, 30, 120, 300, 25, 45],
                 'date': [(datetime.now() - timedelta(days=np.random.randint(0, 30))).date() for _ in range(10)]
             })
-            
+
             data = {'waste': sample_data}
-            
-            # Test widget creation
-            widget = WasteWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = WasteWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Waste module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Waste module not available")
             
@@ -405,7 +415,7 @@ class ModuleTester:
         """Test packing materials module"""
         try:
             from modules.packing_materials import PackingMaterialsWidget
-            
+
             sample_data = pd.DataFrame({
                 'material_id': range(1, 11),
                 'material_name': [
@@ -425,15 +435,15 @@ class ModuleTester:
                 'notes': [''] * 10,
                 'date_added': [datetime.now().date()] * 10
             })
-            
+
             data = {'packing_materials': sample_data}
-            
-            # Test widget creation
-            widget = PackingMaterialsWidget(self.app, data)
+
+            # Test widget creation - FIXED: correct argument order (data, parent)
+            widget = PackingMaterialsWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
-            
+
             self.logger.info("Packing materials module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Packing materials module not available")
             
@@ -441,17 +451,17 @@ class ModuleTester:
         """Test Firebase module"""
         try:
             from modules.firebase_sync import FirebaseSync
-            
-            # Test Firebase sync creation
-            firebase_sync = FirebaseSync(self.app, self.app.data, "data")
+
+            # Test Firebase sync creation - FIXED: correct argument order (parent, data, data_dir)
+            firebase_sync = FirebaseSync(parent=self.app, data=self.app.data, data_dir="data")
             assert firebase_sync is not None, "Firebase sync creation failed"
-            
+
             # Test availability check
             is_available = firebase_sync.is_firebase_available()
             assert isinstance(is_available, bool), "Firebase availability check failed"
-            
+
             self.logger.info("Firebase module test completed successfully")
-            
+
         except ImportError:
             raise Exception("Firebase module not available")
             

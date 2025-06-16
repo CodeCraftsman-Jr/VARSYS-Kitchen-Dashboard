@@ -3991,24 +3991,22 @@ For more information, please check the documentation or contact support.
         )
 
     def run_comprehensive_tests(self):
-        """Run comprehensive tests for all modules and functions"""
+        """Run safe comprehensive tests for all modules and functions"""
         try:
-            # Import from tests directory
-            import sys
-            import os
-            tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
-            sys.path.insert(0, tests_dir)
+            # Import the safe comprehensive test suite
+            from safe_comprehensive_test import show_safe_comprehensive_test_suite_modal
 
-            try:
-                from comprehensive_test_suite import ComprehensiveTestSuite  # type: ignore
-                # Create test suite
-                test_suite = ComprehensiveTestSuite(self)
-            except ImportError:
-                QMessageBox.warning(self, "Test Error", "Comprehensive test suite not found. Please ensure test files are available.")
+            # Show a message first
+            QMessageBox.information(self, "Comprehensive Tests", "Opening comprehensive test suite...")
+
+            # Create and show the safe test suite (modal version)
+            self.comprehensive_test_dialog = show_safe_comprehensive_test_suite_modal(self)
+
+            if self.comprehensive_test_dialog is None:
+                QMessageBox.warning(self, "Test Error", "Failed to create safe test suite.")
                 return
 
-            # Run all tests
-            test_suite.run_all_tests()
+            self.logger.info("Safe comprehensive test suite launched successfully")
 
         except Exception as e:
             self.logger.error(f"Error running comprehensive tests: {e}")
