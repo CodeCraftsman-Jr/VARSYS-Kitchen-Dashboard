@@ -675,6 +675,55 @@ def authenticate_user(email, password):
         log_error(f"Authentication failed for user: {email}", e)
         return None
 
+
+def change_user_password(id_token, new_password):
+    """Change user password using Firebase Auth REST API"""
+    if not FIREBASE_AVAILABLE or not FIREBASE_APP:
+        log_error("Firebase is not available. Cannot change password.")
+        return False
+
+    try:
+        import requests
+
+        # Get API key from Firebase app configuration
+        api_key = None
+        if hasattr(FIREBASE_APP, 'api_key'):
+            api_key = FIREBASE_APP.api_key
+        else:
+            # Try to get from config if available
+            try:
+                config = FIREBASE_APP.config
+                api_key = config.get('apiKey', '')
+            except:
+                log_error("Could not retrieve API key from Firebase configuration")
+                return False
+
+        if not api_key:
+            log_error("Firebase API key not available")
+            return False
+
+        # Firebase Auth REST API endpoint for changing password
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:update?key={api_key}"
+
+        payload = {
+            "idToken": id_token,
+            "password": new_password,
+            "returnSecureToken": True
+        }
+
+        response = requests.post(url, json=payload)
+
+        if response.status_code == 200:
+            log_info("Password changed successfully")
+            return True
+        else:
+            log_error(f"Failed to change password: {response.text}")
+            return False
+
+    except Exception as e:
+        log_error(f"Error changing password", e)
+        return False
+
 def get_user_data(user_id, data_type):
     """Get user data from Firestore"""
     if not FIREBASE_AVAILABLE:

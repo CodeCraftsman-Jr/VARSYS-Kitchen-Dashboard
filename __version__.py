@@ -7,8 +7,8 @@ Software: Kitchen Dashboard (First software in VARSYS ecosystem)
 License: Proprietary - Free for limited testing period
 """
 
-__version__ = "1.1.1"
-__build__ = "20250616"
+__version__ = "1.1.3"
+__build__ = "20250617"
 __company__ = "VARSYS Solutions"
 __product__ = "Kitchen Dashboard"
 __description__ = "Professional Kitchen Management System with Firebase Authentication & Cloud Sync"
@@ -19,8 +19,8 @@ __support_email__ = "support@varsys-solutions.com"
 # Version components
 VERSION_MAJOR = 1
 VERSION_MINOR = 1
-VERSION_PATCH = 1
-VERSION_BUILD = 20250616
+VERSION_PATCH = 3
+VERSION_BUILD = 20250617
 
 # Release information
 RELEASE_TYPE = "stable"  # alpha, beta, rc, stable

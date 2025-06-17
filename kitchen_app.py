@@ -283,7 +283,7 @@ class KitchenDashboardApp(QMainWindow):
             self.firebase_config_manager = None
 
         # SUBSCRIPTION-BASED AUTHENTICATION: Only subscribed users can access
-        self.logger.info("Kitchen Dashboard v1.1.1 - Subscription-based access")
+        self.logger.info("Kitchen Dashboard v1.1.3 - Subscription-based access")
         self.logger.info("Only users with valid Firebase accounts can access this application")
 
         # Check if daily sync is needed (without performing it)
@@ -2935,19 +2935,48 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             self.logger.error(f"Error in clear_session_type: {e}")
 
     def show_account_settings(self):
-        """Show account settings dialog (placeholder for future features)"""
+        """Show account settings dialog"""
         try:
-            from PySide6.QtWidgets import QMessageBox
+            if not hasattr(self, 'current_user') or not self.current_user:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, "No User", "No user is currently logged in.")
+                return
 
-            msg = QMessageBox(self)
-            msg.setWindowTitle("Account Settings")
-            msg.setText("Account settings feature coming soon!")
-            msg.setInformativeText("This will include:\n• Password change\n• Profile updates\n• Notification preferences\n• Security settings")
-            msg.setIcon(QMessageBox.Information)
-            msg.exec()
+            from modules.account_settings_dialog import AccountSettingsDialog
+
+            settings_dialog = AccountSettingsDialog(self.current_user, self)
+            settings_dialog.profile_updated.connect(self.handle_profile_updated)
+            settings_dialog.settings_changed.connect(self.handle_settings_changed)
+            settings_dialog.exec()
 
         except Exception as e:
             self.logger.error(f"Error showing account settings: {e}")
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Error", f"Could not open account settings: {str(e)}")
+
+    def handle_profile_updated(self, updated_user_info):
+        """Handle profile update from account settings"""
+        self.current_user = updated_user_info
+        # Update user profile widget if it exists
+        if hasattr(self, 'user_profile_widget'):
+            self.user_profile_widget.set_user_info(updated_user_info)
+        self.logger.info("User profile updated from account settings")
+
+    def handle_settings_changed(self, settings):
+        """Handle settings change from account settings"""
+        self.logger.info("User settings updated from account settings")
+        # Apply notification settings if needed
+        if 'notifications' in settings:
+            self.apply_notification_settings(settings['notifications'])
+
+    def apply_notification_settings(self, notification_settings):
+        """Apply notification preferences"""
+        try:
+            if hasattr(self, 'notification_manager'):
+                # Update notification manager settings
+                self.notification_manager.update_settings(notification_settings)
+        except Exception as e:
+            self.logger.error(f"Error applying notification settings: {e}")
 
     def show_cloud_sync_dialog(self):
         """Show cloud sync management dialog"""
@@ -8821,7 +8850,7 @@ if __name__ == "__main__":
 
     try:
         print("\n" + "="*80)
-        print("    VARSYS KITCHEN DASHBOARD - PROFESSIONAL EDITION")
+        print("    VARSYS KITCHEN DASHBOARD - PROFESSIONAL EDITION v1.1.3")
         print("="*80)
         print("Starting application...")
         print("="*80 + "\n")
@@ -8829,16 +8858,24 @@ if __name__ == "__main__":
         logger.log_startup_info()
 
         app = QApplication(sys.argv)
-        logger.log_section_header("Application Initialization")
 
+        # Show loading screen
+        from modules.startup_loading_screen import show_startup_loading_screen
+        loading_screen = show_startup_loading_screen()
+
+        # Initialize main window in background
+        logger.log_section_header("Application Initialization")
         window = KitchenDashboardApp()
         logger.log_section_footer("Application Initialization", True)
 
-        logger.log_section_header("UI Display")
-        window.show()
-        logger.log_section_footer("UI Display", True)
+        # Connect loading screen completion to show main window
+        def on_loading_finished():
+            logger.log_section_header("UI Display")
+            window.show()
+            logger.log_section_footer("UI Display", True)
+            logger.info("Application ready - entering main event loop")
 
-        logger.info("Application ready - entering main event loop")
+        loading_screen.loading_finished.connect(on_loading_finished)
 
         # Run the application
         exit_code = app.exec()

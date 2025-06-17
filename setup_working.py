@@ -10,11 +10,11 @@ import os
 from cx_Freeze import setup, Executable
 
 # Version information
-VERSION = "1.1.1"
+VERSION = "1.1.3"
 COMPANY_NAME = "VARSYS Technologies"
 PRODUCT_NAME = "VARSYS Kitchen Dashboard"
 
-print(f"Building {PRODUCT_NAME} v{VERSION} (Working Configuration)")
+print(f"Building {PRODUCT_NAME} v{VERSION} (Working Configuration - Updated for v1.1.3)")
 
 def get_python_version():
     """Get Python version for build directory naming"""

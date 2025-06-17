@@ -95,11 +95,36 @@ class UserProfileWidget(QWidget):
         if not self.current_user:
             QMessageBox.warning(self, "No User", "No user is currently logged in.")
             return
-            
+
         # Create profile dialog
         dialog = UserProfileDialog(self.current_user, self)
         dialog.logout_requested.connect(self.handle_logout_request)
+        dialog.account_settings_requested.connect(self.handle_account_settings_request)
         dialog.exec()
+
+    def handle_account_settings_request(self):
+        """Handle account settings request"""
+        try:
+            from modules.account_settings_dialog import AccountSettingsDialog
+
+            settings_dialog = AccountSettingsDialog(self.current_user, self)
+            settings_dialog.profile_updated.connect(self.handle_profile_updated)
+            settings_dialog.settings_changed.connect(self.handle_settings_changed)
+            settings_dialog.exec()
+
+        except Exception as e:
+            self.logger.error(f"Error opening account settings: {e}")
+            QMessageBox.warning(self, "Error", f"Could not open account settings: {str(e)}")
+
+    def handle_profile_updated(self, updated_user_info):
+        """Handle profile update"""
+        self.current_user = updated_user_info
+        self.set_user_info(updated_user_info)
+        self.logger.info("User profile updated successfully")
+
+    def handle_settings_changed(self, settings):
+        """Handle settings change"""
+        self.logger.info("User settings updated successfully")
         
     def handle_logout_request(self):
         """Handle logout request from profile dialog"""
@@ -119,9 +144,10 @@ class UserProfileWidget(QWidget):
 
 class UserProfileDialog(QDialog):
     """User profile information dialog"""
-    
+
     logout_requested = Signal()
-    
+    account_settings_requested = Signal()
+
     def __init__(self, user_info, parent=None):
         super().__init__(parent)
         self.user_info = user_info
@@ -192,6 +218,11 @@ class UserProfileDialog(QDialog):
         
         # Buttons
         button_layout = QHBoxLayout()
+
+        # Account settings button
+        settings_button = QPushButton("Account Settings")
+        settings_button.clicked.connect(self.handle_account_settings)
+        button_layout.addWidget(settings_button)
 
         # Session management button
         session_button = QPushButton("Manage Sessions")
@@ -359,6 +390,11 @@ class UserProfileDialog(QDialog):
             dialog.accept()
         except Exception as e:
             QMessageBox.warning(dialog, "Error", f"Failed to clear sessions: {e}")
+
+    def handle_account_settings(self):
+        """Handle account settings request"""
+        self.account_settings_requested.emit()
+        self.accept()  # Close the profile dialog
 
     def handle_logout(self):
         """Handle logout button click"""

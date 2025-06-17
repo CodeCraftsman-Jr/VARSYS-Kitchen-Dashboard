@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "enable_notifications": true,
+    "notification_sound": true,
+    "show_desktop_notifications": true,
+    "notification_frequency": "normal"
+  },
+  "security": {
+    "session_timeout": 24,
+    "auto_logout_idle": 30,
+    "require_password_confirmation": true,
+    "enable_audit_log": true
+  },
+  "profile": {
+    "display_name": "Vasanth",
+    "email": "dominicvasanth777@gmail.com",
+    "phone": "",
+    "timezone": "UTC"
+  }
+}
