@@ -57,58 +57,58 @@ Name: "startup"; Description: "Start {#MyAppName} with Windows"; GroupDescriptio
 
 [Files]
 ; Main executable
-Source: "build\exe.win-amd64-3.13\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Python runtime DLLs
-Source: "build\exe.win-amd64-3.13\python3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\python313.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\python3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\python312.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Library directory (all compiled modules and dependencies)
-Source: "build\exe.win-amd64-3.13\lib\*"; DestDir: "{app}\lib"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\lib\*"; DestDir: "{app}\lib"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Application modules
-Source: "build\exe.win-amd64-3.13\modules\*"; DestDir: "{app}\modules"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\tests\*"; DestDir: "{app}\tests"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\modules\*"; DestDir: "{app}\modules"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\tests\*"; DestDir: "{app}\tests"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Data directories
-Source: "build\exe.win-amd64-3.13\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\data_backup\*"; DestDir: "{app}\data_backup"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\logs\*"; DestDir: "{app}\logs"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\reports\*"; DestDir: "{app}\reports"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\data_backup\*"; DestDir: "{app}\data_backup"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\logs\*"; DestDir: "{app}\logs"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\reports\*"; DestDir: "{app}\reports"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Assets and resources
-Source: "build\exe.win-amd64-3.13\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Configuration files
-Source: "build\exe.win-amd64-3.13\*.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\*.key"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\*.db"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\*.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.key"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.db"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Python scripts and utilities
-Source: "build\exe.win-amd64-3.13\*.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.py"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Batch and shell scripts
-Source: "build\exe.win-amd64-3.13\*.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\*.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\*.sh"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\*.sh"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Documentation
-Source: "build\exe.win-amd64-3.13\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\exe.win-amd64-3.13\FIREBASE_SETUP.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\exe.win-amd64-3.12\FIREBASE_SETUP.md"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Secure credentials directory
-Source: "build\exe.win-amd64-3.13\secure_credentials\*"; DestDir: "{app}\secure_credentials"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\secure_credentials\*"; DestDir: "{app}\secure_credentials"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Release tools and documentation
-Source: "build\exe.win-amd64-3.13\release_tools\*"; DestDir: "{app}\release_tools"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\releases\*"; DestDir: "{app}\releases"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "build\exe.win-amd64-3.13\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\release_tools\*"; DestDir: "{app}\release_tools"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\releases\*"; DestDir: "{app}\releases"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Cache directories
-Source: "build\exe.win-amd64-3.13\__pycache__\*"; DestDir: "{app}\__pycache__"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "build\exe.win-amd64-3.12\__pycache__\*"; DestDir: "{app}\__pycache__"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\assets\icons\vasanthkitchen.ico"

@@ -1,2 +1,0 @@
-currency_symbol=₹
-backup_created=2025-06-15T20:25:02.038983

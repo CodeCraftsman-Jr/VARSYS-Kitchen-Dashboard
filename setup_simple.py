@@ -1,63 +1,79 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Robust cx_Freeze setup for Kitchen Dashboard
+Simple cx_Freeze Build Script for VARSYS Kitchen Dashboard
+Minimal configuration for testing
 """
 
 import sys
 import os
 from cx_Freeze import setup, Executable
 
-# Check if files exist before including them
-def safe_include_files():
-    files_to_include = []
+# Version information
+VERSION = "1.1.1"
+COMPANY_NAME = "VARSYS Technologies"
+PRODUCT_NAME = "VARSYS Kitchen Dashboard"
 
-    # Required directories
-    required_dirs = ["data", "modules", "utils", "assets"]
-    for dir_name in required_dirs:
-        if os.path.exists(dir_name):
-            files_to_include.append((dir_name + "/", dir_name + "/"))
+print(f"Building {PRODUCT_NAME} v{VERSION} (Simple Configuration)")
 
-    # Optional files
-    optional_files = [
-        "firebase_config.json", "firebase_web_config.json", "jwt_secret.key",
-        "__version__.py", "version.py", "config.py", "varsys_config.py", "varsys_branding.py"
-    ]
-    for file_name in optional_files:
-        if os.path.exists(file_name):
-            files_to_include.append((file_name, file_name))
+def get_python_version():
+    """Get Python version for build directory naming"""
+    return f"{sys.version_info.major}.{sys.version_info.minor}"
 
-    return files_to_include
+# Essential include files
+include_files = [
+    ("modules", "modules"),
+    ("utils", "utils"),
+    ("data", "data"),
+    ("vasanthkitchen.ico", "vasanthkitchen.ico"),
+    ("firebase_config.json", "firebase_config.json"),
+    ("version.py", "version.py"),
+    ("__version__.py", "__version__.py")
+]
 
-# Robust build options
+# Essential packages
+packages = [
+    "pandas", "numpy", "matplotlib", "PySide6", 
+    "requests", "PIL", "openpyxl", "json", "csv", 
+    "datetime", "os", "sys"
+]
+
+# Build options
 build_exe_options = {
-    "packages": [
-        "pandas", "matplotlib", "PySide6", "numpy", "PIL",
-        "requests", "urllib3", "certifi", "openpyxl",
-        "matplotlib.backends.backend_qtagg",
-        "traceback", "sys", "os", "json", "csv", "datetime"
-    ],
-    "include_files": safe_include_files(),
-    "excludes": ["tkinter", "unittest", "test", "distutils"],
-    "include_msvcrt": False,
+    "packages": packages,
+    "include_files": include_files,
+    "optimize": 1,
+    "build_exe": f"build/exe.win-amd64-{get_python_version()}",
+    "excludes": ["tkinter", "unittest", "email", "http.server"]
 }
 
-# Create executable with error handling
-icon_file = "assets/icons/vasanthkitchen.ico" if os.path.exists("assets/icons/vasanthkitchen.ico") else None
+# Executable configuration
+icon_path = "vasanthkitchen.ico" if os.path.exists("vasanthkitchen.ico") else None
 
-executable = Executable(
-    script="kitchen_app.py",
-    base="Win32GUI",
-    icon=icon_file,
-    target_name="VARSYS_Kitchen_Dashboard.exe"
-)
+executables = [
+    Executable(
+        script="kitchen_app.py",
+        base="Win32GUI",
+        target_name="VARSYS_Kitchen_Dashboard.exe",
+        icon=icon_path
+    )
+]
 
-# Setup
+print("Simple build configuration:")
+print(f"   Target: VARSYS_Kitchen_Dashboard.exe")
+print(f"   Output: build/exe.win-amd64-{get_python_version()}/")
+print(f"   Icon: {icon_path or 'None'}")
+print(f"   Files to include: {len(include_files)}")
+print(f"   Packages: {len(packages)}")
+
+# Setup configuration
 setup(
-    name="VARSYS Kitchen Dashboard",
-    version="1.0.6",
-    description="Kitchen Management System",
+    name=PRODUCT_NAME,
+    version=VERSION,
+    description="Kitchen Dashboard Application",
+    author=COMPANY_NAME,
     options={"build_exe": build_exe_options},
-    executables=[executable]
+    executables=executables
 )
 
-print("Robust build configuration loaded")
-print(f"Including {len(build_exe_options['include_files'])} files/directories")
+print("Simple build completed!")

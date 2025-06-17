@@ -2028,6 +2028,82 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         # Initialize automatic update checking (after UI is ready)
         QTimer.singleShot(5000, self.initialize_update_checking)
 
+    def closeEvent(self, event):
+        """Handle application close event with proper confirmation"""
+        try:
+            from PySide6.QtWidgets import QMessageBox
+
+            # Show confirmation dialog
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Exit Application")
+            msg.setText("Are you sure you want to exit Kitchen Dashboard?")
+            msg.setInformativeText("Any unsaved changes will be lost.")
+            msg.setIcon(QMessageBox.Question)
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+
+            # Apply modern styling to the message box
+            msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: #ffffff;
+                    color: #1f2937;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                }
+                QMessageBox QPushButton {
+                    background-color: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-weight: 500;
+                    min-width: 80px;
+                }
+                QMessageBox QPushButton:hover {
+                    background-color: #2563eb;
+                }
+                QMessageBox QPushButton:pressed {
+                    background-color: #1d4ed8;
+                }
+            """)
+
+            result = msg.exec()
+
+            if result == QMessageBox.Yes:
+                self.logger.info("Application exit confirmed by user")
+
+                # Perform cleanup operations
+                try:
+                    # Stop any running sync operations
+                    if hasattr(self, 'active_sync_worker') and self.active_sync_worker:
+                        self.active_sync_worker.cancel_operation()
+                        self.active_sync_worker.quit()
+                        self.active_sync_worker.wait(2000)
+
+                    # Save any pending data
+                    if hasattr(self, 'data') and self.data:
+                        self.data.save_all_data()
+
+                    self.logger.info("Cleanup completed successfully")
+
+                except Exception as cleanup_error:
+                    self.logger.error(f"Error during cleanup: {cleanup_error}")
+
+                # Accept the close event
+                event.accept()
+
+                # Force application quit
+                QTimer.singleShot(100, lambda: QApplication.quit())
+
+            else:
+                # User chose not to exit
+                event.ignore()
+
+        except Exception as e:
+            self.logger.error(f"Error in closeEvent: {e}")
+            # If there's an error, just accept the close event
+            event.accept()
+            QApplication.quit()
+
     def force_layout_update(self):
         """Force layout update to ensure proper sizing"""
         try:
@@ -5208,7 +5284,7 @@ For more information, please check the documentation or contact support.
         version_icon.setStyleSheet("border: none; background: transparent;")
         version_layout.addWidget(version_icon)
 
-        self.version_label = QLabel("v1.0.4")
+        self.version_label = QLabel("v1.1.2")
         self.version_label.setAlignment(Qt.AlignCenter)
         self.version_label.setStyleSheet("""
             QLabel {

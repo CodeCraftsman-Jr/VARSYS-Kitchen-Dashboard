@@ -1,6 +1,0 @@
-VARSYS Kitchen Dashboard v1.0.4 Checksums
-==================================================
-
-File: VARSYS_Kitchen_Dashboard_v1.0.4.zip
-MD5:    8acd856073bd66b7a43198b3b07de8f2
-SHA256: ef2c23c0e5dafbd9ec2a6721079390577cc0f27be877d8170687d58b9dbdf4f3

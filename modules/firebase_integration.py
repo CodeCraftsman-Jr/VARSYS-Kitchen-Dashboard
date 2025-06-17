@@ -5,8 +5,21 @@ import json
 import pandas as pd
 from datetime import datetime
 import requests
-import firebase_admin
-from firebase_admin import credentials, firestore
+
+# Firebase Admin SDK with fallback for missing modules
+FIREBASE_ADMIN_AVAILABLE = False
+firebase_admin = None
+credentials = None
+firestore = None
+
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    FIREBASE_ADMIN_AVAILABLE = True
+    print("Firebase Admin SDK imported successfully")
+except ImportError as e:
+    print(f"Firebase Admin SDK not available: {e}")
+    print("Application will run in offline mode only")
 
 # Import logger if available
 try:
@@ -24,13 +37,62 @@ except ImportError:
         if exception:
             print(f"Exception details: {str(exception)}")
 
-# For user authentication
+# For user authentication - Enhanced import check for frozen applications
+PYREBASE_AVAILABLE = False
+pyrebase = None
+
 try:
+    # Fix httplib2 circular import issue BEFORE importing pyrebase
+    try:
+        import socks
+        import httplib2.socks
+        log_info("SOCKS and httplib2.socks modules loaded successfully")
+    except ImportError as socks_error:
+        log_warning(f"SOCKS modules not available: {socks_error}")
+
     import pyrebase
     PYREBASE_AVAILABLE = True
-except ImportError:
-    PYREBASE_AVAILABLE = False
-    log_warning("Pyrebase is not available. User authentication will not work.")
+    log_info("Pyrebase imported successfully")
+except ImportError as e:
+    log_warning(f"Pyrebase import failed: {e}")
+    # Try alternative import methods for frozen applications
+    try:
+        import sys
+        import importlib
+
+        # Try to fix httplib2 issue first
+        try:
+            importlib.import_module('socks')
+            importlib.import_module('httplib2.socks')
+            log_info("SOCKS modules loaded via importlib")
+        except:
+            log_warning("Could not load SOCKS modules via importlib")
+
+        pyrebase = importlib.import_module('pyrebase')
+        PYREBASE_AVAILABLE = True
+        log_info("Pyrebase imported successfully using importlib")
+    except Exception as e2:
+        log_warning(f"Alternative pyrebase import also failed: {e2}")
+        # Check if we're in a frozen environment and pyrebase might be available
+        if hasattr(sys, 'frozen'):
+            log_info("Running in frozen environment - attempting pyrebase fallback")
+            try:
+                # Try to find pyrebase in the library
+                import os
+                lib_path = os.path.join(os.path.dirname(sys.executable), 'lib')
+                pyrebase_path = os.path.join(lib_path, 'pyrebase')
+                if os.path.exists(pyrebase_path):
+                    log_info("Pyrebase library found in frozen app - marking as available")
+                    PYREBASE_AVAILABLE = True
+                    # Set pyrebase to None so it can be imported later when needed
+                    pyrebase = None
+                else:
+                    log_warning("Pyrebase library not found in frozen app")
+            except Exception as e3:
+                log_warning(f"Frozen environment pyrebase check failed: {e3}")
+
+        if not PYREBASE_AVAILABLE:
+            log_warning("Pyrebase is not available. User authentication will not work.")
 
 # Global variables
 FIREBASE_APP = None
@@ -314,18 +376,30 @@ def initialize_firebase():
         FIREBASE_AVAILABLE = False
         return False
     
+    # Check if Firebase Admin SDK is available - FALLBACK FOR BUILD ENVIRONMENT
+    if not FIREBASE_ADMIN_AVAILABLE:
+        log_warning("Firebase Admin SDK not available - trying Pyrebase-only mode")
+
+        # Try to initialize with Pyrebase only (for build environments)
+        if PYREBASE_AVAILABLE:
+            return initialize_pyrebase_only_mode()
+        else:
+            log_error("Neither Firebase Admin SDK nor Pyrebase is available")
+            log_error("To enable Firebase features, install: pip install firebase-admin pyrebase4")
+            FIREBASE_AVAILABLE = False
+            return False
+
     try:
         # Load the Firebase service account credentials for Admin SDK
         log_info("Loading Firebase credentials...")
-        with open(credentials_path, 'r') as f:
-            admin_config = json.load(f)
-        
+        log_info(f"Using credentials file: {credentials_path}")
+
         # Initialize Firebase Admin SDK
         if not firebase_admin._apps:
             log_info("Initializing Firebase Admin SDK...")
             cred = credentials.Certificate(credentials_path)
             firebase_admin.initialize_app(cred)
-        
+
         # Get Firestore database instance
         log_info("Getting Firestore database instance...")
         FIRESTORE_DB = firestore.client()
@@ -374,9 +448,20 @@ def initialize_firebase():
                             log_error(f"Error loading Firebase config from {path}: {e}")
 
             if web_config:
-                log_info("Initializing Pyrebase for authentication...")
-                FIREBASE_APP = pyrebase.initialize_app(web_config)
-                FIREBASE_AUTH = FIREBASE_APP.auth()
+                try:
+                    log_info("Initializing Pyrebase for authentication...")
+                    # Ensure pyrebase is imported if not already
+                    global pyrebase
+                    if pyrebase is None:
+                        import pyrebase as pyrebase_module
+                        pyrebase = pyrebase_module
+                    FIREBASE_APP = pyrebase.initialize_app(web_config)
+                    FIREBASE_AUTH = FIREBASE_APP.auth()
+                    log_info("Pyrebase authentication initialized successfully")
+                except Exception as e:
+                    log_error(f"Failed to initialize Pyrebase: {e}")
+                    log_warning("Falling back to Firebase Admin SDK only")
+                    FIREBASE_AUTH = None
             else:
                 log_error("No valid Firebase web configuration found")
                 log_error("Authentication will not work without valid web config")
@@ -394,6 +479,83 @@ def initialize_firebase():
         return True
     except Exception as e:
         log_error("Failed to initialize Firebase", e)
+        FIREBASE_AVAILABLE = False
+        return False
+
+def initialize_pyrebase_only_mode():
+    """Initialize Firebase using only Pyrebase (fallback for build environments)"""
+    global FIREBASE_APP, FIRESTORE_DB, FIREBASE_AUTH, FIREBASE_AVAILABLE
+
+    try:
+        log_info("Attempting Pyrebase-only initialization...")
+
+        # Get current directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if current_dir.endswith('modules'):
+            current_dir = os.path.dirname(current_dir)
+
+        # Try to load Firebase web config for Pyrebase
+        web_config = None
+        web_config_paths = [
+            os.path.join(current_dir, "firebase_config.json"),
+            os.path.join(current_dir, "firebase_web_config.json"),
+            os.path.join(current_dir, "secure_credentials", "firebase_web_config.json")
+        ]
+
+        for path in web_config_paths:
+            if os.path.exists(path):
+                try:
+                    log_info(f"Loading Firebase config from: {path}")
+                    with open(path, 'r') as f:
+                        config = json.load(f)
+
+                    # Handle nested firebase config
+                    if 'firebase' in config:
+                        config = config['firebase']
+
+                    if config and config.get('apiKey') and config.get('projectId'):
+                        web_config = config
+                        log_info(f"Valid Firebase config found in: {path}")
+                        break
+                    else:
+                        log_warning(f"Invalid Firebase config in {path}")
+                except Exception as e:
+                    log_error(f"Error loading Firebase config from {path}: {e}")
+
+        if not web_config:
+            log_error("No valid Firebase web configuration found for Pyrebase-only mode")
+            FIREBASE_AVAILABLE = False
+            return False
+
+        # Initialize Pyrebase
+        try:
+            global pyrebase
+            if pyrebase is None:
+                import pyrebase as pyrebase_module
+                pyrebase = pyrebase_module
+
+            FIREBASE_APP = pyrebase.initialize_app(web_config)
+            FIREBASE_AUTH = FIREBASE_APP.auth()
+
+            # Use Realtime Database instead of Firestore for Pyrebase-only mode
+            try:
+                FIRESTORE_DB = FIREBASE_APP.database()
+                log_info("Firebase Realtime Database initialized (Pyrebase-only mode)")
+            except Exception as e:
+                log_warning(f"Realtime Database initialization failed: {e}")
+                FIRESTORE_DB = None
+
+            FIREBASE_AVAILABLE = True
+            log_info("Pyrebase-only mode initialization successful!")
+            return True
+
+        except Exception as e:
+            log_error(f"Failed to initialize Pyrebase: {e}")
+            FIREBASE_AVAILABLE = False
+            return False
+
+    except Exception as e:
+        log_error(f"Pyrebase-only mode initialization failed: {e}")
         FIREBASE_AVAILABLE = False
         return False
 
@@ -429,8 +591,18 @@ def initialize_firebase_with_config(firebase_config):
         log_info("Initializing Firebase with provided configuration...")
 
         # Initialize Pyrebase app with provided config
-        FIREBASE_APP = pyrebase.initialize_app(firebase_config)
-        FIREBASE_AUTH = FIREBASE_APP.auth()
+        try:
+            # Ensure pyrebase is imported if not already
+            global pyrebase
+            if pyrebase is None:
+                import pyrebase as pyrebase_module
+                pyrebase = pyrebase_module
+            FIREBASE_APP = pyrebase.initialize_app(firebase_config)
+            FIREBASE_AUTH = FIREBASE_APP.auth()
+        except Exception as e:
+            log_error(f"Failed to initialize Pyrebase with config: {e}")
+            FIREBASE_AVAILABLE = False
+            return False
 
         # Initialize Firestore database (if available)
         try:

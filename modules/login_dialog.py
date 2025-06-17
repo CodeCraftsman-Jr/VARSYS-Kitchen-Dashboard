@@ -460,5 +460,8 @@ class LoginDialog(ResponsiveDialog):
         msg.setDefaultButton(QMessageBox.No)
 
         if msg.exec() == QMessageBox.Yes:
+            # Force application exit
+            import sys
             QApplication.quit()
+            sys.exit(0)
         # If No, do nothing - keep the login dialog open
