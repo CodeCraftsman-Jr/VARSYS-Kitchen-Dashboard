@@ -1,9 +1,9 @@
-task_id,task_name,frequency,last_completed,next_due,priority,notes,assigned_staff_id,assigned_staff_name,schedule_type,schedule_interval,day_number,time_period,auto_assign,rotation_order,schedule_days,schedule_dates
-1,Kitchen Deep Cleaning,Weekly,,2025-06-19 10:00:00,High,Complete deep cleaning of kitchen area,,,manual,1,3,Week,1,,,
-2,Equipment Maintenance,Monthly,,2025-06-20 14:00:00,Medium,Check and maintain kitchen equipment,,,manual,1,1,Month,1,,,
-3,Inventory Count,Weekly,,2025-06-21 09:00:00,Medium,Count and update inventory records,,,manual,1,5,Week,1,,,
-4,Floor Mopping,Daily,,2025-06-19 16:00:00,High,Mop all kitchen floors,,,manual,1,1,Week,1,,,
-5,Dishwasher Cleaning,Weekly,,2025-06-22 11:00:00,Medium,Clean and sanitize dishwasher,,,manual,1,6,Week,1,,,
-6,Refrigerator Cleaning,Monthly,,2025-07-01 10:00:00,High,Deep clean refrigerators and freezers,,,manual,1,1,Month,1,,,
-7,Waste Management,Daily,,2025-06-19 18:00:00,High,Empty trash and recycling bins,,,manual,1,7,Week,1,,,
-8,Surface Sanitizing,Daily,,2025-06-19 12:00:00,High,Sanitize all work surfaces,,,manual,1,2,Week,1,,,
+task_id,task_name,frequency,last_completed,next_due,priority,notes,assigned_staff_id,assigned_staff_name,schedule_type,schedule_interval,day_number,time_period,auto_assign,rotation_order,schedule_days,schedule_dates,multiple_staff_config
+1,Kitchen Deep Cleaning,Weekly,,2025-06-20 14:50:38,High,Complete deep cleaning of kitchen area,4.0,Vasanthan,nth_day_pattern,1,5,Week,1,,,,
+2,Equipment Maintenance,Monthly,,2025-06-22 14:48:19,High,Check and maintain kitchen equipment,1.0,Elumalai,nth_day_pattern,1,7,Week,1,,,,
+3,Inventory Count,Weekly,,2025-06-19 14:48:47,High,Count and update inventory records,2.0,Abirami,daily,1,1,Week,1,,,,
+4,Floor Mopping,Daily,,2025-06-19 14:49:10,Medium,Mop all kitchen floors,3.0,Asmetha,daily,1,1,Week,1,,,,
+5,Utensils Cleaning,Weekly,2025-06-18,2025-06-19 16:14:10,High,Clean and sanitize dishwasher,1.0,"Elumalai, Abirami, Asmetha, Vasanthan, Arunesh",daily_rotation,1,1,Week,1,1;2;3;4;5,,,daily_rotation:5:weekly_cycle
+6,Refrigerator Cleaning,Monthly,,2025-06-25 14:51:36,Medium,Deep clean refrigerators and freezers,5.0,Arunesh,nth_day_pattern,1,3,Week,1,,,,
+7,Waste Management,Daily,,2025-06-19 14:49:41,High,Empty trash and recycling bins,4.0,Vasanthan,daily,1,1,Week,1,,,,
+8,Surface Sanitizing,Daily,,2025-06-19 14:50:51,Medium,Sanitize all work surfaces,2.0,Abirami,daily,1,1,Week,1,,,,

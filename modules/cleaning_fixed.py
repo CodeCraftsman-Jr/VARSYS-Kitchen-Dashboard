@@ -128,12 +128,24 @@ class CleaningWidget(QWidget):
     def refresh_data(self):
         """Refresh the cleaning data after staff management changes"""
         try:
+            # Reload cleaning data from CSV file to get latest assignments
+            import pandas as pd
+            import os
+
+            cleaning_file = 'data/cleaning_maintenance.csv'
+            if os.path.exists(cleaning_file):
+                # Reload from CSV to get the latest data
+                self.data['cleaning_maintenance'] = pd.read_csv(cleaning_file)
+                self.cleaning_df = self.data['cleaning_maintenance'].copy()
+
+                # Convert date columns properly
+                if 'last_completed' in self.cleaning_df.columns:
+                    self.cleaning_df['last_completed'] = pd.to_datetime(self.cleaning_df['last_completed'], errors='coerce')
+                if 'next_due' in self.cleaning_df.columns:
+                    self.cleaning_df['next_due'] = pd.to_datetime(self.cleaning_df['next_due'], errors='coerce')
+
             # Reload staff options
             self.load_staff_options()
-
-            # Refresh the cleaning dataframe
-            if 'cleaning_maintenance' in self.data:
-                self.cleaning_df = self.data['cleaning_maintenance'].copy()
 
             # Update the task list
             self.update_task_list()
@@ -141,6 +153,8 @@ class CleaningWidget(QWidget):
             # Update calendar if it exists
             if hasattr(self, 'calendar'):
                 self.highlight_task_dates()
+
+            print(f"Cleaning data refreshed: {len(self.cleaning_df)} tasks loaded")
 
         except Exception as e:
             print(f"Error refreshing data: {e}")
@@ -775,27 +789,123 @@ class CleaningWidget(QWidget):
     
     def highlight_task_dates(self):
         try:
+            # Clear existing formatting first
+            self.calendar.setDateTextFormat(QDate(), QTextCharFormat())
+
             # Make sure next_due is properly converted to datetime
             if 'next_due' in self.cleaning_df.columns:
                 if not pd.api.types.is_datetime64_any_dtype(self.cleaning_df['next_due']):
                     self.cleaning_df['next_due'] = pd.to_datetime(self.cleaning_df['next_due'], errors='coerce')
-                
-                # Get all valid dates with tasks (filtering out NaT values)
-                valid_dates = self.cleaning_df['next_due'].dropna()
-                if len(valid_dates) > 0:
-                    task_dates = valid_dates.dt.date.unique()
-                    
-                    # Highlight dates on calendar
-                    for date in task_dates:
-                        if pd.notnull(date):
-                            qdate = QDate(date.year, date.month, date.day)
-                            text_format = QTextCharFormat()
-                            text_format.setBackground(QColor(255, 200, 200))  # Light red
-                            self.calendar.setDateTextFormat(qdate, text_format)
+
+                current_date = datetime.now().date()
+                highlighted_dates = set()  # Track highlighted dates to avoid conflicts
+
+                for _, task in self.cleaning_df.iterrows():
+                    schedule_type = task.get('schedule_type', '')
+
+                    if schedule_type == 'daily_rotation':
+                        # Highlight daily rotation dates
+                        self.highlight_daily_rotation_dates(task, highlighted_dates, current_date)
+                    else:
+                        # Handle regular tasks (existing logic)
+                        next_due_str = task.get('next_due')
+                        if pd.notnull(next_due_str):
+                            next_due = pd.to_datetime(next_due_str, errors='coerce')
+                            if pd.notnull(next_due):
+                                date = next_due.date()
+                                date_key = (date.year, date.month, date.day)
+
+                                if date_key not in highlighted_dates:
+                                    highlighted_dates.add(date_key)
+                                    qdate = QDate(date.year, date.month, date.day)
+                                    text_format = QTextCharFormat()
+
+                                    # Color based on priority and due date
+                                    priority = task.get('priority', 'Medium')
+                                    days_diff = (date - current_date).days
+
+                                    if days_diff < 0:
+                                        # Overdue - Red
+                                        text_format.setBackground(QColor(255, 200, 200))
+                                    elif days_diff == 0:
+                                        # Due today - Orange
+                                        text_format.setBackground(QColor(255, 220, 150))
+                                    elif days_diff <= 3:
+                                        # Due soon - Yellow
+                                        text_format.setBackground(QColor(255, 255, 200))
+                                    elif priority == 'High':
+                                        # High priority - Light red
+                                        text_format.setBackground(QColor(255, 230, 230))
+                                    else:
+                                        # Regular tasks - Light blue
+                                        text_format.setBackground(QColor(230, 240, 255))
+
+                                    self.calendar.setDateTextFormat(qdate, text_format)
+
         except Exception as e:
             # If there's any error, just skip highlighting
             print(f"Error highlighting task dates: {e}")
             pass
+
+    def highlight_daily_rotation_dates(self, task, highlighted_dates, current_date):
+        """Highlight dates for daily rotation tasks"""
+        try:
+            # Get the task start date
+            next_due_str = task.get('next_due')
+            if pd.isna(next_due_str) or not next_due_str:
+                return
+
+            start_date = pd.to_datetime(next_due_str, errors='coerce')
+            if pd.isna(start_date):
+                return
+
+            start_date = start_date.date()
+
+            # Highlight dates for the next 30 days from start date
+            from datetime import timedelta
+            for days_offset in range(30):
+                highlight_date = start_date + timedelta(days=days_offset)
+
+                # Skip dates too far in the past or future
+                if highlight_date < current_date - timedelta(days=7) or highlight_date > current_date + timedelta(days=60):
+                    continue
+
+                # Create QDate safely
+                try:
+                    qdate = QDate(highlight_date.year, highlight_date.month, highlight_date.day)
+                    if not qdate.isValid():
+                        continue
+
+                    # Skip if already highlighted
+                    date_key = (highlight_date.year, highlight_date.month, highlight_date.day)
+                    if date_key in highlighted_dates:
+                        continue
+                    highlighted_dates.add(date_key)
+
+                    # Create format for highlighting daily rotation
+                    text_format = QTextCharFormat()
+
+                    # Special color scheme for daily rotation tasks
+                    days_diff = (highlight_date - current_date).days
+
+                    if days_diff < 0:
+                        # Past dates - Light purple
+                        text_format.setBackground(QColor(230, 220, 255))
+                    elif days_diff == 0:
+                        # Today - Bright purple
+                        text_format.setBackground(QColor(200, 150, 255))
+                    else:
+                        # Future dates - Light lavender
+                        text_format.setBackground(QColor(240, 230, 255))
+
+                    # Apply the format
+                    self.calendar.setDateTextFormat(qdate, text_format)
+
+                except Exception as date_error:
+                    continue
+
+        except Exception as e:
+            print(f"Error highlighting daily rotation dates: {e}")
     
     def show_tasks_for_date(self, date):
         # Clear the tasks layout
@@ -820,10 +930,37 @@ class CleaningWidget(QWidget):
                 # Convert QDate to Python date
                 py_date = datetime(date.year(), date.month(), date.day()).date()
 
-                # Filter tasks due on the selected date
-                tasks_due = self.cleaning_df[self.cleaning_df['next_due'].dt.date == py_date]
+                # Initialize lists for different types of tasks
+                tasks_due = pd.DataFrame()
+                daily_rotation_tasks = []
+
+                # Check for daily rotation tasks
+                for _, task in self.cleaning_df.iterrows():
+                    schedule_type = task.get('schedule_type', '')
+
+                    if schedule_type == 'daily_rotation':
+                        # Check if this daily rotation task should be shown for the selected date
+                        if self.should_show_daily_rotation_task(task, py_date):
+                            # Calculate which staff member is assigned for this date
+                            assigned_staff = self.get_staff_for_date(task, py_date)
+
+                            # Create a modified task with the correct staff for this date
+                            task_for_date = task.copy()
+                            task_for_date['assigned_staff_name'] = assigned_staff
+                            task_for_date['rotation_date'] = py_date.strftime('%Y-%m-%d')
+                            daily_rotation_tasks.append(task_for_date)
+                    else:
+                        # Handle regular tasks (existing logic)
+                        if pd.notnull(task.get('next_due')):
+                            task_due_date = pd.to_datetime(task.get('next_due'), errors='coerce')
+                            if pd.notnull(task_due_date) and task_due_date.date() == py_date:
+                                if tasks_due.empty:
+                                    tasks_due = pd.DataFrame([task])
+                                else:
+                                    tasks_due = pd.concat([tasks_due, pd.DataFrame([task])], ignore_index=True)
 
                 # Filter tasks allotted/completed on the selected date (last_completed)
+                tasks_allotted = pd.DataFrame()
                 if 'last_completed' in self.cleaning_df.columns:
                     if not pd.api.types.is_datetime64_any_dtype(self.cleaning_df['last_completed']):
                         self.cleaning_df['last_completed'] = pd.to_datetime(self.cleaning_df['last_completed'], errors='coerce')
@@ -831,8 +968,9 @@ class CleaningWidget(QWidget):
                 else:
                     tasks_allotted = pd.DataFrame()
 
-                # Create sections for due tasks and allotted tasks
+                # Create sections for due tasks, daily rotation tasks, and allotted tasks
                 self.create_due_tasks_section(tasks_due, date)
+                self.create_daily_rotation_section(daily_rotation_tasks, date)
                 self.create_allotted_tasks_section(tasks_allotted, date)
             else:
                 no_tasks_label = QLabel("No task data available.")
@@ -1031,3 +1169,110 @@ class CleaningWidget(QWidget):
                 self.show_tasks_for_date(self.calendar.selectedDate())
                 
                 QMessageBox.information(self, "Success", f"{task_name} marked as completed.")
+
+    def create_daily_rotation_section(self, daily_rotation_tasks, date):
+        """Create section for daily rotation tasks"""
+        if not daily_rotation_tasks:
+            return
+
+        # Daily Rotation Tasks Section
+        rotation_section_label = QLabel("🔄 Daily Rotation Tasks")
+        rotation_section_label.setFont(QFont("Arial", 11, QFont.Bold))
+        rotation_section_label.setStyleSheet("color: #7b1fa2; margin-top: 10px; margin-bottom: 5px;")
+        self.date_tasks_layout.addWidget(rotation_section_label)
+
+        # Create a table for daily rotation tasks
+        rotation_tasks_table = QTableWidget()
+        rotation_tasks_table.setColumnCount(4)
+        rotation_tasks_table.setHorizontalHeaderLabels(["Task", "Assigned Staff", "Priority", "Notes"])
+        rotation_tasks_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        rotation_tasks_table.setMaximumHeight(150)  # Limit height
+
+        # Add rows to the table
+        rotation_tasks_table.setRowCount(len(daily_rotation_tasks))
+        for i, task in enumerate(daily_rotation_tasks):
+            rotation_tasks_table.setItem(i, 0, QTableWidgetItem(self.safe_string_convert(task.get('task_name', ''))))
+            rotation_tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(task.get('assigned_staff_name', ''))))
+            rotation_tasks_table.setItem(i, 2, QTableWidgetItem(self.safe_string_convert(task.get('priority', ''))))
+
+            # Enhanced notes for rotation
+            notes = self.safe_string_convert(task.get('notes', ''))
+            rotation_info = task.get('multiple_staff_config', '')
+            if rotation_info:
+                notes += f" | Rotation: {rotation_info}"
+            rotation_tasks_table.setItem(i, 3, QTableWidgetItem(notes))
+
+            # Color code daily rotation tasks with light purple background
+            color = QColor(240, 230, 255)  # Light purple
+            for j in range(rotation_tasks_table.columnCount()):
+                rotation_tasks_table.item(i, j).setBackground(color)
+
+        self.date_tasks_layout.addWidget(rotation_tasks_table)
+
+        # Add info label
+        info_label = QLabel(f"🔄 {len(daily_rotation_tasks)} daily rotation task(s) assigned for this date")
+        info_label.setStyleSheet("color: #7b1fa2; font-weight: bold; padding: 5px;")
+        info_label.setAlignment(Qt.AlignCenter)
+        self.date_tasks_layout.addWidget(info_label)
+
+    def should_show_daily_rotation_task(self, task, date):
+        """Check if a daily rotation task should be shown for the given date"""
+        try:
+            # Get the task start date (next_due date)
+            next_due_str = task.get('next_due')
+            if pd.isna(next_due_str) or not next_due_str:
+                return False
+
+            # Parse start date
+            start_date = pd.to_datetime(next_due_str, errors='coerce')
+            if pd.isna(start_date):
+                return False
+
+            # Daily rotation tasks are shown from the start date onwards
+            return date >= start_date.date()
+
+        except Exception as e:
+            print(f"Error checking daily rotation task: {e}")
+            return False
+
+    def get_staff_for_date(self, task, date):
+        """Get the staff member assigned for a specific date in daily rotation"""
+        try:
+            # Get rotation order
+            rotation_order = task.get('rotation_order', '')
+            if not rotation_order:
+                return task.get('assigned_staff_name', 'Unassigned')
+
+            # Parse staff IDs from rotation order
+            staff_ids = [int(x.strip()) for x in rotation_order.split(';') if x.strip().isdigit()]
+            if not staff_ids:
+                return task.get('assigned_staff_name', 'Unassigned')
+
+            # Get the task start date
+            next_due_str = task.get('next_due')
+            if pd.isna(next_due_str) or not next_due_str:
+                return task.get('assigned_staff_name', 'Unassigned')
+
+            start_date = pd.to_datetime(next_due_str, errors='coerce')
+            if pd.isna(start_date):
+                return task.get('assigned_staff_name', 'Unassigned')
+
+            # Calculate days since start date
+            days_since_start = (date - start_date.date()).days
+
+            # Determine which staff member is assigned (rotation index)
+            rotation_index = days_since_start % len(staff_ids)
+            assigned_staff_id = staff_ids[rotation_index]
+
+            # Get staff name from ID
+            if 'staff' in self.data:
+                staff_df = self.data['staff']
+                staff_row = staff_df[staff_df['staff_id'] == assigned_staff_id]
+                if not staff_row.empty:
+                    return staff_row.iloc[0]['staff_name']
+
+            return f"Staff {assigned_staff_id}"
+
+        except Exception as e:
+            print(f"Error getting staff for date: {e}")
+            return task.get('assigned_staff_name', 'Unassigned')

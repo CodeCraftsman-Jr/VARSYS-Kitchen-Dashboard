@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QComboBox, QTextEdit, QDialog, QDialogButtonBox,
                              QMessageBox, QDateEdit, QSpinBox, QCheckBox,
                              QCalendarWidget, QListWidget, QSplitter,
-                             QGridLayout, QFrame)
+                             QGridLayout, QFrame, QScrollArea)
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QFont, QColor
 
@@ -77,7 +77,6 @@ class StaffManagementWidget(QWidget):
         # Create tabs
         self.create_staff_tab()
         self.create_task_assignment_tab()
-        self.create_calendar_tab()
         self.create_scheduling_tab()
         
         layout.addWidget(self.tabs)
@@ -167,86 +166,9 @@ class StaffManagementWidget(QWidget):
         
         self.tabs.addTab(task_widget, "📋 Task Assignments")
     
-    def create_calendar_tab(self):
-        """Create calendar view tab"""
-        calendar_widget = QWidget()
-        layout = QHBoxLayout(calendar_widget)
-        
-        # Left side - Calendar
-        left_layout = QVBoxLayout()
-        
-        calendar_title = QLabel("Task Calendar")
-        calendar_title.setFont(QFont("Arial", 14, QFont.Bold))
-        left_layout.addWidget(calendar_title)
-        
-        self.calendar = QCalendarWidget()
 
-        # Fix calendar display issues
-        self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)  # Remove week numbers
-        self.calendar.setHorizontalHeaderFormat(QCalendarWidget.ShortDayNames)  # Use short day names
-        self.calendar.setGridVisible(True)  # Show grid lines
-        self.calendar.setNavigationBarVisible(True)  # Show navigation
+        
 
-        # Set proper date range to avoid invalid dates
-        from PySide6.QtCore import QDate
-        self.calendar.setMinimumDate(QDate(2020, 1, 1))
-        self.calendar.setMaximumDate(QDate(2030, 12, 31))
-
-        # Set current date
-        self.calendar.setSelectedDate(QDate.currentDate())
-
-        self.calendar.selectionChanged.connect(self.on_date_selected)
-        left_layout.addWidget(self.calendar)
-        
-        # Right side - Tasks for selected date
-        right_layout = QVBoxLayout()
-        
-        tasks_title = QLabel("Tasks for Selected Date")
-        tasks_title.setFont(QFont("Arial", 14, QFont.Bold))
-        right_layout.addWidget(tasks_title)
-        
-        self.date_tasks_list = QListWidget()
-        right_layout.addWidget(self.date_tasks_list)
-        
-        # Task details
-        details_group = QGroupBox("Task Details")
-        details_layout = QFormLayout(details_group)
-        
-        self.task_detail_name = QLabel("-")
-        self.task_detail_staff = QLabel("-")
-        self.task_detail_priority = QLabel("-")
-        self.task_detail_notes = QLabel("-")
-        
-        details_layout.addRow("Task:", self.task_detail_name)
-        details_layout.addRow("Assigned Staff:", self.task_detail_staff)
-        details_layout.addRow("Priority:", self.task_detail_priority)
-        details_layout.addRow("Notes:", self.task_detail_notes)
-        
-        right_layout.addWidget(details_group)
-
-        # Quick action button
-        quick_assign_btn = QPushButton("➕ Quick Assign Task")
-        quick_assign_btn.clicked.connect(self.open_task_assignment_dialog)
-        quick_assign_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                padding: 6px 12px;
-                border: none;
-                border-radius: 3px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-        """)
-        right_layout.addWidget(quick_assign_btn)
-
-        # Add layouts to main layout
-        layout.addLayout(left_layout, 2)
-        layout.addLayout(right_layout, 1)
-        
-        self.tabs.addTab(calendar_widget, "📅 Calendar View")
     
     def create_scheduling_tab(self):
         """Create automated scheduling tab"""
@@ -330,10 +252,6 @@ class StaffManagementWidget(QWidget):
         try:
             self.load_staff_data()
             self.load_task_assignments()
-            self.update_calendar()
-            # Show tasks for today by default
-            today = datetime.now().date()
-            self.show_tasks_for_date(today)
         except Exception as e:
             self.logger.error(f"Error loading data: {e}")
 
@@ -537,104 +455,7 @@ class StaffManagementWidget(QWidget):
         except Exception as e:
             self.logger.error(f"Error loading task assignments: {e}")
 
-    def update_calendar(self):
-        """Update calendar with task highlights - Fixed date handling"""
-        try:
-            if 'cleaning_maintenance' not in self.data:
-                return
 
-            tasks_df = self.data['cleaning_maintenance']
-            current_date = datetime.now().date()
-
-            # Clear existing highlights by resetting to default format
-            default_format = self.calendar.dateTextFormat(QDate())
-
-            # Reset all dates to default format first
-            start_date = QDate.currentDate().addDays(-365)
-            end_date = QDate.currentDate().addDays(365)
-            current_reset_date = start_date
-            while current_reset_date <= end_date:
-                self.calendar.setDateTextFormat(current_reset_date, default_format)
-                current_reset_date = current_reset_date.addDays(1)
-
-            # Highlight dates with tasks
-            highlighted_dates = set()  # Track highlighted dates to avoid conflicts
-
-            for _, task in tasks_df.iterrows():
-                try:
-                    next_due_str = task.get('next_due')
-                    if pd.isna(next_due_str) or not next_due_str:
-                        continue
-
-                    # Parse the date more carefully
-                    next_due = pd.to_datetime(next_due_str, errors='coerce')
-                    if pd.isna(next_due):
-                        self.logger.warning(f"Invalid date format for task {task.get('task_name', '')}: {next_due_str}")
-                        continue
-
-                    # Extract date components safely
-                    due_date = next_due.date()
-
-                    # Validate date components
-                    if due_date.year < 1900 or due_date.year > 2100:
-                        self.logger.warning(f"Invalid year for task {task.get('task_name', '')}: {due_date.year}")
-                        continue
-
-                    # Create QDate safely
-                    q_date = QDate(due_date.year, due_date.month, due_date.day)
-                    if not q_date.isValid():
-                        self.logger.warning(f"Invalid QDate for task {task.get('task_name', '')}: {due_date}")
-                        continue
-
-                    # Skip if already highlighted (avoid conflicts)
-                    date_key = (due_date.year, due_date.month, due_date.day)
-                    if date_key in highlighted_dates:
-                        continue
-                    highlighted_dates.add(date_key)
-
-                    # Create format for highlighting
-                    format = self.calendar.dateTextFormat(q_date)
-
-                    # Color based on priority and status
-                    priority = task.get('priority', 'Medium')
-                    days_diff = (due_date - current_date).days
-
-                    if days_diff < 0:
-                        # Overdue - Red background
-                        format.setBackground(QColor(255, 200, 200))
-                        format.setForeground(QColor(139, 0, 0))
-                    elif days_diff == 0:
-                        # Due today - Orange background
-                        format.setBackground(QColor(255, 220, 150))
-                        format.setForeground(QColor(139, 69, 0))
-                    elif days_diff <= 3:
-                        # Due soon - Yellow background
-                        format.setBackground(QColor(255, 255, 200))
-                        format.setForeground(QColor(139, 139, 0))
-                    elif priority == 'High':
-                        # High priority - Light red
-                        format.setBackground(QColor(255, 230, 230))
-                        format.setForeground(QColor(139, 0, 0))
-                    elif priority == 'Medium':
-                        # Medium priority - Light blue
-                        format.setBackground(QColor(230, 240, 255))
-                        format.setForeground(QColor(0, 0, 139))
-                    else:
-                        # Low priority - Light green
-                        format.setBackground(QColor(230, 255, 230))
-                        format.setForeground(QColor(0, 100, 0))
-
-                    # Apply the format
-                    self.calendar.setDateTextFormat(q_date, format)
-
-                except Exception as date_error:
-                    self.logger.warning(f"Error processing date for task {task.get('task_name', '')}: {date_error}")
-                    continue
-
-            self.logger.info(f"Calendar updated with {len(highlighted_dates)} highlighted dates")
-
-        except Exception as e:
-            self.logger.error(f"Error updating calendar: {e}")
 
     def add_staff_member(self):
         """Add a new staff member"""
@@ -733,7 +554,6 @@ class StaffManagementWidget(QWidget):
 
             # Reload data and refresh displays
             self.load_task_assignments()
-            self.update_calendar()
             self.data_changed.emit()
 
             QMessageBox.information(self, "Success", f"Task '{task_name}' marked as completed.")
@@ -742,118 +562,7 @@ class StaffManagementWidget(QWidget):
             self.logger.error(f"Error completing task: {e}")
             QMessageBox.critical(self, "Error", f"Failed to complete task: {str(e)}")
 
-    def on_date_selected(self):
-        """Handle calendar date selection"""
-        try:
-            selected_date = self.calendar.selectedDate().toPython()
-            self.show_tasks_for_date(selected_date)
-        except Exception as e:
-            self.logger.error(f"Error handling date selection: {e}")
 
-    def show_tasks_for_date(self, date):
-        """Show tasks for selected date - Fixed date handling"""
-        try:
-            self.date_tasks_list.clear()
-            self.clear_task_details()
-
-            if 'cleaning_maintenance' not in self.data:
-                self.date_tasks_list.addItem("No task data available")
-                return
-
-            tasks_df = self.data['cleaning_maintenance']
-            if tasks_df.empty:
-                self.date_tasks_list.addItem("No tasks found")
-                return
-
-            tasks_for_date = []
-
-            for _, task in tasks_df.iterrows():
-                try:
-                    next_due_str = task.get('next_due')
-                    if pd.isna(next_due_str) or not next_due_str:
-                        continue
-
-                    # Parse date carefully
-                    next_due = pd.to_datetime(next_due_str, errors='coerce')
-                    if pd.isna(next_due):
-                        continue
-
-                    # Compare dates
-                    if next_due.date() == date:
-                        priority = task.get('priority', 'Medium')
-                        priority_icon = "🔴" if priority == 'High' else "🟡" if priority == 'Medium' else "🟢"
-
-                        task_name = task.get('task_name', 'Unknown Task')
-                        staff_name = task.get('assigned_staff_name', 'Unassigned')
-
-                        task_text = f"{priority_icon} {task_name}"
-                        if staff_name and staff_name != 'Unassigned':
-                            task_text += f" - {staff_name}"
-
-                        self.date_tasks_list.addItem(task_text)
-                        tasks_for_date.append(task)
-
-                except Exception as task_error:
-                    self.logger.warning(f"Error processing task {task.get('task_name', '')}: {task_error}")
-                    continue
-
-            if not tasks_for_date:
-                self.date_tasks_list.addItem(f"No tasks scheduled for {date.strftime('%Y-%m-%d')}")
-
-            # Connect selection change to show details (disconnect first to avoid multiple connections)
-            try:
-                self.date_tasks_list.itemSelectionChanged.disconnect()
-            except:
-                pass
-            self.date_tasks_list.itemSelectionChanged.connect(self.on_task_selected)
-
-        except Exception as e:
-            self.logger.error(f"Error showing tasks for date: {e}")
-            self.date_tasks_list.clear()
-            self.date_tasks_list.addItem(f"Error loading tasks: {str(e)}")
-
-    def clear_task_details(self):
-        """Clear task detail display"""
-        self.task_detail_name.setText("-")
-        self.task_detail_staff.setText("-")
-        self.task_detail_priority.setText("-")
-        self.task_detail_notes.setText("-")
-
-    def on_task_selected(self):
-        """Handle task selection in calendar view"""
-        try:
-            current_item = self.date_tasks_list.currentItem()
-            if not current_item:
-                return
-
-            # Extract task info from the text
-            task_text = current_item.text()
-
-            # Find the corresponding task in data
-            if 'cleaning_maintenance' not in self.data:
-                return
-
-            tasks_df = self.data['cleaning_maintenance']
-            selected_date = self.calendar.selectedDate().toPython()
-
-            for _, task in tasks_df.iterrows():
-                try:
-                    next_due = pd.to_datetime(task.get('next_due'))
-                    if (next_due.date() == selected_date and
-                        task.get('task_name', '') in task_text and
-                        task.get('assigned_staff_name', '') in task_text):
-
-                        # Update task details
-                        self.task_detail_name.setText(task.get('task_name', '-'))
-                        self.task_detail_staff.setText(task.get('assigned_staff_name', '-'))
-                        self.task_detail_priority.setText(task.get('priority', '-'))
-                        self.task_detail_notes.setText(task.get('notes', '-'))
-                        break
-                except:
-                    continue
-
-        except Exception as e:
-            self.logger.error(f"Error handling task selection: {e}")
 
     def generate_future_assignments(self):
         """Generate future task assignments based on schedules using the scheduling engine"""
@@ -1062,22 +771,37 @@ class TaskAssignmentDialog(QDialog):
 
         self.setWindowTitle("Advanced Task Assignment")
         self.setModal(True)
-        self.resize(650, 600)  # Larger dialog to accommodate all options
+        self.resize(1000, 700)  # Further increased width for better content visibility
+        self.setMaximumHeight(800)  # Increased maximum height for better usability
+        self.setMinimumWidth(950)  # Set minimum width to ensure content is always visible
 
         self.setup_ui()
 
     def setup_ui(self):
         """Setup enhanced dialog UI"""
-        layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(5)
+        main_layout.setContentsMargins(10, 10, 10, 10)
 
         # Title and description
         title_label = QLabel("Task Assignment")
         title_label.setFont(QFont("Arial", 14, QFont.Bold))
-        layout.addWidget(title_label)
+        main_layout.addWidget(title_label)
 
         desc_label = QLabel("Assign a task to a staff member with automated scheduling options.")
-        desc_label.setStyleSheet("color: #666; margin-bottom: 10px;")
-        layout.addWidget(desc_label)
+        desc_label.setStyleSheet("color: #666; font-size: 11px;")
+        main_layout.addWidget(desc_label)
+
+        # Create scroll area for the form content
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        # Content widget for scroll area
+        content_widget = QWidget()
+        layout = QVBoxLayout(content_widget)
+        layout.setSpacing(5)
 
         # Form layout
         form_layout = QFormLayout()
@@ -1088,10 +812,23 @@ class TaskAssignmentDialog(QDialog):
         self.task_combo.setToolTip("Select an existing task or type a new task name")
         self.load_available_tasks()
 
-        # Staff selection
+        # Staff selection - Enhanced for multiple staff
+        self.staff_assignment_type = QComboBox()
+        self.staff_assignment_type.addItems([
+            "Single Staff Member",
+            "Multiple Staff (Daily Rotation)"
+        ])
+        self.staff_assignment_type.currentTextChanged.connect(self.on_staff_assignment_type_changed)
+        self.staff_assignment_type.setToolTip("Choose between single staff assignment or multiple staff with daily rotation")
+
+        # Single staff selection
         self.staff_combo = QComboBox()
         self.staff_combo.setToolTip("Select the staff member to assign this task to")
         self.load_available_staff()
+
+        # Multiple staff selection widget
+        self.multiple_staff_widget = QWidget()
+        self.setup_multiple_staff_widget()
 
         # Priority
         self.priority_combo = QComboBox()
@@ -1120,42 +857,37 @@ class TaskAssignmentDialog(QDialog):
         self.nth_day_options_widget.setStyleSheet("""
             QWidget {
                 background-color: #e8f5e8;
-                border: 2px solid #4CAF50;
-                border-radius: 6px;
-                padding: 12px;
-                margin: 4px;
+                border: 1px solid #4CAF50;
+                border-radius: 3px;
+                padding: 6px;
+                margin: 2px;
             }
         """)
-        nth_day_layout = QVBoxLayout(self.nth_day_options_widget)
-        nth_day_layout.setContentsMargins(12, 12, 12, 12)
+        nth_day_layout = QGridLayout(self.nth_day_options_widget)  # Use grid for compactness
+        nth_day_layout.setContentsMargins(6, 6, 6, 6)
+        nth_day_layout.setSpacing(3)
 
         # Title for the section
-        title_label = QLabel("Configure Nth Day Pattern")
-        title_label.setStyleSheet("font-weight: bold; color: #2E7D32; margin-bottom: 8px;")
-        nth_day_layout.addWidget(title_label)
+        title_label = QLabel("Nth Day Pattern")
+        title_label.setStyleSheet("font-weight: bold; color: #2E7D32; font-size: 12px;")
+        nth_day_layout.addWidget(title_label, 0, 0, 1, 4)
 
-        # First row: Day number selection
-        day_row = QHBoxLayout()
-        day_row.addWidget(QLabel("Day Number:"))
-
+        # Day number selection
+        nth_day_layout.addWidget(QLabel("Day:"), 1, 0)
         self.day_number_spin = QSpinBox()
         self.day_number_spin.setRange(1, 7)  # Start with week range (1st to 7th day)
         self.day_number_spin.setValue(3)  # Default to 3rd (Wednesday)
+        self.day_number_spin.setMaximumWidth(60)
         self.day_number_spin.setToolTip("1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday, 7=Sunday")
-        day_row.addWidget(self.day_number_spin)
+        nth_day_layout.addWidget(self.day_number_spin, 1, 1)
 
         # Day name display
         self.day_name_label = QLabel("(Wednesday)")
-        self.day_name_label.setStyleSheet("color: #666; font-style: italic;")
-        day_row.addWidget(self.day_name_label)
+        self.day_name_label.setStyleSheet("color: #666; font-style: italic; font-size: 11px;")
+        nth_day_layout.addWidget(self.day_name_label, 1, 2)
 
-        day_row.addStretch()
-        nth_day_layout.addLayout(day_row)
-
-        # Second row: Time period selection
-        period_row = QHBoxLayout()
-        period_row.addWidget(QLabel("of every:"))
-
+        # Time period selection
+        nth_day_layout.addWidget(QLabel("of every:"), 2, 0)
         self.time_period_combo = QComboBox()
         self.time_period_combo.addItems([
             "Week",    # 3rd day of every week (Wednesday)
@@ -1163,27 +895,22 @@ class TaskAssignmentDialog(QDialog):
             "Year"     # 3rd day of every year (January 3rd)
         ])
         self.time_period_combo.setCurrentText("Week")
+        self.time_period_combo.setMaximumWidth(80)
         self.time_period_combo.setToolTip("Choose the time period for repetition")
-        period_row.addWidget(self.time_period_combo)
+        nth_day_layout.addWidget(self.time_period_combo, 2, 1)
 
-        period_row.addStretch()
-        nth_day_layout.addLayout(period_row)
-
-        # Third row: Interval (optional)
-        interval_row = QHBoxLayout()
-        interval_row.addWidget(QLabel("Repeat every:"))
-
+        # Interval selection
+        nth_day_layout.addWidget(QLabel("Every:"), 3, 0)
         self.pattern_interval_spin = QSpinBox()
         self.pattern_interval_spin.setRange(1, 12)
         self.pattern_interval_spin.setValue(1)
+        self.pattern_interval_spin.setMaximumWidth(60)
         self.pattern_interval_spin.setToolTip("How often to repeat (1 = every week/month/year, 2 = every 2nd week/month/year)")
-        interval_row.addWidget(self.pattern_interval_spin)
+        nth_day_layout.addWidget(self.pattern_interval_spin, 3, 1)
 
         self.interval_unit_label = QLabel("week(s)")
-        interval_row.addWidget(self.interval_unit_label)
-
-        interval_row.addStretch()
-        nth_day_layout.addLayout(interval_row)
+        self.interval_unit_label.setStyleSheet("font-size: 11px;")
+        nth_day_layout.addWidget(self.interval_unit_label, 3, 2)
 
         # Connect signals to update day name and interval unit
         self.day_number_spin.valueChanged.connect(self.update_day_name)
@@ -1196,39 +923,52 @@ class TaskAssignmentDialog(QDialog):
 
         # Schedule preview
         self.schedule_preview_label = QLabel("")
-        self.schedule_preview_label.setStyleSheet("color: #0066cc; font-style: italic; margin: 5px 0;")
+        self.schedule_preview_label.setStyleSheet("""
+            QLabel {
+                color: #0066cc;
+                font-style: italic;
+                font-size: 12px;
+                background-color: #f0f8ff;
+                border: 1px solid #4a90e2;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 5px 0;
+                line-height: 1.4;
+            }
+        """)
+        self.schedule_preview_label.setWordWrap(True)
+        self.schedule_preview_label.setMinimumHeight(60)  # Set minimum height for better visibility
 
         # Add form rows
         form_layout.addRow("Task:", self.task_combo)
-        form_layout.addRow("Assign to Staff:", self.staff_combo)
+        form_layout.addRow("Staff Assignment:", self.staff_assignment_type)
+        form_layout.addRow("Single Staff:", self.staff_combo)
+        form_layout.addRow("Multiple Staff:", self.multiple_staff_widget)
         form_layout.addRow("Priority:", self.priority_combo)
         form_layout.addRow("Schedule Type:", self.schedule_type_combo)
 
         layout.addLayout(form_layout)
 
-        # Add scheduling options section with a group box for better visibility
-        schedule_group = QGroupBox("Advanced Scheduling Configuration")
+        # Add scheduling options section with a more compact group box
+        schedule_group = QGroupBox("Scheduling Configuration")
         schedule_group.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
-                border: 2px solid #cccccc;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+                border: 1px solid #cccccc;
+                border-radius: 3px;
+                margin-top: 5px;
+                padding-top: 5px;
+                font-size: 12px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
+                left: 8px;
+                padding: 0 3px 0 3px;
             }
         """)
         schedule_group_layout = QVBoxLayout(schedule_group)
-        schedule_group_layout.setSpacing(10)
-
-        # Add instruction label
-        instruction_label = QLabel("Configure the scheduling pattern based on the selected type:")
-        instruction_label.setStyleSheet("color: #666; font-style: italic; margin-bottom: 5px;")
-        schedule_group_layout.addWidget(instruction_label)
+        schedule_group_layout.setSpacing(5)
+        schedule_group_layout.setContentsMargins(5, 5, 5, 5)
 
         # Add all scheduling option widgets to the group
         schedule_group_layout.addWidget(self.nth_day_options_widget)
@@ -1237,8 +977,13 @@ class TaskAssignmentDialog(QDialog):
         layout.addWidget(self.auto_assign_check)
         layout.addWidget(self.schedule_preview_label)
 
-        # Initially hide all scheduling options
+        # Set the content widget to the scroll area
+        scroll_area.setWidget(content_widget)
+        main_layout.addWidget(scroll_area)
+
+        # Initially hide all scheduling options and multiple staff widget
         self.nth_day_options_widget.setVisible(False)
+        self.multiple_staff_widget.setVisible(False)
 
         # Connect signals for preview updates
         self.schedule_type_combo.currentTextChanged.connect(self.update_schedule_preview)
@@ -1246,11 +991,11 @@ class TaskAssignmentDialog(QDialog):
         self.time_period_combo.currentTextChanged.connect(self.update_schedule_preview)
         self.pattern_interval_spin.valueChanged.connect(self.update_schedule_preview)
 
-        # Buttons
+        # Buttons (outside scroll area)
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
-        layout.addWidget(button_box)
+        main_layout.addWidget(button_box)
 
         # Initial preview update
         self.update_schedule_preview()
@@ -1275,6 +1020,419 @@ class TaskAssignmentDialog(QDialog):
                 self.staff_combo.addItems(staff_names)
         except Exception as e:
             pass
+
+    def setup_multiple_staff_widget(self):
+        """Setup the multiple staff assignment widget"""
+        layout = QVBoxLayout(self.multiple_staff_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)  # Reduce spacing
+
+        # Header (more compact)
+        header_label = QLabel("Daily Rotation Assignment")
+        header_label.setStyleSheet("font-weight: bold; color: #2E7D32; font-size: 14px;")
+        layout.addWidget(header_label)
+
+        # Description
+        description = QLabel("Select staff members to rotate daily. Each day will be assigned to the next staff member in sequence.")
+        description.setWordWrap(True)
+        description.setStyleSheet("color: #666; font-style: italic; margin: 5px 0px; font-size: 11px;")
+        layout.addWidget(description)
+
+        # Create scroll area for the content
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setMaximumHeight(300)  # Limit height
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        scroll_layout.setSpacing(3)
+
+        # Staff selection area (more compact)
+        staff_selection_widget = QWidget()
+        staff_selection_widget.setStyleSheet("""
+            QWidget {
+                background-color: #f0f8ff;
+                border: 1px solid #4CAF50;
+                border-radius: 3px;
+                padding: 4px;
+            }
+        """)
+        staff_layout = QVBoxLayout(staff_selection_widget)
+        staff_layout.setSpacing(2)
+
+        # Available staff checkboxes
+        self.staff_checkboxes = {}
+        self.load_staff_checkboxes(staff_layout)
+
+        scroll_layout.addWidget(staff_selection_widget)
+
+        # Daily rotation info (simplified)
+        info_widget = QWidget()
+        info_widget.setStyleSheet("""
+            QWidget {
+                background-color: #e8f5e8;
+                border: 1px solid #4CAF50;
+                border-radius: 4px;
+                padding: 8px;
+            }
+        """)
+        info_layout = QVBoxLayout(info_widget)
+        info_layout.setSpacing(5)
+
+        info_title = QLabel("🔄 Daily Rotation Pattern")
+        info_title.setStyleSheet("font-weight: bold; color: #2E7D32; font-size: 12px;")
+        info_layout.addWidget(info_title)
+
+        info_text = QLabel("• Each day will be assigned to the next staff member in sequence\n• Pattern repeats weekly (e.g., Staff A → Staff B → Staff C → Staff A...)\n• Rotation starts from tomorrow")
+        info_text.setStyleSheet("color: #333; font-size: 10px; line-height: 1.3;")
+        info_text.setWordWrap(True)
+        info_layout.addWidget(info_text)
+
+        scroll_layout.addWidget(info_widget)
+
+        scroll_area.setWidget(scroll_content)
+        layout.addWidget(scroll_area)
+
+        # Preview area (expanded for better visibility)
+        preview_group = QGroupBox("Daily Rotation Preview")
+        preview_layout = QVBoxLayout(preview_group)
+
+        self.multiple_staff_preview = QLabel("Select staff members above to see the daily rotation preview")
+        self.multiple_staff_preview.setStyleSheet("""
+            QLabel {
+                color: #0066cc;
+                font-style: italic;
+                font-size: 12px;
+                background-color: #f0f8ff;
+                border: 1px solid #4a90e2;
+                border-radius: 4px;
+                padding: 12px;
+                line-height: 1.4;
+            }
+        """)
+        self.multiple_staff_preview.setWordWrap(True)
+        self.multiple_staff_preview.setMinimumHeight(80)  # Increased minimum height
+        self.multiple_staff_preview.setMaximumHeight(120)  # Increased maximum height for better content visibility
+
+        preview_layout.addWidget(self.multiple_staff_preview)
+        layout.addWidget(preview_group)
+
+    def load_staff_checkboxes(self, layout):
+        """Load staff checkboxes for multiple selection"""
+        try:
+            if 'staff' in self.data:
+                staff_df = self.data['staff']
+                active_staff = staff_df[staff_df['status'] == 'Active']
+
+                for _, staff in active_staff.iterrows():
+                    staff_name = staff['staff_name']
+                    staff_id = staff['staff_id']
+
+                    checkbox = QCheckBox(staff_name)
+                    checkbox.setToolTip(f"Include {staff_name} in the rotation")
+                    checkbox.stateChanged.connect(self.on_staff_checkbox_changed)
+
+                    self.staff_checkboxes[staff_id] = {
+                        'checkbox': checkbox,
+                        'name': staff_name
+                    }
+
+                    layout.addWidget(checkbox)
+        except Exception as e:
+            pass
+
+    def on_staff_assignment_type_changed(self, assignment_type):
+        """Handle staff assignment type change"""
+        if assignment_type == "Single Staff Member":
+            self.staff_combo.setVisible(True)
+            self.multiple_staff_widget.setVisible(False)
+        else:  # Multiple Staff (Daily Rotation)
+            self.staff_combo.setVisible(False)
+            self.multiple_staff_widget.setVisible(True)
+            self.update_multiple_staff_preview()
+
+        # Force layout update
+        self.layout().update()
+        self.adjustSize()
+
+    def on_staff_checkbox_changed(self):
+        """Handle staff checkbox state changes"""
+        # Update preview for daily rotation
+        self.update_multiple_staff_preview()
+
+
+
+    def setup_staff_pattern_configs(self):
+        """Setup individual pattern configurations for each staff member"""
+        # Clear existing widgets
+        for i in reversed(range(self.staff_pattern_layout.count())):
+            child = self.staff_pattern_layout.itemAt(i).widget()
+            if child:
+                child.setParent(None)
+
+        # Create a more organized layout for staff patterns
+        selected_staff = []
+        for staff_id, staff_info in self.staff_checkboxes.items():
+            if staff_info['checkbox'].isChecked():
+                selected_staff.append((staff_id, staff_info['name']))
+
+        if not selected_staff:
+            # Show message when no staff selected
+            no_staff_label = QLabel("Please select staff members above to configure their patterns.")
+            no_staff_label.setStyleSheet("color: #666; font-style: italic; padding: 10px; text-align: center;")
+            self.staff_pattern_layout.addWidget(no_staff_label)
+            return
+
+        # Create a compact grid layout for multiple staff patterns
+        if len(selected_staff) > 2:
+            # Use a more compact approach for many staff members
+            self.create_compact_staff_patterns(selected_staff)
+        else:
+            # Use detailed layout for few staff members
+            for staff_id, staff_name in selected_staff:
+                self.add_staff_pattern_config(staff_id, staff_name)
+
+    def add_staff_pattern_config(self, staff_id, staff_name):
+        """Add pattern configuration for a specific staff member (detailed view)"""
+        config_widget = QWidget()
+        config_widget.setStyleSheet("""
+            QWidget {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 8px;
+                margin: 2px;
+            }
+        """)
+
+        # Use a more organized layout
+        main_layout = QVBoxLayout(config_widget)
+        main_layout.setSpacing(5)
+
+        # Staff name header
+        name_label = QLabel(f"📋 {staff_name}")
+        name_label.setStyleSheet("""
+            font-weight: bold;
+            font-size: 12px;
+            color: #2c3e50;
+            padding: 2px 0px;
+            border-bottom: 1px solid #bdc3c7;
+        """)
+        main_layout.addWidget(name_label)
+
+        # Pattern configuration in a horizontal layout
+        pattern_layout = QHBoxLayout()
+        pattern_layout.setSpacing(8)
+
+        # Day configuration
+        day_group = QVBoxLayout()
+        day_label = QLabel("Day:")
+        day_label.setStyleSheet("font-size: 10px; color: #666;")
+        day_group.addWidget(day_label)
+
+        day_spin = QSpinBox()
+        day_spin.setRange(1, 31)
+        day_spin.setValue(1)
+        day_spin.setMaximumWidth(60)
+        day_spin.valueChanged.connect(self.update_multiple_staff_preview)
+        day_group.addWidget(day_spin)
+        pattern_layout.addLayout(day_group)
+
+        # Period configuration
+        period_group = QVBoxLayout()
+        period_label = QLabel("Period:")
+        period_label.setStyleSheet("font-size: 10px; color: #666;")
+        period_group.addWidget(period_label)
+
+        period_combo = QComboBox()
+        period_combo.addItems(["Week", "Month", "Year"])
+        period_combo.setMaximumWidth(80)
+        period_combo.currentTextChanged.connect(self.update_multiple_staff_preview)
+        period_group.addWidget(period_combo)
+        pattern_layout.addLayout(period_group)
+
+        # Interval configuration
+        interval_group = QVBoxLayout()
+        interval_label = QLabel("Every:")
+        interval_label.setStyleSheet("font-size: 10px; color: #666;")
+        interval_group.addWidget(interval_label)
+
+        interval_spin = QSpinBox()
+        interval_spin.setRange(1, 12)
+        interval_spin.setValue(1)
+        interval_spin.setMaximumWidth(60)
+        interval_spin.valueChanged.connect(self.update_multiple_staff_preview)
+        interval_group.addWidget(interval_spin)
+        pattern_layout.addLayout(interval_group)
+
+        # Add stretch to push everything to the left
+        pattern_layout.addStretch()
+
+        main_layout.addLayout(pattern_layout)
+
+        # Store references for later access
+        if not hasattr(self, 'staff_pattern_configs'):
+            self.staff_pattern_configs = {}
+
+        self.staff_pattern_configs[staff_id] = {
+            'day_spin': day_spin,
+            'period_combo': period_combo,
+            'interval_spin': interval_spin,
+            'widget': config_widget
+        }
+
+        self.staff_pattern_layout.addWidget(config_widget)
+
+    def create_compact_staff_patterns(self, selected_staff):
+        """Create a more compact layout for multiple staff patterns"""
+        # Create a table-like layout for multiple staff
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(12, 10, 12, 10)  # Further increased margins for better header spacing
+        header_layout.setSpacing(15)  # Add spacing between header columns
+
+        # Headers with better proportions
+        staff_label = QLabel("Staff Member")
+        staff_label.setMinimumWidth(150)  # Set minimum width for staff column
+        header_layout.addWidget(staff_label, 3)  # Increased proportion for staff names
+
+        day_label = QLabel("Day")
+        day_label.setMinimumWidth(60)
+        header_layout.addWidget(day_label, 1)
+
+        period_label = QLabel("Period")
+        period_label.setMinimumWidth(80)
+        header_layout.addWidget(period_label, 1)
+
+        every_label = QLabel("Every")
+        every_label.setMinimumWidth(60)
+        header_layout.addWidget(every_label, 1)
+
+        # Style the header
+        header_widget.setStyleSheet("""
+            QWidget {
+                background-color: #e3f2fd;
+                border: 1px solid #2196f3;
+                border-radius: 3px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+        """)
+
+        self.staff_pattern_layout.addWidget(header_widget)
+
+        # Add each staff member as a compact row
+        for staff_id, staff_name in selected_staff:
+            self.add_compact_staff_pattern_row(staff_id, staff_name)
+
+    def add_compact_staff_pattern_row(self, staff_id, staff_name):
+        """Add a compact row for staff pattern configuration"""
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(12, 8, 12, 8)  # Further increased margins for better spacing
+        row_layout.setSpacing(15)  # Further increased spacing between controls
+
+        # Staff name (show more characters)
+        name_label = QLabel(staff_name[:18] + "..." if len(staff_name) > 18 else staff_name)
+        name_label.setToolTip(staff_name)
+        name_label.setMinimumWidth(150)  # Increased minimum width
+        name_label.setStyleSheet("font-weight: bold; padding: 2px;")
+        row_layout.addWidget(name_label, 3)  # Increased proportion
+
+        # Day number
+        day_spin = QSpinBox()
+        day_spin.setRange(1, 31)
+        day_spin.setValue(1)
+        day_spin.setMinimumWidth(60)  # Increased minimum width
+        day_spin.setMaximumWidth(80)  # Increased maximum width
+        day_spin.valueChanged.connect(self.update_multiple_staff_preview)
+        row_layout.addWidget(day_spin, 1)
+
+        # Period
+        period_combo = QComboBox()
+        period_combo.addItems(["Week", "Month", "Year"])
+        period_combo.setMinimumWidth(80)  # Increased minimum width
+        period_combo.setMaximumWidth(100)  # Increased maximum width
+        period_combo.currentTextChanged.connect(self.update_multiple_staff_preview)
+        row_layout.addWidget(period_combo, 1)
+
+        # Interval
+        interval_spin = QSpinBox()
+        interval_spin.setRange(1, 12)
+        interval_spin.setValue(1)
+        interval_spin.setMinimumWidth(60)  # Increased minimum width
+        interval_spin.setMaximumWidth(80)  # Increased maximum width
+        interval_spin.valueChanged.connect(self.update_multiple_staff_preview)
+        row_layout.addWidget(interval_spin, 1)
+
+        # Style the row
+        row_widget.setStyleSheet("""
+            QWidget {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 2px;
+                margin: 1px;
+            }
+        """)
+
+        # Store references
+        if not hasattr(self, 'staff_pattern_configs'):
+            self.staff_pattern_configs = {}
+
+        self.staff_pattern_configs[staff_id] = {
+            'day_spin': day_spin,
+            'period_combo': period_combo,
+            'interval_spin': interval_spin,
+            'widget': row_widget
+        }
+
+        self.staff_pattern_layout.addWidget(row_widget)
+
+    def update_multiple_staff_preview(self):
+        """Update the daily rotation assignment preview"""
+        try:
+            selected_staff = []
+            for staff_id, staff_info in self.staff_checkboxes.items():
+                if staff_info['checkbox'].isChecked():
+                    selected_staff.append(staff_info['name'])
+
+            if not selected_staff:
+                self.multiple_staff_preview.setText("Select staff members above to see the daily rotation preview")
+                return
+
+            if len(selected_staff) == 1:
+                preview_text = f"🔄 Daily Assignment: {selected_staff[0]} will be assigned every day"
+            elif len(selected_staff) <= 7:
+                # Show the weekly rotation pattern
+                days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                rotation_preview = []
+                for i in range(7):
+                    staff_name = selected_staff[i % len(selected_staff)]
+                    short_name = staff_name[:10] + "..." if len(staff_name) > 10 else staff_name
+                    rotation_preview.append(f"{days[i]}: {short_name}")
+
+                preview_text = f"🔄 Weekly Rotation Pattern:\n" + "\n".join(rotation_preview[:4])
+                if len(rotation_preview) > 4:
+                    preview_text += f"\n... and {len(rotation_preview)-4} more days"
+                preview_text += f"\n\n📅 Pattern repeats every week with {len(selected_staff)} staff members"
+            else:
+                # Many staff members
+                preview_text = f"🔄 Daily Rotation: {len(selected_staff)} staff members\n📅 Each day assigned to next staff member in sequence\n🔁 Pattern repeats continuously"
+
+            self.multiple_staff_preview.setText(preview_text)
+
+        except Exception as e:
+            self.multiple_staff_preview.setText("Unable to generate preview - please check your selection")
+
+    def get_weekday_number(self, day_name):
+        """Convert day name to weekday number (0=Monday, 6=Sunday)"""
+        day_mapping = {
+            'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+            'friday': 4, 'saturday': 5, 'sunday': 6
+        }
+        return day_mapping.get(day_name.lower(), 0)
 
     def update_day_name(self, day_number):
         """Update the day name display when day number changes"""
@@ -1344,6 +1502,13 @@ class TaskAssignmentDialog(QDialog):
     def update_schedule_preview(self):
         """Update the schedule preview text"""
         try:
+            assignment_type = self.staff_assignment_type.currentText()
+
+            if assignment_type == "Multiple Staff (Daily Rotation)":
+                # For multiple staff, show the multiple staff preview instead
+                self.schedule_preview_label.setText("Preview: See daily rotation assignment preview below")
+                return
+
             schedule_type = self.schedule_type_combo.currentText()
             preview_text = ""
 
@@ -1390,109 +1555,239 @@ class TaskAssignmentDialog(QDialog):
         return suffix
 
     def accept(self):
-        """Save enhanced task assignment"""
+        """Save enhanced task assignment with support for multiple staff"""
         try:
-            if not self.task_combo.currentText() or not self.staff_combo.currentText():
-                QMessageBox.warning(self, "Validation Error", "Please select both task and staff member.")
+            if not self.task_combo.currentText():
+                QMessageBox.warning(self, "Validation Error", "Please enter a task name.")
                 return
 
-            # Get staff ID
-            staff_name = self.staff_combo.currentText()
-            staff_df = self.data['staff']
-            staff_row = staff_df[staff_df['staff_name'] == staff_name]
-            staff_id = staff_row.iloc[0]['staff_id'] if not staff_row.empty else 0
+            assignment_type = self.staff_assignment_type.currentText()
 
-            # Determine schedule parameters based on type
-            schedule_type_text = self.schedule_type_combo.currentText()
-            schedule_type = "manual"
-            schedule_interval = 1
-            day_number = 1
-            time_period = "Week"
-
-            if schedule_type_text == "Daily":
-                schedule_type = "daily"
-                schedule_interval = 1
-            elif schedule_type_text == "Nth Day Pattern":
-                schedule_type = "nth_day_pattern"
-                day_number = self.day_number_spin.value()
-                time_period = self.time_period_combo.currentText()
-                schedule_interval = self.pattern_interval_spin.value()
-
-            # Update or create task assignment
-            task_name = self.task_combo.currentText().strip()
-            tasks_df = self.data['cleaning_maintenance']
-            task_index = tasks_df[tasks_df['task_name'] == task_name].index
-
-            # Add new fields for nth day pattern scheduling if they don't exist
-            if 'day_number' not in tasks_df.columns:
-                tasks_df['day_number'] = 1
-            if 'time_period' not in tasks_df.columns:
-                tasks_df['time_period'] = "Week"
-
-            # Set next due date based on schedule type
-            from datetime import datetime, timedelta
-            now = datetime.now()
-
-            if schedule_type == "daily":
-                next_due = now + timedelta(days=schedule_interval)
-            elif schedule_type == "nth_day_pattern":
-                next_due = self.calculate_nth_day_pattern(now, day_number, time_period, schedule_interval)
-            else:
-                next_due = now + timedelta(days=1)  # Default to tomorrow
-
-            if not task_index.empty:
-                # Update existing task
-                idx = task_index[0]
-                tasks_df.loc[idx, 'assigned_staff_id'] = staff_id
-                tasks_df.loc[idx, 'assigned_staff_name'] = staff_name
-                tasks_df.loc[idx, 'schedule_type'] = schedule_type
-                tasks_df.loc[idx, 'schedule_interval'] = schedule_interval
-                tasks_df.loc[idx, 'day_number'] = day_number
-                tasks_df.loc[idx, 'time_period'] = time_period
-                tasks_df.loc[idx, 'priority'] = self.priority_combo.currentText()
-                tasks_df.loc[idx, 'auto_assign'] = 1 if self.auto_assign_check.isChecked() else 0
-                tasks_df.loc[idx, 'next_due'] = next_due.strftime('%Y-%m-%d %H:%M:%S')
-
-                action_text = "updated"
-            else:
-                # Create new task
-                new_task_id = tasks_df['task_id'].max() + 1 if not tasks_df.empty else 1
-
-                new_task = {
-                    'task_id': new_task_id,
-                    'task_name': task_name,
-                    'frequency': schedule_type_text,
-                    'last_completed': '',
-                    'next_due': next_due.strftime('%Y-%m-%d %H:%M:%S'),
-                    'priority': self.priority_combo.currentText(),
-                    'notes': f'Created via staff assignment - {schedule_type_text}',
-                    'assigned_staff_id': staff_id,
-                    'assigned_staff_name': staff_name,
-                    'schedule_type': schedule_type,
-                    'schedule_interval': schedule_interval,
-                    'day_number': day_number,
-                    'time_period': time_period,
-                    'auto_assign': 1 if self.auto_assign_check.isChecked() else 0,
-                    'rotation_order': ''
-                }
-
-                # Add new row to dataframe
-                new_row_df = pd.DataFrame([new_task])
-                tasks_df = pd.concat([tasks_df, new_row_df], ignore_index=True)
-                self.data['cleaning_maintenance'] = tasks_df
-
-                action_text = "created and assigned"
-
-            # Save to CSV
-            tasks_df.to_csv('data/cleaning_maintenance.csv', index=False)
-
-            QMessageBox.information(self, "Success",
-                f"Task '{task_name}' {action_text} to {staff_name} with {schedule_type_text.lower()} scheduling.")
+            if assignment_type == "Single Staff Member":
+                self.save_single_staff_assignment()
+            else:  # Multiple Staff (Daily Rotation)
+                self.save_multiple_staff_assignment()
 
             super().accept()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to assign task: {str(e)}")
+
+    def save_single_staff_assignment(self):
+        """Save single staff assignment (original functionality)"""
+        if not self.staff_combo.currentText():
+            QMessageBox.warning(self, "Validation Error", "Please select a staff member.")
+            return
+
+        # Get staff ID
+        staff_name = self.staff_combo.currentText()
+        staff_df = self.data['staff']
+        staff_row = staff_df[staff_df['staff_name'] == staff_name]
+        staff_id = staff_row.iloc[0]['staff_id'] if not staff_row.empty else 0
+
+        # Determine schedule parameters based on type
+        schedule_type_text = self.schedule_type_combo.currentText()
+        schedule_type = "manual"
+        schedule_interval = 1
+        day_number = 1
+        time_period = "Week"
+
+        if schedule_type_text == "Daily":
+            schedule_type = "daily"
+            schedule_interval = 1
+        elif schedule_type_text == "Nth Day Pattern":
+            schedule_type = "nth_day_pattern"
+            day_number = self.day_number_spin.value()
+            time_period = self.time_period_combo.currentText()
+            schedule_interval = self.pattern_interval_spin.value()
+
+        # Update or create task assignment
+        task_name = self.task_combo.currentText().strip()
+        tasks_df = self.data['cleaning_maintenance']
+
+        # Add new fields if they don't exist
+        self.ensure_task_columns(tasks_df)
+
+        # Set next due date based on schedule type
+        from datetime import datetime, timedelta
+        now = datetime.now()
+
+        if schedule_type == "daily":
+            next_due = now + timedelta(days=schedule_interval)
+        elif schedule_type == "nth_day_pattern":
+            next_due = self.calculate_nth_day_pattern(now, day_number, time_period, schedule_interval)
+        else:
+            next_due = now + timedelta(days=1)  # Default to tomorrow
+
+        # Create or update task
+        self.create_or_update_task(tasks_df, task_name, {
+            'assigned_staff_id': staff_id,
+            'assigned_staff_name': staff_name,
+            'schedule_type': schedule_type,
+            'schedule_interval': schedule_interval,
+            'day_number': day_number,
+            'time_period': time_period,
+            'priority': self.priority_combo.currentText(),
+            'auto_assign': 1 if self.auto_assign_check.isChecked() else 0,
+            'next_due': next_due.strftime('%Y-%m-%d %H:%M:%S'),
+            'rotation_order': '',
+            'multiple_staff_config': ''
+        })
+
+        # Save to CSV
+        tasks_df.to_csv('data/cleaning_maintenance.csv', index=False)
+
+        # Update the data dictionary to ensure changes are reflected
+        self.data['cleaning_maintenance'] = tasks_df
+
+        # Notify parent to refresh data - try multiple refresh methods
+        parent = self.parent()
+        refreshed = False
+
+        # Try to find the main application window
+        main_app = parent
+        while main_app and not hasattr(main_app, 'refresh_all_tabs'):
+            main_app = main_app.parent() if hasattr(main_app, 'parent') else None
+
+        if main_app and hasattr(main_app, 'refresh_all_tabs'):
+            # Refresh the main application
+            main_app.data = main_app.load_data()  # Reload data first
+            main_app.refresh_all_tabs()
+            refreshed = True
+        elif hasattr(parent, 'refresh_all_data'):
+            parent.refresh_all_data()
+            refreshed = True
+        elif hasattr(parent, 'refresh_data'):
+            parent.refresh_data()
+            refreshed = True
+
+        if not refreshed:
+            print("Warning: Could not find refresh method in parent")
+
+        QMessageBox.information(self, "Success",
+            f"Task '{task_name}' assigned to {staff_name} with {schedule_type_text.lower()} scheduling.")
+
+    def save_multiple_staff_assignment(self):
+        """Save multiple staff assignment with daily rotation"""
+        # Get selected staff
+        selected_staff = []
+        for staff_id, staff_info in self.staff_checkboxes.items():
+            if staff_info['checkbox'].isChecked():
+                selected_staff.append((staff_id, staff_info['name']))
+
+        if not selected_staff:
+            QMessageBox.warning(self, "Validation Error", "Please select at least one staff member.")
+            return
+
+        # Daily rotation logic (simplified - no complex rotation types)
+        task_name = self.task_combo.currentText().strip()
+        tasks_df = self.data['cleaning_maintenance']
+
+        # Add new fields if they don't exist
+        self.ensure_task_columns(tasks_df)
+
+        from datetime import datetime, timedelta
+        now = datetime.now()
+
+        # Create a single task with daily rotation pattern
+        rotation_order = ';'.join([str(staff_id) for staff_id, _ in selected_staff])
+        staff_names = ', '.join([staff_name for _, staff_name in selected_staff])
+
+        # Calculate next due date (start from tomorrow for daily rotation)
+        next_due = now + timedelta(days=1)
+
+        # Create or update task with daily rotation
+        self.create_or_update_task(tasks_df, task_name, {
+            'assigned_staff_id': selected_staff[0][0],  # First staff as primary
+            'assigned_staff_name': staff_names,
+            'schedule_type': 'daily_rotation',
+            'schedule_interval': 1,  # Daily
+            'day_number': 1,
+            'time_period': 'Week',
+            'priority': self.priority_combo.currentText(),
+            'auto_assign': 1 if self.auto_assign_check.isChecked() else 0,
+            'next_due': next_due.strftime('%Y-%m-%d %H:%M:%S'),
+            'rotation_order': rotation_order,
+            'multiple_staff_config': f'daily_rotation:{len(selected_staff)}:weekly_cycle'
+        })
+
+        success_msg = f"Task '{task_name}' assigned to {len(selected_staff)} staff members with daily rotation: {staff_names}"
+
+        # Save to CSV
+        tasks_df.to_csv('data/cleaning_maintenance.csv', index=False)
+
+        # Update the data dictionary to ensure changes are reflected
+        self.data['cleaning_maintenance'] = tasks_df
+
+        # Notify parent to refresh data - try multiple refresh methods
+        parent = self.parent()
+        refreshed = False
+
+        # Try to find the main application window
+        main_app = parent
+        while main_app and not hasattr(main_app, 'refresh_all_tabs'):
+            main_app = main_app.parent() if hasattr(main_app, 'parent') else None
+
+        if main_app and hasattr(main_app, 'refresh_all_tabs'):
+            # Refresh the main application
+            main_app.data = main_app.load_data()  # Reload data first
+            main_app.refresh_all_tabs()
+            refreshed = True
+        elif hasattr(parent, 'refresh_all_data'):
+            parent.refresh_all_data()
+            refreshed = True
+        elif hasattr(parent, 'refresh_data'):
+            parent.refresh_data()
+            refreshed = True
+
+        if not refreshed:
+            print("Warning: Could not find refresh method in parent")
+
+        QMessageBox.information(self, "Success", success_msg)
+
+    def ensure_task_columns(self, tasks_df):
+        """Ensure all required columns exist in the tasks dataframe"""
+        required_columns = [
+            'day_number', 'time_period', 'rotation_order', 'multiple_staff_config'
+        ]
+
+        for column in required_columns:
+            if column not in tasks_df.columns:
+                if column == 'day_number':
+                    tasks_df[column] = 1
+                elif column == 'time_period':
+                    tasks_df[column] = "Week"
+                else:
+                    tasks_df[column] = ''
+
+    def create_or_update_task(self, tasks_df, task_name, task_data):
+        """Create or update a task with the given data"""
+        task_index = tasks_df[tasks_df['task_name'] == task_name].index
+
+        if not task_index.empty:
+            # Update existing task
+            idx = task_index[0]
+            for key, value in task_data.items():
+                tasks_df.loc[idx, key] = value
+        else:
+            # Create new task
+            new_task_id = tasks_df['task_id'].max() + 1 if not tasks_df.empty else 1
+
+            new_task = {
+                'task_id': new_task_id,
+                'task_name': task_name,
+                'frequency': self.schedule_type_combo.currentText(),
+                'last_completed': '',
+                'notes': f'Created via staff assignment - {self.schedule_type_combo.currentText()}'
+            }
+
+            # Add all the task data
+            new_task.update(task_data)
+
+            # Add new row to dataframe
+            new_row_df = pd.DataFrame([new_task])
+            tasks_df = pd.concat([tasks_df, new_row_df], ignore_index=True)
+            self.data['cleaning_maintenance'] = tasks_df
 
     def calculate_nth_day_pattern(self, base_date, day_number, time_period, interval):
         """Calculate the next occurrence of nth day pattern"""
@@ -1664,12 +1959,26 @@ class AutoSchedulingEngine:
             assignment_date = start_date
             rotation_index = 0
 
+            # For daily rotation, calculate the starting rotation index based on the current date
+            if schedule_type == 'daily_rotation' and staff_rotation:
+                # Calculate days since epoch to determine rotation position
+                epoch_date = datetime(2024, 1, 1)  # Reference date
+                days_since_epoch = (assignment_date - epoch_date).days
+                rotation_index = days_since_epoch % len(staff_rotation)
+
             while assignment_date <= start_date + timedelta(days=days_ahead):
                 # Determine assigned staff
                 if staff_rotation and len(staff_rotation) > 0:
-                    staff_id = staff_rotation[rotation_index % len(staff_rotation)]
-                    staff_name = self.get_staff_name_by_id(staff_id)
-                    rotation_index += 1
+                    if schedule_type == 'daily_rotation':
+                        # Daily rotation: each day gets the next staff member in sequence
+                        staff_id = staff_rotation[rotation_index % len(staff_rotation)]
+                        staff_name = self.get_staff_name_by_id(staff_id)
+                        rotation_index += 1  # Increment for next day
+                    else:
+                        # Weekly/other rotation: each period gets the next staff member
+                        staff_id = staff_rotation[rotation_index % len(staff_rotation)]
+                        staff_name = self.get_staff_name_by_id(staff_id)
+                        rotation_index += 1
                 else:
                     staff_id = task.get('assigned_staff_id', '')
                     staff_name = task.get('assigned_staff_name', '')
@@ -1780,10 +2089,23 @@ class AutoSchedulingEngine:
             self.logger.error(f"Error checking assignment creation: {e}")
             return True
 
+    def get_staff_name_by_id(self, staff_id):
+        """Get staff name by staff ID"""
+        try:
+            if 'staff' in self.data:
+                staff_df = self.data['staff']
+                staff_row = staff_df[staff_df['staff_id'] == staff_id]
+                if not staff_row.empty:
+                    return staff_row.iloc[0]['staff_name']
+            return f"Staff {staff_id}"
+        except Exception as e:
+            self.logger.error(f"Error getting staff name for ID {staff_id}: {e}")
+            return f"Staff {staff_id}"
+
     def get_next_assignment_date(self, current_date, schedule_type, interval, task=None):
         """Calculate the next assignment date - Enhanced for complex patterns"""
         try:
-            if schedule_type == 'daily':
+            if schedule_type == 'daily' or schedule_type == 'daily_rotation':
                 return current_date + timedelta(days=interval)
 
             elif schedule_type == 'weekly':
