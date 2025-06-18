@@ -208,89 +208,242 @@ class EnhancedBudgetWidget(QWidget):
         parent_layout.addWidget(self.tabs)
     
     def create_allocation_tab(self):
-        """Create budget allocation tab"""
+        """Create enhanced budget allocation tab with Kitchen Essentials and other categories"""
         allocation_widget = QWidget()
         layout = QVBoxLayout(allocation_widget)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
-        
-        # Budget allocation table
-        self.budget_table = QTableWidget()
-        self.budget_table.setColumnCount(6)
-        self.budget_table.setHorizontalHeaderLabels([
-            "Category", "Budget Amount", "Spent Amount", "Remaining", "Percentage Used", "Status"
-        ])
-        
-        # Modern table styling
-        self.budget_table.setStyleSheet("""
-            QTableWidget {
-                background-color: white;
-                border: 1px solid #e2e8f0;
-                border-radius: 12px;
-                gridline-color: #f1f5f9;
-                selection-background-color: #dbeafe;
-                font-size: 12px;
-            }
-            QTableWidget::item {
-                padding: 12px 8px;
-                border-bottom: 1px solid #f1f5f9;
-            }
-            QHeaderView::section {
-                background-color: #f8fafc;
+
+        # Header with add category button
+        header_layout = QHBoxLayout()
+        header_label = QLabel("Budget Categories")
+        header_label.setFont(QFont("Arial", 16, QFont.Bold))
+        header_layout.addWidget(header_label)
+        header_layout.addStretch()
+
+        # Add Category button
+        add_category_btn = QPushButton("➕ Add Category")
+        add_category_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #27ae60;
+                color: white;
                 border: none;
-                border-bottom: 1px solid #e2e8f0;
-                border-right: 1px solid #e2e8f0;
-                padding: 12px 8px;
-                font-weight: 600;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: bold;
                 font-size: 12px;
-                color: #374151;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
             }
         """)
-        
-        # Set column widths
+        add_category_btn.clicked.connect(self.show_add_category_dialog)
+        header_layout.addWidget(add_category_btn)
+        layout.addLayout(header_layout)
+
+        # Enhanced budget allocation table
+        self.budget_table = QTableWidget()
+        self.budget_table.setColumnCount(7)
+        self.budget_table.setHorizontalHeaderLabels([
+            "Category", "Amount Allocated", "Amount Spent", "Amount Balance", "% Used", "Status", "Actions"
+        ])
+
+        # Style the table
+        self.budget_table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid #ecf0f1;
+                border-radius: 8px;
+                gridline-color: #bdc3c7;
+                selection-background-color: #3498db;
+                selection-color: white;
+                font-size: 12px;
+                background-color: white;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #ecf0f1;
+                min-height: 25px;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+                font-size: 12px;
+            }
+        """)
+
+        # Enable manual column resizing with proper default widths
         header = self.budget_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)           # Category
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Budget Amount
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Spent Amount
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Remaining
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Percentage
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Status
-        
+
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(7):
+            header.setSectionResizeMode(col, QHeaderView.Interactive)
+
+        # Set default column widths for better initial display (increased to prevent overlapping)
+        budget_default_widths = {
+            0: 220,  # Category (hierarchical display)
+            1: 130,  # Amount Allocated
+            2: 130,  # Amount Spent
+            3: 130,  # Amount Balance
+            4: 90,   # % Used
+            5: 120,  # Status (increased to prevent overlap)
+            6: 120   # Actions (Delete button) (increased for better button display)
+        }
+
+        # Apply default widths
+        for col_index, width in budget_default_widths.items():
+            self.budget_table.setColumnWidth(col_index, width)
+
+        # Enable auto-fit functionality (double-click column borders to auto-fit)
+        header.sectionDoubleClicked.connect(self.auto_fit_column)
+
         layout.addWidget(self.budget_table)
         
         self.tabs.addTab(allocation_widget, "Budget Allocation")
+
+    def auto_fit_column(self, logical_index):
+        """Auto-fit column width to content when header is double-clicked"""
+        try:
+            self.budget_table.resizeColumnToContents(logical_index)
+            print(f"🔧 Auto-fitted budget column {logical_index} to content")
+        except Exception as e:
+            print(f"Error auto-fitting budget column {logical_index}: {e}")
+
+    def auto_fit_expense_column(self, logical_index):
+        """Auto-fit expense table column width to content when header is double-clicked"""
+        try:
+            self.expense_table.resizeColumnToContents(logical_index)
+            print(f"🔧 Auto-fitted expense column {logical_index} to content")
+        except Exception as e:
+            print(f"Error auto-fitting expense column {logical_index}: {e}")
     
     def create_expense_tracking_tab(self):
-        """Create expense tracking tab"""
+        """Create enhanced expense tracking tab with transaction history"""
         expense_widget = QWidget()
         layout = QVBoxLayout(expense_widget)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
-        
+
+        # Header with summary cards
+        summary_layout = QHBoxLayout()
+
+        # Total Expenses Card
+        total_card = QFrame()
+        total_card.setStyleSheet("""
+            QFrame {
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+            }
+        """)
+        total_layout = QVBoxLayout(total_card)
+        total_title = QLabel("Total Expenses")
+        total_title.setStyleSheet("font-weight: bold; color: #374151;")
+        self.total_expenses_label = QLabel("₹0.00")
+        self.total_expenses_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #059669;")
+        total_layout.addWidget(total_title)
+        total_layout.addWidget(self.total_expenses_label)
+        summary_layout.addWidget(total_card)
+
+        # This Month Card
+        month_card = QFrame()
+        month_card.setStyleSheet(total_card.styleSheet())
+        month_layout = QVBoxLayout(month_card)
+        month_title = QLabel("This Month")
+        month_title.setStyleSheet("font-weight: bold; color: #374151;")
+        self.month_expenses_label = QLabel("₹0.00")
+        self.month_expenses_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #dc2626;")
+        month_layout.addWidget(month_title)
+        month_layout.addWidget(self.month_expenses_label)
+        summary_layout.addWidget(month_card)
+
+        # Budget Remaining Card
+        remaining_card = QFrame()
+        remaining_card.setStyleSheet(total_card.styleSheet())
+        remaining_layout = QVBoxLayout(remaining_card)
+        remaining_title = QLabel("Budget Remaining")
+        remaining_title.setStyleSheet("font-weight: bold; color: #374151;")
+        self.remaining_budget_label = QLabel("₹0.00")
+        self.remaining_budget_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2563eb;")
+        remaining_layout.addWidget(remaining_title)
+        remaining_layout.addWidget(self.remaining_budget_label)
+        summary_layout.addWidget(remaining_card)
+
+        layout.addLayout(summary_layout)
+
         # Expense tracking table
+        table_header = QLabel("Transaction History")
+        table_header.setStyleSheet("font-size: 16px; font-weight: bold; color: #374151; margin-top: 20px;")
+        layout.addWidget(table_header)
+
         self.expense_table = QTableWidget()
-        self.expense_table.setColumnCount(7)
+        self.expense_table.setColumnCount(8)
         self.expense_table.setHorizontalHeaderLabels([
-            "Date", "Category", "Description", "Amount", "Source", "Receipt", "Notes"
+            "Date", "Category", "Description", "Amount", "Type", "Source", "Receipt", "Notes"
         ])
-        
+
         # Apply modern styling
-        self.expense_table.setStyleSheet(self.budget_table.styleSheet())
-        
-        # Set column widths
+        self.expense_table.setStyleSheet("""
+            QTableWidget {
+                border: 2px solid #ecf0f1;
+                border-radius: 8px;
+                gridline-color: #bdc3c7;
+                selection-background-color: #3498db;
+                selection-color: white;
+                font-size: 12px;
+                background-color: white;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #ecf0f1;
+                min-height: 25px;
+            }
+            QHeaderView::section {
+                background-color: #34495e;
+                color: white;
+                padding: 10px;
+                border: none;
+                font-weight: bold;
+                font-size: 12px;
+            }
+        """)
+
+        # Enable manual column resizing for expense table
         header = self.expense_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Date
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Category
-        header.setSectionResizeMode(2, QHeaderView.Stretch)           # Description
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Amount
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Source
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)  # Receipt
-        header.setSectionResizeMode(6, QHeaderView.Stretch)           # Notes
-        
+
+        # Set ALL columns to Interactive mode for manual resizing
+        for col in range(8):
+            header.setSectionResizeMode(col, QHeaderView.Interactive)
+
+        # Set default column widths for expense table
+        expense_default_widths = {
+            0: 100,  # Date
+            1: 120,  # Category
+            2: 200,  # Description
+            3: 100,  # Amount
+            4: 80,   # Type
+            5: 100,  # Source
+            6: 80,   # Receipt
+            7: 150   # Notes
+        }
+
+        # Apply default widths
+        for col_index, width in expense_default_widths.items():
+            self.expense_table.setColumnWidth(col_index, width)
+
+        # Enable auto-fit functionality for expense table
+        header.sectionDoubleClicked.connect(self.auto_fit_expense_column)
+
         layout.addWidget(self.expense_table)
-        
-        # Add expense button
-        add_expense_btn = QPushButton("Add Manual Expense")
+
+        # Action buttons
+        button_layout = QHBoxLayout()
+
+        # Add Manual Expense button
+        add_expense_btn = QPushButton("➕ Add Manual Expense")
         add_expense_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2563eb;
@@ -306,13 +459,31 @@ class EnhancedBudgetWidget(QWidget):
             }
         """)
         add_expense_btn.clicked.connect(self.add_manual_expense)
-        
-        button_layout = QHBoxLayout()
+
+        # Add Repair/Bills Transaction button
+        add_transaction_btn = QPushButton("🔧 Add Repair/Bills")
+        add_transaction_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc2626;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-weight: 500;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #b91c1c;
+            }
+        """)
+        add_transaction_btn.clicked.connect(self.add_repair_bills_transaction)
+
         button_layout.addStretch()
+        button_layout.addWidget(add_transaction_btn)
         button_layout.addWidget(add_expense_btn)
         layout.addLayout(button_layout)
-        
-        self.tabs.addTab(expense_widget, "Expense Tracking")
+
+        self.tabs.addTab(expense_widget, "Transaction Tracking")
     
     def create_shopping_integration_tab(self):
         """Create shopping integration tab"""
@@ -439,114 +610,384 @@ class EnhancedBudgetWidget(QWidget):
             self.logger.error(f"Error populating budget overview: {e}")
     
     def populate_budget_table(self):
-        """Populate budget allocation table"""
+        """Populate enhanced budget allocation table with hierarchical structure"""
         try:
+            # Clear existing data
+            self.budget_table.setRowCount(0)
+
+            # Initialize default categories if budget is empty
+            self.initialize_default_budget_categories()
+
             if 'budget' not in self.data or self.data['budget'].empty:
                 return
-            
+
+            # Get inventory categories for Kitchen Essentials subcategories
+            inventory_categories = self.get_inventory_categories()
+
+            # Organize budget data
             budget_df = self.data['budget']
-            self.budget_table.setRowCount(len(budget_df))
-            
-            for row, (_, budget) in enumerate(budget_df.iterrows()):
-                # Category
-                category_item = QTableWidgetItem(str(budget.get('category', '')))
-                self.budget_table.setItem(row, 0, category_item)
-                
-                # Budget Amount
-                budget_amount = budget.get('budget_amount', 0)
-                budget_item = QTableWidgetItem(f"₹{budget_amount:,.2f}")
-                self.budget_table.setItem(row, 1, budget_item)
-                
-                # Spent Amount
-                spent_amount = budget.get('actual_amount', 0)
-                spent_item = QTableWidgetItem(f"₹{spent_amount:,.2f}")
-                self.budget_table.setItem(row, 2, spent_item)
-                
-                # Remaining
-                remaining = budget_amount - spent_amount
-                remaining_item = QTableWidgetItem(f"₹{remaining:,.2f}")
-                self.budget_table.setItem(row, 3, remaining_item)
-                
-                # Percentage Used
-                percentage = (spent_amount / budget_amount * 100) if budget_amount > 0 else 0
-                percentage_item = QTableWidgetItem(f"{percentage:.1f}%")
-                self.budget_table.setItem(row, 4, percentage_item)
-                
-                # Status
-                if percentage > 100:
-                    status = "Over Budget"
-                    color = "#ef4444"
-                elif percentage > 90:
-                    status = "Critical"
-                    color = "#f59e0b"
-                elif percentage > 75:
-                    status = "Warning"
-                    color = "#f59e0b"
+            organized_budget = self.organize_budget_data(budget_df, inventory_categories)
+
+            # Populate table with hierarchical structure
+            row = 0
+            for main_category, subcategories in organized_budget.items():
+                if main_category == "Kitchen Essentials":
+                    # Add Kitchen Essentials parent category
+                    self.add_hierarchical_budget_row(row, main_category,
+                                                   subcategories.get('total_allocated', 0),
+                                                   subcategories.get('total_spent', 0),
+                                                   is_parent=True, category_id=None)
+                    row += 1
+
+                    # Add subcategories as actual budget entries
+                    for subcat_name, subcat_data in subcategories.get('subcategories', {}).items():
+                        self.add_hierarchical_budget_row(row, f"  └─ {subcat_name}",
+                                                       subcat_data.get('allocated', 0),
+                                                       subcat_data.get('spent', 0),
+                                                       is_parent=False,
+                                                       category_id=subcat_data.get('budget_id'))
+                        row += 1
                 else:
-                    status = "On Track"
-                    color = "#10b981"
-                
-                status_item = QTableWidgetItem(status)
-                status_item.setForeground(QColor(color))
-                self.budget_table.setItem(row, 5, status_item)
-                
+                    # Add regular categories as budget entries
+                    self.add_hierarchical_budget_row(row, main_category,
+                                                   subcategories.get('allocated', 0),
+                                                   subcategories.get('spent', 0),
+                                                   is_parent=False,
+                                                   category_id=subcategories.get('budget_id'))
+                    row += 1
+
         except Exception as e:
             self.logger.error(f"Error populating budget table: {e}")
-    
+
+    def add_hierarchical_budget_row(self, row, category_name, allocated, spent, is_parent=False, category_id=None):
+        """Add a hierarchical budget row with proper styling and delete functionality"""
+        try:
+            self.budget_table.insertRow(row)
+
+            # Category name with hierarchical styling
+            category_item = QTableWidgetItem(category_name)
+            if is_parent:
+                # Parent category styling
+                category_item.setBackground(QColor(248, 250, 252))  # Light gray background
+                font = category_item.font()
+                font.setBold(True)
+                category_item.setFont(font)
+                category_item.setForeground(QColor(55, 65, 81))  # Dark gray text
+            else:
+                # Child category styling
+                category_item.setForeground(QColor(107, 114, 128))  # Medium gray text
+
+            self.budget_table.setItem(row, 0, category_item)
+
+            # Calculate balance and percentage
+            balance = allocated - spent
+            percentage = (spent / allocated * 100) if allocated > 0 else 0
+
+            # Amount Allocated
+            allocated_item = QTableWidgetItem(f"₹{allocated:.2f}")
+            allocated_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.budget_table.setItem(row, 1, allocated_item)
+
+            # Amount Spent
+            spent_item = QTableWidgetItem(f"₹{spent:.2f}")
+            spent_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            if spent > allocated:
+                spent_item.setForeground(QColor(220, 38, 38))  # Red for overspent
+            self.budget_table.setItem(row, 2, spent_item)
+
+            # Amount Balance
+            balance_item = QTableWidgetItem(f"₹{balance:.2f}")
+            balance_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            if balance < 0:
+                balance_item.setForeground(QColor(220, 38, 38))  # Red for negative balance
+            else:
+                balance_item.setForeground(QColor(34, 197, 94))  # Green for positive balance
+            self.budget_table.setItem(row, 3, balance_item)
+
+            # Percentage Used
+            percentage_item = QTableWidgetItem(f"{percentage:.1f}%")
+            percentage_item.setTextAlignment(Qt.AlignCenter)
+            if percentage > 100:
+                percentage_item.setForeground(QColor(220, 38, 38))  # Red for over budget
+            elif percentage > 80:
+                percentage_item.setForeground(QColor(245, 158, 11))  # Orange for warning
+            else:
+                percentage_item.setForeground(QColor(34, 197, 94))  # Green for good
+            self.budget_table.setItem(row, 4, percentage_item)
+
+            # Status
+            if percentage > 100:
+                status = "Over Budget"
+                status_color = QColor(220, 38, 38)
+            elif percentage > 80:
+                status = "Warning"
+                status_color = QColor(245, 158, 11)
+            else:
+                status = "On Track"
+                status_color = QColor(34, 197, 94)
+
+            status_item = QTableWidgetItem(status)
+            status_item.setTextAlignment(Qt.AlignCenter)
+            status_item.setForeground(status_color)
+            self.budget_table.setItem(row, 5, status_item)
+
+            # Actions (Delete button) - only for non-parent categories
+            if not is_parent and category_id:
+                delete_btn = QPushButton("🗑️")
+                delete_btn.setToolTip("Delete this budget category")
+                delete_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #dc2626;
+                        color: white;
+                        border: none;
+                        border-radius: 3px;
+                        padding: 2px 6px;
+                        font-size: 10px;
+                        max-width: 30px;
+                        max-height: 25px;
+                        min-width: 30px;
+                        min-height: 25px;
+                    }
+                    QPushButton:hover {
+                        background-color: #b91c1c;
+                    }
+                """)
+                delete_btn.clicked.connect(lambda: self.delete_budget_category(category_id, category_name))
+                self.budget_table.setCellWidget(row, 6, delete_btn)
+            else:
+                # Empty cell for parent categories
+                self.budget_table.setItem(row, 6, QTableWidgetItem(""))
+
+        except Exception as e:
+            self.logger.error(f"Error adding hierarchical budget row: {e}")
+
+    def delete_budget_category(self, category_id, category_name):
+        """Delete a budget category with confirmation"""
+        try:
+            from PySide6.QtWidgets import QMessageBox
+
+            # Confirm deletion
+            reply = QMessageBox.question(
+                self,
+                "Delete Budget Category",
+                f"Are you sure you want to delete the budget category '{category_name}'?\n\n"
+                f"This action cannot be undone and will remove all associated data.",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                # Remove from budget dataframe
+                if 'budget' in self.data and not self.data['budget'].empty:
+                    budget_df = self.data['budget']
+                    budget_df = budget_df[budget_df['budget_id'] != category_id]
+                    self.data['budget'] = budget_df
+
+                    # Save to CSV
+                    budget_file = os.path.join('data', 'budget.csv')
+                    budget_df.to_csv(budget_file, index=False)
+
+                    # Refresh the table
+                    self.populate_budget_table()
+
+                    # Show success message
+                    QMessageBox.information(
+                        self,
+                        "Category Deleted",
+                        f"Budget category '{category_name}' has been successfully deleted."
+                    )
+
+                    print(f"✅ Deleted budget category: {category_name} (ID: {category_id})")
+
+        except Exception as e:
+            self.logger.error(f"Error deleting budget category: {e}")
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to delete budget category: {str(e)}"
+            )
+
+    def initialize_default_budget_categories(self):
+        """Initialize default budget categories if they don't exist"""
+        try:
+            if 'budget' not in self.data:
+                self.data['budget'] = pd.DataFrame(columns=[
+                    'budget_id', 'category', 'budget_amount', 'actual_amount', 'period', 'notes'
+                ])
+
+            budget_df = self.data['budget']
+            default_categories = {
+                'Repairs': 2000.0,
+                'Bills': 3000.0,
+                'Kitchen Equipment': 1500.0,
+                'Utilities': 2500.0,
+                'Maintenance': 1000.0
+            }
+
+            # Add missing default categories
+            for category, default_amount in default_categories.items():
+                if budget_df.empty or len(budget_df[budget_df['category'] == category]) == 0:
+                    new_budget = pd.DataFrame({
+                        'budget_id': [len(budget_df) + 1],
+                        'category': [category],
+                        'budget_amount': [default_amount],
+                        'actual_amount': [0.0],
+                        'period': ['Monthly'],
+                        'notes': ['Default category']
+                    })
+                    budget_df = pd.concat([budget_df, new_budget], ignore_index=True)
+
+            self.data['budget'] = budget_df
+
+            # Save to CSV
+            budget_file = os.path.join('data', 'budget.csv')
+            budget_df.to_csv(budget_file, index=False)
+
+        except Exception as e:
+            self.logger.error(f"Error initializing default budget categories: {e}")
+
+    def get_inventory_categories(self):
+        """Get inventory categories for Kitchen Essentials subcategories"""
+        try:
+            if 'categories' in self.data and not self.data['categories'].empty:
+                return self.data['categories']['category_name'].tolist()
+            return []
+        except Exception as e:
+            self.logger.error(f"Error getting inventory categories: {e}")
+            return []
+
+    def organize_budget_data(self, budget_df, inventory_categories):
+        """Organize budget data into main categories and subcategories"""
+        try:
+            organized = {}
+
+            # Kitchen Essentials - group inventory categories
+            kitchen_essentials = {
+                'total_allocated': 0,
+                'total_spent': 0,
+                'subcategories': {}
+            }
+
+            # Process each budget category
+            for _, budget in budget_df.iterrows():
+                category = budget.get('category', '')
+                allocated = budget.get('budget_amount', 0)
+                spent = budget.get('actual_amount', 0)
+                budget_id = budget.get('budget_id', None)
+
+                # Check if this category should be under Kitchen Essentials
+                if category in inventory_categories:
+                    kitchen_essentials['total_allocated'] += allocated
+                    kitchen_essentials['total_spent'] += spent
+                    kitchen_essentials['subcategories'][category] = {
+                        'allocated': allocated,
+                        'spent': spent,
+                        'budget_id': budget_id
+                    }
+                else:
+                    # Regular category
+                    organized[category] = {
+                        'allocated': allocated,
+                        'spent': spent,
+                        'budget_id': budget_id
+                    }
+
+            # Add Kitchen Essentials if it has subcategories
+            if kitchen_essentials['subcategories']:
+                organized['Kitchen Essentials'] = kitchen_essentials
+
+            return organized
+
+        except Exception as e:
+            self.logger.error(f"Error organizing budget data: {e}")
+            return {}
+
+
+
     def populate_expense_table(self):
-        """Populate expense tracking table"""
+        """Populate expense tracking table with all transaction types"""
         try:
             # Clear existing data
             self.expense_table.setRowCount(0)
 
             # Get expenses from shopping data and manual expenses
             expenses = []
+            total_amount = 0
+            month_amount = 0
+            current_month = QDate.currentDate().toString("yyyy-MM")
 
             # Add shopping expenses
             if 'shopping_list' in self.data and not self.data['shopping_list'].empty:
                 shopping_df = self.data['shopping_list']
                 for _, item in shopping_df.iterrows():
                     if item.get('status', '').lower() == 'purchased':
+                        amount = float(item.get('current_price', 0))
+                        date_str = str(item.get('date_purchased', item.get('date_added', '')))
+
                         expense = {
-                            'date': item.get('date_purchased', item.get('date_added', '')),
+                            'date': date_str,
                             'category': item.get('category', 'Shopping'),
                             'description': f"Shopping: {item.get('item_name', 'Unknown')}",
-                            'amount': item.get('current_price', 0),
-                            'source': 'Shopping',
+                            'amount': amount,
+                            'type': 'Shopping',
+                            'source': 'Shopping List',
                             'receipt': '',
                             'notes': item.get('notes', '')
                         }
                         expenses.append(expense)
+                        total_amount += amount
 
-            # Add manual expenses
+                        # Check if this month
+                        if date_str.startswith(current_month):
+                            month_amount += amount
+
+            # Add manual expenses (repairs, bills, etc.)
             if 'manual_expenses' in self.data and not self.data['manual_expenses'].empty:
                 manual_df = self.data['manual_expenses']
                 for _, expense in manual_df.iterrows():
+                    amount = float(expense.get('amount', 0))
+                    date_str = str(expense.get('date', ''))
+
                     expense_data = {
-                        'date': expense.get('date', ''),
+                        'date': date_str,
                         'category': expense.get('category', 'Manual'),
                         'description': expense.get('description', ''),
-                        'amount': expense.get('amount', 0),
+                        'amount': amount,
+                        'type': 'Manual',
                         'source': 'Manual Entry',
                         'receipt': expense.get('receipt', ''),
                         'notes': expense.get('notes', '')
                     }
                     expenses.append(expense_data)
+                    total_amount += amount
+
+                    # Check if this month
+                    if date_str.startswith(current_month):
+                        month_amount += amount
 
             # Add gas purchases
             if 'gas_purchases' in self.data and not self.data['gas_purchases'].empty:
                 gas_df = self.data['gas_purchases']
                 for _, purchase in gas_df.iterrows():
+                    amount = float(purchase.get('total_cost', 0))
+                    date_str = str(purchase.get('purchase_date', ''))
+
                     expense = {
-                        'date': purchase.get('purchase_date', ''),
+                        'date': date_str,
                         'category': 'Gas',
                         'description': f"Gas Cylinder - {purchase.get('supplier', 'Unknown')}",
-                        'amount': purchase.get('total_cost', 0),
+                        'amount': amount,
+                        'type': 'Utilities',
                         'source': 'Gas Management',
                         'receipt': '',
                         'notes': purchase.get('notes', '')
                     }
                     expenses.append(expense)
+                    total_amount += amount
+
+                    # Check if this month
+                    if date_str.startswith(current_month):
+                        month_amount += amount
 
             # Add packing materials purchases
             if 'packing_materials' in self.data and not self.data['packing_materials'].empty:
@@ -554,19 +995,47 @@ class EnhancedBudgetWidget(QWidget):
                 for _, material in packing_df.iterrows():
                     # Only include if there's a purchase record
                     if material.get('last_purchase_date'):
+                        amount = float(material.get('cost_per_unit', 0)) * float(material.get('current_stock', 0))
+                        date_str = str(material.get('last_purchase_date', ''))
+
                         expense = {
-                            'date': material.get('last_purchase_date', ''),
+                            'date': date_str,
                             'category': 'Packing Materials',
                             'description': f"Packing: {material.get('material_name', 'Unknown')}",
-                            'amount': material.get('cost_per_unit', 0) * material.get('current_stock', 0),
+                            'amount': amount,
+                            'type': 'Supplies',
                             'source': 'Stock Management',
                             'receipt': '',
                             'notes': material.get('notes', '')
                         }
                         expenses.append(expense)
+                        total_amount += amount
+
+                        # Check if this month
+                        if date_str.startswith(current_month):
+                            month_amount += amount
 
             # Sort expenses by date (newest first)
             expenses.sort(key=lambda x: x.get('date', ''), reverse=True)
+
+            # Update summary cards
+            self.total_expenses_label.setText(f"₹{total_amount:,.2f}")
+            self.month_expenses_label.setText(f"₹{month_amount:,.2f}")
+
+            # Calculate remaining budget
+            total_budget = 0
+            if 'budget' in self.data and not self.data['budget'].empty:
+                total_budget = self.data['budget']['budget_amount'].sum()
+            remaining_budget = total_budget - total_amount
+            self.remaining_budget_label.setText(f"₹{remaining_budget:,.2f}")
+
+            # Set color based on remaining budget
+            if remaining_budget < 0:
+                self.remaining_budget_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #dc2626;")
+            elif remaining_budget < total_budget * 0.2:
+                self.remaining_budget_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #f59e0b;")
+            else:
+                self.remaining_budget_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #059669;")
 
             # Populate table
             self.expense_table.setRowCount(len(expenses))
@@ -575,9 +1044,10 @@ class EnhancedBudgetWidget(QWidget):
                 self.expense_table.setItem(row, 1, QTableWidgetItem(str(expense.get('category', ''))))
                 self.expense_table.setItem(row, 2, QTableWidgetItem(str(expense.get('description', ''))))
                 self.expense_table.setItem(row, 3, QTableWidgetItem(f"₹{expense.get('amount', 0):.2f}"))
-                self.expense_table.setItem(row, 4, QTableWidgetItem(str(expense.get('source', ''))))
-                self.expense_table.setItem(row, 5, QTableWidgetItem(str(expense.get('receipt', ''))))
-                self.expense_table.setItem(row, 6, QTableWidgetItem(str(expense.get('notes', ''))))
+                self.expense_table.setItem(row, 4, QTableWidgetItem(str(expense.get('type', ''))))
+                self.expense_table.setItem(row, 5, QTableWidgetItem(str(expense.get('source', ''))))
+                self.expense_table.setItem(row, 6, QTableWidgetItem(str(expense.get('receipt', ''))))
+                self.expense_table.setItem(row, 7, QTableWidgetItem(str(expense.get('notes', ''))))
 
         except Exception as e:
             self.logger.error(f"Error populating expense table: {e}")
@@ -713,6 +1183,146 @@ class EnhancedBudgetWidget(QWidget):
         except Exception as e:
             self.logger.error(f"Error adding budget category: {e}")
             QMessageBox.warning(self, "Error", f"Failed to add budget category: {str(e)}")
+
+    def add_repair_bills_transaction(self):
+        """Show dialog to add repair/bills transaction"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Add Repair/Bills Transaction")
+        dialog.setMinimumWidth(500)
+        dialog.setMinimumHeight(400)
+
+        layout = QVBoxLayout(dialog)
+
+        # Transaction type
+        type_layout = QHBoxLayout()
+        type_layout.addWidget(QLabel("Transaction Type:"))
+        type_combo = QComboBox()
+        type_combo.addItems(["Repairs", "Bills", "Utilities", "Maintenance", "Other"])
+        type_layout.addWidget(type_combo)
+        layout.addLayout(type_layout)
+
+        # Description
+        desc_layout = QHBoxLayout()
+        desc_layout.addWidget(QLabel("Description:"))
+        desc_input = QLineEdit()
+        desc_input.setPlaceholderText("e.g., Kitchen equipment repair, Electricity bill")
+        desc_layout.addWidget(desc_input)
+        layout.addLayout(desc_layout)
+
+        # Amount
+        amount_layout = QHBoxLayout()
+        amount_layout.addWidget(QLabel("Amount (₹):"))
+        amount_input = QDoubleSpinBox()
+        amount_input.setRange(0, 999999)
+        amount_input.setValue(100)
+        amount_layout.addWidget(amount_input)
+        layout.addLayout(amount_layout)
+
+        # Date
+        date_layout = QHBoxLayout()
+        date_layout.addWidget(QLabel("Date:"))
+        date_input = QDateEdit()
+        date_input.setDate(QDate.currentDate())
+        date_input.setCalendarPopup(True)
+        date_layout.addWidget(date_input)
+        layout.addLayout(date_layout)
+
+        # Receipt/Reference
+        receipt_layout = QHBoxLayout()
+        receipt_layout.addWidget(QLabel("Receipt/Reference:"))
+        receipt_input = QLineEdit()
+        receipt_input.setPlaceholderText("Receipt number or reference")
+        receipt_layout.addWidget(receipt_input)
+        layout.addLayout(receipt_layout)
+
+        # Notes
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(QLabel("Notes:"))
+        notes_input = QTextEdit()
+        notes_input.setMaximumHeight(80)
+        notes_input.setPlaceholderText("Additional details about the transaction")
+        notes_layout.addWidget(notes_input)
+        layout.addLayout(notes_layout)
+
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        if dialog.exec_() == QDialog.Accepted:
+            transaction_type = type_combo.currentText()
+            description = desc_input.text().strip()
+            amount = amount_input.value()
+            date = date_input.date().toString("yyyy-MM-dd")
+            receipt = receipt_input.text().strip()
+            notes = notes_input.toPlainText().strip()
+
+            if description and amount > 0:
+                self.add_transaction_to_budget(transaction_type, description, amount, date, receipt, notes)
+            else:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a description and amount.")
+
+    def add_transaction_to_budget(self, transaction_type, description, amount, date, receipt, notes):
+        """Add transaction to budget tracking and update budget spent amounts"""
+        try:
+            # Initialize manual expenses dataframe if needed
+            if 'manual_expenses' not in self.data:
+                self.data['manual_expenses'] = pd.DataFrame(columns=[
+                    'expense_id', 'date', 'category', 'description', 'amount', 'receipt', 'notes'
+                ])
+
+            # Add to manual expenses
+            new_expense = pd.DataFrame({
+                'expense_id': [len(self.data['manual_expenses']) + 1],
+                'date': [date],
+                'category': [transaction_type],
+                'description': [description],
+                'amount': [amount],
+                'receipt': [receipt],
+                'notes': [notes]
+            })
+
+            self.data['manual_expenses'] = pd.concat([self.data['manual_expenses'], new_expense], ignore_index=True)
+
+            # Update budget spent amount for this category
+            if 'budget' in self.data and not self.data['budget'].empty:
+                budget_df = self.data['budget']
+                category_mask = budget_df['category'] == transaction_type
+
+                if category_mask.any():
+                    # Update existing category
+                    current_spent = budget_df.loc[category_mask, 'actual_amount'].iloc[0]
+                    budget_df.loc[category_mask, 'actual_amount'] = current_spent + amount
+                else:
+                    # Create new budget category if it doesn't exist
+                    new_budget = pd.DataFrame({
+                        'budget_id': [len(budget_df) + 1],
+                        'category': [transaction_type],
+                        'budget_amount': [amount * 2],  # Set budget to 2x the first expense
+                        'actual_amount': [amount],
+                        'period': ['Monthly'],
+                        'notes': ['Auto-created from transaction']
+                    })
+                    budget_df = pd.concat([budget_df, new_budget], ignore_index=True)
+
+                self.data['budget'] = budget_df
+
+            # Save to CSV files
+            expenses_file = os.path.join('data', 'manual_expenses.csv')
+            self.data['manual_expenses'].to_csv(expenses_file, index=False)
+
+            budget_file = os.path.join('data', 'budget.csv')
+            self.data['budget'].to_csv(budget_file, index=False)
+
+            # Refresh displays
+            self.load_data()
+
+            QMessageBox.information(self, "Success", f"Transaction added successfully!\nCategory: {transaction_type}\nAmount: ₹{amount:.2f}")
+
+        except Exception as e:
+            self.logger.error(f"Error adding transaction: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add transaction: {str(e)}")
 
     def save_budget_category(self, category, amount, period, notes):
         """Save new budget category to data"""
@@ -885,6 +1495,107 @@ class EnhancedBudgetWidget(QWidget):
 
         except Exception as e:
             self.logger.error(f"Error updating budget with expense: {e}")
+
+    def show_add_category_dialog(self):
+        """Show dialog to add new budget category"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Add Budget Category")
+        dialog.setMinimumWidth(400)
+        dialog.setMinimumHeight(300)
+
+        layout = QVBoxLayout(dialog)
+
+        # Category name
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(QLabel("Category Name:"))
+        name_input = QLineEdit()
+        name_layout.addWidget(name_input)
+        layout.addLayout(name_layout)
+
+        # Budget amount
+        amount_layout = QHBoxLayout()
+        amount_layout.addWidget(QLabel("Budget Amount (₹):"))
+        amount_input = QDoubleSpinBox()
+        amount_input.setRange(0, 999999)
+        amount_input.setValue(1000)
+        amount_layout.addWidget(amount_input)
+        layout.addLayout(amount_layout)
+
+        # Period
+        period_layout = QHBoxLayout()
+        period_layout.addWidget(QLabel("Period:"))
+        period_combo = QComboBox()
+        period_combo.addItems(["Monthly", "Weekly", "Yearly"])
+        period_layout.addWidget(period_combo)
+        layout.addLayout(period_layout)
+
+        # Notes
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(QLabel("Notes:"))
+        notes_input = QTextEdit()
+        notes_input.setMaximumHeight(80)
+        notes_layout.addWidget(notes_input)
+        layout.addLayout(notes_layout)
+
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        if dialog.exec_() == QDialog.Accepted:
+            category_name = name_input.text().strip()
+            budget_amount = amount_input.value()
+            period = period_combo.currentText()
+            notes = notes_input.toPlainText().strip()
+
+            if category_name:
+                self.add_budget_category(category_name, budget_amount, period, notes)
+            else:
+                QMessageBox.warning(self, "Invalid Input", "Please enter a category name.")
+
+    def add_budget_category(self, category_name, budget_amount, period, notes):
+        """Add new budget category"""
+        try:
+            # Initialize budget dataframe if needed
+            if 'budget' not in self.data:
+                self.data['budget'] = pd.DataFrame(columns=[
+                    'budget_id', 'category', 'budget_amount', 'actual_amount', 'period', 'notes'
+                ])
+
+            # Check if category already exists
+            budget_df = self.data['budget']
+            if not budget_df.empty:
+                existing = budget_df[budget_df['category'] == category_name]
+                if not existing.empty:
+                    QMessageBox.warning(self, "Category Exists", f"Budget category '{category_name}' already exists.")
+                    return
+
+            # Create new budget entry
+            new_budget = pd.DataFrame({
+                'budget_id': [len(budget_df) + 1],
+                'category': [category_name],
+                'budget_amount': [budget_amount],
+                'actual_amount': [0.0],
+                'period': [period],
+                'notes': [notes]
+            })
+
+            # Add to dataframe
+            self.data['budget'] = pd.concat([self.data['budget'], new_budget], ignore_index=True)
+
+            # Save to CSV
+            budget_file = os.path.join('data', 'budget.csv')
+            self.data['budget'].to_csv(budget_file, index=False)
+
+            # Refresh displays
+            self.load_data()
+
+            QMessageBox.information(self, "Success", f"Budget category '{category_name}' added successfully!")
+
+        except Exception as e:
+            self.logger.error(f"Error adding budget category: {e}")
+            QMessageBox.warning(self, "Error", f"Failed to add budget category: {str(e)}")
     
     def save_budget_data(self):
         """Save budget data to file"""

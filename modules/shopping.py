@@ -303,29 +303,38 @@ class ShoppingWidget(QWidget):
         if not selected_rows:
             QMessageBox.warning(self, "No Selection", "Please select an item to mark as purchased.")
             return
-        
+
         # Get the selected row index
         row = selected_rows[0].row()
         item_name = self.shopping_table.item(row, 0).text()
         quantity = float(self.shopping_table.item(row, 2).text())
         unit = self.shopping_table.item(row, 3).text()
-        
+
         # Update the status in the dataframe
         item_index = self.shopping_df[self.shopping_df['item_name'] == item_name].index
         if len(item_index) > 0:
+            # Get the purchase details for budget tracking
+            purchase_amount = self.shopping_df.loc[item_index, 'current_price'].iloc[0]
+            category = self.shopping_df.loc[item_index, 'category'].iloc[0]
+
+            # Mark as purchased
             self.shopping_df.loc[item_index, 'status'] = 'Purchased'
+            self.shopping_df.loc[item_index, 'date_purchased'] = pd.Timestamp.now().strftime('%Y-%m-%d')
             self.data['shopping_list'] = self.shopping_df
-            
+
+            # Update budget tracking - deduct from appropriate budget category
+            self.update_budget_tracking(category, purchase_amount, item_name)
+
             # Save to CSV
             self.shopping_df.to_csv('data/shopping_list.csv', index=False)
-            
+
             # Update inventory if the item exists there
             self.update_inventory_quantity(item_name, quantity, unit)
-            
+
             # Update the table
             self.update_shopping_list()
-            
-            QMessageBox.information(self, "Success", f"{item_name} marked as purchased and inventory updated if applicable.")
+
+            QMessageBox.information(self, "Success", f"{item_name} marked as purchased and inventory updated if applicable.\nBudget tracking updated for {category} category.")
     
     def mark_as_cancelled(self):
         selected_rows = self.shopping_table.selectedItems()
@@ -755,6 +764,52 @@ class ShoppingWidget(QWidget):
 
             # Log the update
             print(f"Updated inventory: {item_name} from {current_quantity} to {new_quantity} {item_unit}")
+
+    def update_budget_tracking(self, category, amount, item_name):
+        """Update budget tracking when an item is purchased"""
+        try:
+            import os
+
+            # Initialize budget dataframe if it doesn't exist
+            if 'budget' not in self.data:
+                self.data['budget'] = pd.DataFrame(columns=[
+                    'budget_id', 'category', 'budget_amount', 'actual_amount', 'period', 'notes'
+                ])
+
+            budget_df = self.data['budget']
+
+            # Check if category exists in budget
+            category_mask = budget_df['category'] == category
+
+            if category_mask.any():
+                # Update existing category
+                current_spent = budget_df.loc[category_mask, 'actual_amount'].iloc[0]
+                budget_df.loc[category_mask, 'actual_amount'] = current_spent + amount
+            else:
+                # Create new budget category for this purchase
+                new_budget = pd.DataFrame({
+                    'budget_id': [len(budget_df) + 1],
+                    'category': [category],
+                    'budget_amount': [amount * 5],  # Set budget to 5x the first purchase
+                    'actual_amount': [amount],
+                    'period': ['Monthly'],
+                    'notes': [f'Auto-created from shopping purchase: {item_name}']
+                })
+                budget_df = pd.concat([budget_df, new_budget], ignore_index=True)
+
+            # Update data and save
+            self.data['budget'] = budget_df
+            budget_file = os.path.join('data', 'budget.csv')
+            budget_df.to_csv(budget_file, index=False)
+
+            # Mark data as changed for auto-save
+            if hasattr(self, 'main_app') and hasattr(self.main_app, 'mark_data_changed'):
+                self.main_app.mark_data_changed()
+
+            print(f"Budget tracking updated: {category} category spent ₹{amount:.2f} for {item_name}")
+
+        except Exception as e:
+            print(f"Error updating budget tracking: {e}")
 
     def setup_add_item_form(self, layout):
         """Setup the form for adding new items"""

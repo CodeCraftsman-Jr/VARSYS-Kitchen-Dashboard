@@ -1074,7 +1074,7 @@ class FixedMealPlanningWidget(QWidget):
 
         # Get the recipe ID from the first column
         row = selected_items[0].row()
-        recipe_id = int(self.recipe_table.item(row, 0).text())
+        recipe_id = float(self.recipe_table.item(row, 0).text())
 
         # Find the recipe in the dataframe
         recipe = self.recipes_df[self.recipes_df['recipe_id'] == recipe_id].iloc[0]
@@ -1480,7 +1480,7 @@ class FixedMealPlanningWidget(QWidget):
 
         # Get the selected recipe
         row = selected_items[0].row()
-        recipe_id = int(self.recipe_table.item(row, 0).text())
+        recipe_id = float(self.recipe_table.item(row, 0).text())
         recipe = self.recipes_df[self.recipes_df['recipe_id'] == recipe_id].iloc[0]
 
         # Create edit dialog with pre-filled data
@@ -1567,7 +1567,7 @@ class FixedMealPlanningWidget(QWidget):
 
         # Get the selected recipe
         row = selected_items[0].row()
-        recipe_id = int(self.recipe_table.item(row, 0).text())
+        recipe_id = float(self.recipe_table.item(row, 0).text())
         recipe = self.recipes_df[self.recipes_df['recipe_id'] == recipe_id].iloc[0]
         recipe_name = recipe['recipe_name']
 
@@ -1635,7 +1635,7 @@ class FixedMealPlanningWidget(QWidget):
 
         # Get the selected recipe
         row = selected_recipe_items[0].row()
-        recipe_id = int(self.recipe_table.item(row, 0).text())
+        recipe_id = float(self.recipe_table.item(row, 0).text())
         recipe = self.recipes_df[self.recipes_df['recipe_id'] == recipe_id].iloc[0]
         recipe_name = recipe['recipe_name']
 

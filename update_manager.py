@@ -258,9 +258,19 @@ class UpdateDialog(QDialog):
         self.download_thread.start()
     
     def update_progress(self, percent):
-        """Update download progress"""
+        """Update download progress with method-specific messages"""
         self.progress_bar.setValue(percent)
-        self.status_label.setText(f"Downloading update... {percent}%")
+
+        # Check if using Git or HTTP method
+        download_method = getattr(self.update_info, 'download_method', 'http')
+
+        if download_method == 'git':
+            if percent < 70:
+                self.status_label.setText(f"Syncing with Git repository... {percent}%")
+            else:
+                self.status_label.setText(f"Preparing update files... {percent}%")
+        else:
+            self.status_label.setText(f"Downloading update... {percent}%")
     
     def download_completed(self, file_path):
         """Handle download completion"""

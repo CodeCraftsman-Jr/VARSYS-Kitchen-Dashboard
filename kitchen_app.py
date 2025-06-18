@@ -43,7 +43,7 @@ from PySide6.QtGui import QFont, QColor, QIcon, QPalette, QPainter, QPen, QPixma
 
 # Import modules - use standard imports for IDE compatibility
 from modules.settings_fixed import SettingsWidget
-from modules.shopping_fixed import ShoppingWidget
+from modules.expenses_fixed import ExpensesWidget
 from modules.logs_viewer import LogsViewerWidget
 from modules.firebase_sync import FirebaseSync
 from modules.login_dialog import LoginDialog
@@ -538,10 +538,10 @@ class KitchenDashboardApp(QMainWindow):
                 'sync_interval_minutes': 30,
                 'last_sync_timestamp': None,
                 'sync_collections': [
-                    'inventory', 'recipes', 'budget', 'sales', 'shopping_list',
+                    'inventory', 'recipes', 'budget', 'budget_categories', 'sales', 'expenses_list',
                     'waste', 'cleaning_maintenance', 'items', 'categories',
                     'recipe_ingredients', 'pricing', 'packing_materials',
-                    'recipe_packing_materials', 'sales_orders', 'meal_plan'
+                    'recipe_packing_materials', 'sales_orders', 'meal_plan', 'staff'
                 ]
             }
 
@@ -760,10 +760,10 @@ class KitchenDashboardApp(QMainWindow):
 
             # Define expected CSV files
             expected_files = [
-                'inventory', 'recipes', 'budget', 'sales', 'shopping_list',
+                'inventory', 'recipes', 'budget', 'budget_categories', 'sales', 'expenses_list',
                 'waste', 'cleaning_maintenance', 'items', 'categories',
                 'recipe_ingredients', 'pricing', 'packing_materials',
-                'recipe_packing_materials', 'sales_orders', 'meal_plan'
+                'recipe_packing_materials', 'sales_orders', 'meal_plan', 'staff'
             ]
 
             self.logger.info(f"Scanning data directory: {data_dir}")
@@ -1600,6 +1600,9 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             if hasattr(self, 'cloud_sync_manager') and self.cloud_sync_manager:
                 self.cloud_sync_manager.set_subscriber_info(user_info)
 
+            # Run automatic migration if needed (shopping_list → expenses_list)
+            self.run_automatic_migration()
+
             # Initialize the UI
             self.initialize_ui()
 
@@ -1617,6 +1620,30 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         except Exception as e:
             self.logger.error(f"Error handling authentication result: {e}")
             self.handle_authentication_failure("Authentication processing failed")
+
+    def run_automatic_migration(self):
+        """Run automatic migration from shopping_list to expenses_list if needed"""
+        try:
+            # Only run migration if we have Firebase manager and user ID
+            if not self.firebase_manager or not hasattr(self, 'firebase_user_id'):
+                self.logger.info("Skipping migration - Firebase manager or user ID not available")
+                return
+
+            # Import and run automatic migration
+            from modules.automatic_migration import check_and_migrate_on_startup
+
+            self.logger.info("🔄 Checking for automatic migration needs...")
+            success = check_and_migrate_on_startup(self.firebase_manager, self.firebase_user_id)
+
+            if success:
+                self.logger.info("✅ Automatic migration check completed successfully")
+            else:
+                self.logger.warning("⚠️ Automatic migration encountered issues (non-critical)")
+
+        except Exception as e:
+            # Don't fail authentication if migration fails - it's not critical
+            self.logger.warning(f"⚠️ Automatic migration failed (non-critical): {e}")
+            self.logger.info("Continuing with normal application startup...")
 
     def handle_authentication_failure(self, error_message):
         """Handle authentication failure - ONLINE-ONLY MODE"""
@@ -1894,6 +1921,88 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         except Exception as e:
             self.logger.error(f"Error setting up auto-refresh timer: {e}")
 
+    def setup_auto_save_timer(self):
+        """Setup auto-save timer to prevent data loss"""
+        try:
+            from PySide6.QtCore import QTimer
+            from datetime import datetime
+
+            # Create timer for auto-save
+            self.auto_save_timer = QTimer()
+            self.auto_save_timer.timeout.connect(self.auto_save_data)
+
+            # Set auto-save interval (2 minutes = 120000 ms)
+            auto_save_interval = 120000  # 2 minutes
+            self.auto_save_timer.start(auto_save_interval)
+
+            # Track data changes for smart saving
+            self.data_changed = False
+            self.last_save_time = datetime.now()
+
+            self.logger.info(f"Auto-save timer started with {auto_save_interval/1000/60:.1f} minute interval")
+
+        except Exception as e:
+            self.logger.error(f"Error setting up auto-save timer: {e}")
+
+    def auto_save_data(self):
+        """Automatically save data if changes have been made"""
+        try:
+            # Only save if data has changed and we have data to save
+            if self.data_changed and hasattr(self, 'data') and self.data:
+                self.logger.info("Auto-save: Saving changed data...")
+
+                # Save all data to CSV files
+                self.save_all_data_to_csv()
+
+                # Reset change flag
+                self.data_changed = False
+                from datetime import datetime
+                self.last_save_time = datetime.now()
+
+                # Show subtle notification
+                self.add_notification(
+                    "Auto-Save",
+                    "Data automatically saved",
+                    "info",
+                    duration=3000
+                )
+
+                self.logger.info("Auto-save completed successfully")
+
+        except Exception as e:
+            self.logger.error(f"Error during auto-save: {e}")
+
+    def save_all_data_to_csv(self):
+        """Save all application data to CSV files"""
+        try:
+            if not hasattr(self, 'data') or not self.data:
+                self.logger.warning("No data to save")
+                return
+
+            # Ensure data directory exists
+            data_dir = 'data'
+            os.makedirs(data_dir, exist_ok=True)
+
+            # Save each dataframe to its respective CSV file
+            saved_files = []
+            for key, df in self.data.items():
+                if hasattr(df, 'to_csv'):  # Check if it's a DataFrame
+                    try:
+                        file_path = os.path.join(data_dir, f"{key}.csv")
+                        df.to_csv(file_path, index=False, encoding='utf-8')
+                        saved_files.append(key)
+                    except Exception as e:
+                        self.logger.error(f"Error saving {key}.csv: {e}")
+
+            self.logger.info(f"Saved {len(saved_files)} data files: {', '.join(saved_files)}")
+
+        except Exception as e:
+            self.logger.error(f"Error saving all data to CSV: {e}")
+
+    def mark_data_changed(self):
+        """Mark that data has been changed and needs saving"""
+        self.data_changed = True
+
     def initialize_ui(self):
         """Initialize the UI after authentication - ONLINE-ONLY MODE"""
         # Since we've already authenticated successfully, proceed with UI initialization
@@ -2005,6 +2114,9 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         # Setup auto-refresh timer
         self.setup_auto_refresh_timer()
 
+        # Setup auto-save functionality
+        self.setup_auto_save_timer()
+
         # Force layout update after a short delay
         QTimer.singleShot(100, self.force_layout_update)
 
@@ -2033,11 +2145,15 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         try:
             from PySide6.QtWidgets import QMessageBox
 
+            # Perform final auto-save before closing
+            if hasattr(self, 'data_changed') and self.data_changed:
+                self.auto_save_data()
+
             # Show confirmation dialog
             msg = QMessageBox(self)
             msg.setWindowTitle("Exit Application")
             msg.setText("Are you sure you want to exit Kitchen Dashboard?")
-            msg.setInformativeText("Any unsaved changes will be lost.")
+            msg.setInformativeText("All data has been automatically saved.")
             msg.setIcon(QMessageBox.Question)
             msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             msg.setDefaultButton(QMessageBox.No)
@@ -2073,15 +2189,19 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
 
                 # Perform cleanup operations
                 try:
+                    # Stop auto-save timer
+                    if hasattr(self, 'auto_save_timer') and self.auto_save_timer:
+                        self.auto_save_timer.stop()
+
                     # Stop any running sync operations
                     if hasattr(self, 'active_sync_worker') and self.active_sync_worker:
                         self.active_sync_worker.cancel_operation()
                         self.active_sync_worker.quit()
                         self.active_sync_worker.wait(2000)
 
-                    # Save any pending data
+                    # Final save of any pending data
                     if hasattr(self, 'data') and self.data:
-                        self.data.save_all_data()
+                        self.save_all_data_to_csv()
 
                     self.logger.info("Cleanup completed successfully")
 
@@ -4569,8 +4689,8 @@ For more information, please check the documentation or contact support.
         """Get tab name by button index"""
         tab_names = [
             "Home", "Inventory", "Meal Planning", "Budget", "Sales",
-            "Pricing", "Packing Materials", "Shopping", "Gas Management",
-            "Waste", "Cleaning", "Analytics", "Reports", "Logs", "Settings"
+            "Pricing", "Packing Materials", "Expenses", "Gas Management",
+            "Waste", "Cleaning", "Reports", "Logs", "Settings"
         ]
         return tab_names[index] if 0 <= index < len(tab_names) else "Unknown"
 
@@ -4632,18 +4752,24 @@ For more information, please check the documentation or contact support.
                 'budget': pd.DataFrame(columns=[
                     'budget_id', 'category', 'amount', 'period', 'date'
                 ]),
+                'budget_categories': pd.DataFrame(columns=[
+                    'category_id', 'category_name', 'category_type', 'parent_id',
+                    'budget_amount', 'spent_amount', 'description'
+                ]),
                 'sales': pd.DataFrame(columns=[
                     'sale_id', 'item_name', 'quantity', 'price_per_unit', 'total_amount', 'customer', 'date'
                 ]),
-                'shopping_list': pd.DataFrame(columns=[
-                    'item_id', 'item_name', 'category', 'quantity', 'unit', 'priority',
+                'expenses_list': pd.DataFrame(columns=[
+                    'item_id', 'item_name', 'category', 'budget_category', 'quantity', 'unit', 'priority',
                     'last_price', 'current_price', 'avg_price', 'location', 'notes', 'status', 'date_added', 'date_purchased'
                 ]),
                 'waste': pd.DataFrame(columns=[
                     'waste_id', 'item_name', 'quantity', 'unit', 'reason', 'cost', 'date'
                 ]),
                 'cleaning_maintenance': pd.DataFrame(columns=[
-                    'task_id', 'task_name', 'frequency', 'last_completed', 'next_due', 'priority', 'notes'
+                    'task_id', 'task_name', 'frequency', 'last_completed', 'next_due', 'priority', 'notes',
+                    'assigned_staff_id', 'assigned_staff_name', 'schedule_type', 'schedule_interval',
+                    'day_number', 'time_period', 'auto_assign', 'rotation_order'
                 ]),
                 'items': pd.DataFrame(columns=[
                     'item_id', 'item_name', 'category', 'description', 'unit', 'default_cost'
@@ -4669,6 +4795,9 @@ For more information, please check the documentation or contact support.
                     'preparation_materials', 'preparation_cost', 'gas_charges', 'electricity_charges',
                     'total_cost_making', 'our_pricing', 'subtotal', 'discount', 'final_price_after_discount',
                     'profit', 'profit_percentage'
+                ]),
+                'staff': pd.DataFrame(columns=[
+                    'staff_id', 'staff_name', 'role', 'contact_number', 'email', 'hire_date', 'status', 'notes'
                 ])
             }
 
@@ -4794,8 +4923,9 @@ For more information, please check the documentation or contact support.
                 'meal_plan': pd.DataFrame(),
                 'recipes': pd.DataFrame(),
                 'budget': pd.DataFrame(),
+                'budget_categories': pd.DataFrame(),
                 'sales': pd.DataFrame(),
-                'shopping_list': pd.DataFrame(),
+                'expenses_list': pd.DataFrame(),
                 'waste': pd.DataFrame(),
                 'cleaning_maintenance': pd.DataFrame(),
                 'items': pd.DataFrame(),
@@ -4804,7 +4934,8 @@ For more information, please check the documentation or contact support.
                 'pricing': pd.DataFrame(),
                 'packing_materials': pd.DataFrame(),
                 'recipe_packing_materials': pd.DataFrame(),
-                'sales_orders': pd.DataFrame()
+                'sales_orders': pd.DataFrame(),
+                'staff': pd.DataFrame()
             }
 
             # Assign empty data to self.data
@@ -4849,7 +4980,7 @@ For more information, please check the documentation or contact support.
                 self.data = self.load_data()
 
             # Check if all required keys exist
-            required_keys = ['inventory', 'recipes', 'recipe_ingredients', 'shopping_list', 'sales', 'waste']
+            required_keys = ['inventory', 'recipes', 'recipe_ingredients', 'expenses_list', 'budget_categories', 'sales', 'waste']
             missing_keys = [key for key in required_keys if key not in self.data]
 
             if missing_keys:
@@ -5216,13 +5347,13 @@ For more information, please check the documentation or contact support.
         self.nav_buttons_layout.addWidget(self.packing_materials_button)
         self.nav_buttons.append(self.packing_materials_button)
 
-        self.shopping_button = QPushButton(" Shopping")
-        self.shopping_button.setIcon(self.create_icon("🛒"))
-        self.shopping_button.setIconSize(QSize(18, 18))
-        self.shopping_button.setCheckable(True)
-        self.shopping_button.clicked.connect(lambda: self.handle_nav_button(self.shopping_button, self.show_shopping_page))
-        self.nav_buttons_layout.addWidget(self.shopping_button)
-        self.nav_buttons.append(self.shopping_button)
+        self.expenses_button = QPushButton(" Expenses")
+        self.expenses_button.setIcon(self.create_icon("💰"))
+        self.expenses_button.setIconSize(QSize(18, 18))
+        self.expenses_button.setCheckable(True)
+        self.expenses_button.clicked.connect(lambda: self.handle_nav_button(self.expenses_button, self.show_expenses_page))
+        self.nav_buttons_layout.addWidget(self.expenses_button)
+        self.nav_buttons.append(self.expenses_button)
 
         self.gas_management_button = QPushButton(" Gas Management")
         self.gas_management_button.setIcon(self.create_icon("🔥"))
@@ -5248,14 +5379,7 @@ For more information, please check the documentation or contact support.
         self.nav_buttons_layout.addWidget(self.cleaning_button)
         self.nav_buttons.append(self.cleaning_button)
 
-        # Analytics button
-        self.analytics_button = QPushButton(" Analytics")
-        self.analytics_button.setIcon(self.create_icon("📈"))
-        self.analytics_button.setIconSize(QSize(18, 18))
-        self.analytics_button.setCheckable(True)
-        self.analytics_button.clicked.connect(lambda: self.handle_nav_button(self.analytics_button, self.show_analytics_page))
-        self.nav_buttons_layout.addWidget(self.analytics_button)
-        self.nav_buttons.append(self.analytics_button)
+
 
         # Reports button
         self.reports_button = QPushButton(" Reports")
@@ -5313,7 +5437,7 @@ For more information, please check the documentation or contact support.
         version_icon.setStyleSheet("border: none; background: transparent;")
         version_layout.addWidget(version_icon)
 
-        self.version_label = QLabel("v1.1.2")
+        self.version_label = QLabel("v1.2.1")
         self.version_label.setAlignment(Qt.AlignCenter)
         self.version_label.setStyleSheet("""
             QLabel {
@@ -5907,14 +6031,14 @@ For more information, please check the documentation or contact support.
         else:
             waste_cost = 0.0
         
-        # Shopping list metrics
-        if 'status' in self.data['shopping_list'].columns:
-            items_to_buy = len(self.data['shopping_list'][self.data['shopping_list']['status'] == 'Pending'])
+        # Expenses list metrics
+        if 'status' in self.data['expenses_list'].columns:
+            items_to_buy = len(self.data['expenses_list'][self.data['expenses_list']['status'] == 'Pending'])
         else:
-            items_to_buy = len(self.data['shopping_list'])
-            
-        if 'estimated_cost' in self.data['shopping_list'].columns:
-            estimated_cost = self.data['shopping_list']['estimated_cost'].sum()
+            items_to_buy = len(self.data['expenses_list'])
+
+        if 'estimated_cost' in self.data['expenses_list'].columns:
+            estimated_cost = self.data['expenses_list']['estimated_cost'].sum()
         else:
             estimated_cost = 0.0
         
@@ -6397,42 +6521,37 @@ For more information, please check the documentation or contact support.
         self.content_layout.addWidget(meal_planning_widget)
     
     def show_budget_page(self):
-        """Display placeholder message for budget functionality"""
+        """Display the enhanced budget management page"""
         self.clear_content()
 
         # Add header with refresh button
         header_widget = self.create_tab_header_with_refresh("Budget Management", "Budget")
         self.content_layout.addWidget(header_widget)
 
-        # Create placeholder widget
-        placeholder = QWidget()
-        placeholder_layout = QVBoxLayout(placeholder)
-        placeholder_layout.setContentsMargins(50, 50, 50, 50)
-        placeholder_layout.setAlignment(Qt.AlignCenter)
-
-        # Main message
-        main_label = QLabel("Budget Management")
-        main_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #374151; margin-bottom: 20px;")
-        main_label.setAlignment(Qt.AlignCenter)
-        placeholder_layout.addWidget(main_label)
-
-        # Status message
-        status_label = QLabel("Will be implemented soon")
-        status_label.setStyleSheet("font-size: 18px; color: #6b7280; margin-bottom: 30px;")
-        status_label.setAlignment(Qt.AlignCenter)
-        placeholder_layout.addWidget(status_label)
-
-        # Additional info
-        info_label = QLabel("This feature is currently under development.\nPlease check back in future updates.")
-        info_label.setStyleSheet("font-size: 14px; color: #9ca3af; line-height: 1.5;")
-        info_label.setAlignment(Qt.AlignCenter)
-        placeholder_layout.addWidget(info_label)
+        # Create the budget management widget with proper budget categories
+        try:
+            from modules.budget_manager import BudgetManager
+            budget_widget = BudgetManager(self.data)
+            self.logger.info("Using updated budget management widget with budget categories")
+        except Exception as e:
+            # Create placeholder if module fails to load
+            self.logger.error(f"Error loading budget widget: {str(e)}")
+            placeholder = QWidget()
+            placeholder_layout = QVBoxLayout(placeholder)
+            placeholder_layout.setContentsMargins(20, 20, 20, 20)
+            error_label = QLabel(f"Budget management functionality is currently unavailable.\nError: {str(e)}")
+            error_label.setStyleSheet("color: red; font-size: 16px;")
+            error_label.setAlignment(Qt.AlignCenter)
+            error_label.setWordWrap(True)
+            placeholder_layout.addWidget(error_label)
+            budget_widget = placeholder
+            self.logger.error("Enhanced budget module failed to load")
 
         # Add the widget to the content layout
-        self.content_layout.addWidget(placeholder)
+        self.content_layout.addWidget(budget_widget)
 
         # Log the action
-        self.logger.debug("Showing budget placeholder page")
+        self.logger.info("Budget management page displayed")
     
     def show_sales_page(self):
         """Display the sales page with both basic sales recording and order management"""
@@ -6662,23 +6781,23 @@ For more information, please check the documentation or contact support.
         # Add the widget to the content layout
         self.content_layout.addWidget(packing_widget)
 
-    def show_shopping_page(self):
-        """Display the shopping list page"""
+    def show_expenses_page(self):
+        """Display the expenses page"""
         self.clear_content()
 
         # Add header with refresh button
-        header_widget = self.create_tab_header_with_refresh("Shopping List", "Shopping")
+        header_widget = self.create_tab_header_with_refresh("Expenses", "Expenses")
         self.content_layout.addWidget(header_widget)
 
-        # Create the shopping widget using our fixed module
-        # ShoppingWidget is already imported at the top of the file
-        shopping_widget = ShoppingWidget(self.data)
+        # Create the expenses widget using our fixed module
+        # ExpensesWidget is already imported at the top of the file
+        expenses_widget = ExpensesWidget(self.data)
 
         # Set main app reference for data refresh functionality
-        shopping_widget.main_app = self
+        expenses_widget.main_app = self
 
         # Add the widget to the content layout
-        self.content_layout.addWidget(shopping_widget)
+        self.content_layout.addWidget(expenses_widget)
 
     def show_gas_management_page(self):
         """Display the gas management page"""
@@ -6911,7 +7030,7 @@ For more information, please check the documentation or contact support.
         # Data status info
         status_info = QLabel(f"""
 Current Data Status:
-• Shopping List: {len(self.data.get('shopping_list', []))} items
+• Expenses List: {len(self.data.get('expenses_list', []))} items
 • Inventory: {len(self.data.get('inventory', []))} items
 • Recipes: {len(self.data.get('recipes', []))} items
 • Last Loaded: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -6925,6 +7044,29 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
         data_layout.addStretch()
 
         settings_tabs.addTab(data_container, "📊 Data Management")
+
+        # Staff Management Tab
+        try:
+            from modules.staff_management import StaffManagementWidget
+
+            staff_container = QWidget()
+            staff_layout = QVBoxLayout(staff_container)
+            staff_layout.setContentsMargins(20, 20, 20, 20)
+
+            # Create staff management widget
+            staff_widget = StaffManagementWidget(self.data)
+            staff_widget.data_changed.connect(self.refresh_all_tabs)
+            staff_layout.addWidget(staff_widget)
+
+            settings_tabs.addTab(staff_container, "👥 Staff Management")
+            self.logger.info("Staff management integrated into Settings tab")
+
+        except Exception as e:
+            self.logger.warning(f"Staff management not available: {e}")
+            staff_placeholder = QLabel("Staff management not available.\nPlease check staff management modules.")
+            staff_placeholder.setAlignment(Qt.AlignCenter)
+            staff_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
+            settings_tabs.addTab(staff_placeholder, "👥 Staff Management")
 
         # Appliance & Electricity Management Tab
         try:
@@ -6949,79 +7091,9 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
             appliance_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
             settings_tabs.addTab(appliance_placeholder, "⚡ Appliances")
 
-        # Mobile & PWA Settings Tab
-        try:
-            mobile_container = QWidget()
-            mobile_layout = QVBoxLayout(mobile_container)
-            mobile_layout.setContentsMargins(20, 20, 20, 20)
 
-            # Create mobile settings sub-tabs
-            mobile_subtabs = QTabWidget()
 
-            # Responsive design tab
-            if self.responsive_manager:
-                responsive_widget = self.create_responsive_settings_widget()
-                mobile_subtabs.addTab(responsive_widget, "📱 Responsive Design")
 
-            # PWA settings tab
-            if self.pwa_manager:
-                from modules.pwa_manager import PWAStatusWidget
-                pwa_widget = PWAStatusWidget(self.pwa_manager)
-                mobile_subtabs.addTab(pwa_widget, "📲 PWA & Offline")
-
-            # Mobile navigation tab
-            if self.mobile_navigation:
-                navigation_widget = self.create_navigation_settings_widget()
-                mobile_subtabs.addTab(navigation_widget, "🧭 Navigation")
-
-            mobile_layout.addWidget(mobile_subtabs)
-            settings_tabs.addTab(mobile_container, "📱 Mobile")
-
-            self.logger.info("Mobile settings integrated into Settings tab")
-
-        except Exception as e:
-            self.logger.warning(f"Mobile settings not available: {e}")
-            mobile_placeholder = QLabel("Mobile settings not available.\nPlease check mobile modules.")
-            mobile_placeholder.setAlignment(Qt.AlignCenter)
-            mobile_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
-            settings_tabs.addTab(mobile_placeholder, "📱 Mobile")
-
-        # AI & ML Settings Tab
-        try:
-            ai_container = QWidget()
-            ai_layout = QVBoxLayout(ai_container)
-            ai_layout.setContentsMargins(20, 20, 20, 20)
-
-            # AI Provider Selection
-            self.create_ai_provider_selector_for_settings(ai_layout)
-
-            # Create AI settings sub-tabs
-            ai_subtabs = QTabWidget()
-
-            # AI Insights tab
-            if self.multi_ai_engine and self.multi_ai_engine.is_available():
-                insights_widget = self.create_multi_ai_insights_widget()
-                ai_subtabs.addTab(insights_widget, "🧠 AI Insights")
-
-                # Provider Status tab
-                status_widget = self.create_provider_status_widget()
-                ai_subtabs.addTab(status_widget, "📊 Provider Status")
-
-                # API Usage tab
-                usage_widget = self.create_api_usage_widget()
-                ai_subtabs.addTab(usage_widget, "📈 API Usage")
-
-            ai_layout.addWidget(ai_subtabs)
-            settings_tabs.addTab(ai_container, "🤖 AI & ML")
-
-            self.logger.info("AI & ML settings integrated into Settings tab")
-
-        except Exception as e:
-            self.logger.warning(f"AI & ML settings not available: {e}")
-            ai_placeholder = QLabel("AI & ML settings not available.\nPlease check AI modules.")
-            ai_placeholder.setAlignment(Qt.AlignCenter)
-            ai_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
-            settings_tabs.addTab(ai_placeholder, "🤖 AI & ML")
 
         # Enterprise Settings Tab
         try:
@@ -7060,7 +7132,7 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
         self.content_layout.addWidget(settings_tabs)
 
         # Log the action
-        self.logger.info("Enhanced Settings page with Mobile, AI/ML, and Enterprise tabs displayed")
+        self.logger.info("Enhanced Settings page with Firebase and Enterprise tabs displayed")
 
     def on_appliance_settings_updated(self):
         """Handle appliance settings updates"""
@@ -7152,30 +7224,7 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
         # Log the action
         self.logger.info("Logs page with missing items displayed")
 
-    def show_analytics_page(self):
-        """Display the business intelligence analytics page"""
-        self.clear_content()
 
-        # Add header with refresh button
-        header_widget = self.create_tab_header_with_refresh("Business Intelligence Analytics", "Analytics")
-        self.content_layout.addWidget(header_widget)
-
-        # Create business intelligence dashboard
-        try:
-            from modules.business_intelligence_dashboard import BusinessIntelligenceDashboard
-            analytics_widget = BusinessIntelligenceDashboard(self.data)
-            self.logger.info("Using business intelligence dashboard")
-        except Exception as e:
-            # Fallback to placeholder
-            self.logger.warning(f"Business intelligence dashboard not available: {e}")
-            analytics_widget = QLabel("Business Intelligence Dashboard - Loading...")
-            analytics_widget.setAlignment(Qt.AlignCenter)
-            analytics_widget.setStyleSheet("font-size: 18px; color: #64748b;")
-
-        self.content_layout.addWidget(analytics_widget)
-
-        # Log the action
-        self.logger.info("Analytics page displayed")
 
     def show_reports_page(self):
         """Display the advanced reporting page"""
@@ -8535,21 +8584,19 @@ Generated: {timestamp[:19]}
                     self.show_pricing_page()
                 elif button_index == 6:  # Packing Materials
                     self.show_packing_materials_page()
-                elif button_index == 7:  # Shopping
-                    self.show_shopping_page()
+                elif button_index == 7:  # Expenses
+                    self.show_expenses_page()
                 elif button_index == 8:  # Gas Management
                     self.show_gas_management_page()
                 elif button_index == 9:  # Waste
                     self.show_waste_page()
                 elif button_index == 10:  # Cleaning
                     self.show_cleaning_page()
-                elif button_index == 11:  # Analytics
-                    self.show_analytics_page()
-                elif button_index == 12:  # Reports
+                elif button_index == 11:  # Reports
                     self.show_reports_page()
-                elif button_index == 13:  # Logs
+                elif button_index == 12:  # Logs
                     self.show_logs_page()
-                elif button_index == 14:  # Settings (Mobile, AI/ML, Enterprise moved inside)
+                elif button_index == 13:  # Settings (Mobile, AI/ML, Enterprise moved inside)
                     self.show_settings_page()
             else:
                 # Default to home page if no button is active

@@ -1,8 +1,8 @@
 """
-Shopping List to Inventory Synchronization Module
+Expenses List to Inventory Synchronization Module
 
-This module handles the integration between shopping list and inventory:
-- When items are marked as "Purchased" in shopping list, update inventory
+This module handles the integration between expenses list and inventory:
+- When items are marked as "Purchased" in expenses list, update inventory
 - Sync quantities, prices, and dates between systems
 - Maintain data consistency across modules
 """
@@ -13,12 +13,12 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 
-class ShoppingInventorySync:
-    """Handles synchronization between shopping list and inventory"""
-    
+class ExpensesInventorySync:
+    """Handles synchronization between expenses list and inventory"""
+
     def __init__(self, data_dir: str = "data"):
         self.data_dir = data_dir
-        self.shopping_file = os.path.join(data_dir, "shopping_list.csv")
+        self.expenses_file = os.path.join(data_dir, "expenses_list.csv")
         self.inventory_file = os.path.join(data_dir, "inventory.csv")
         
     def sync_purchased_items(self) -> Dict[str, int]:
@@ -204,7 +204,7 @@ class ShoppingInventorySync:
 
 def main():
     """Test the synchronization functionality"""
-    sync = ShoppingInventorySync()
+    sync = ExpensesInventorySync()
     
     print("🔄 Starting Shopping List to Inventory Sync...")
     

@@ -114,7 +114,7 @@ class SafeTestRunner:
         # Test expected data keys
         expected_keys = [
             'inventory', 'meal_plan', 'recipes', 'budget', 'sales',
-            'shopping_list', 'waste', 'cleaning_maintenance', 'items',
+            'expenses_list', 'waste', 'cleaning_maintenance', 'items',
             'categories', 'recipe_ingredients', 'pricing', 'packing_materials'
         ]
         

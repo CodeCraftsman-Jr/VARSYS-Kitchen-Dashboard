@@ -24,7 +24,7 @@ os.makedirs(ASSETS_DIR, exist_ok=True)
 
 # File paths
 INVENTORY_FILE = os.path.join(DATA_DIR, "inventory.csv")
-SHOPPING_LIST_FILE = os.path.join(DATA_DIR, "shopping_list.csv")
+EXPENSES_LIST_FILE = os.path.join(DATA_DIR, "expenses_list.csv")
 SALES_FILE = os.path.join(DATA_DIR, "sales.csv")
 RECIPES_FILE = os.path.join(DATA_DIR, "recipes.csv")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")

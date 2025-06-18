@@ -223,8 +223,8 @@ class DataSourcesViewer(QWidget):
     def load_all_data_sources(self):
         """Load and display all data sources"""
         try:
-            # Load Shopping List
-            shopping_count = self.load_shopping_data()
+            # Load Expenses List
+            shopping_count = self.load_expenses_data()
 
             # Load Inventory
             inventory_count = self.load_inventory_data()
@@ -249,18 +249,18 @@ class DataSourcesViewer(QWidget):
     
 
     
-    def load_shopping_data(self):
-        """Load shopping list data"""
+    def load_expenses_data(self):
+        """Load expenses list data"""
         try:
-            shopping_file = os.path.join(self.data_dir, 'shopping_list.csv')
-            if not os.path.exists(shopping_file):
+            expenses_file = os.path.join(self.data_dir, 'expenses_list.csv')
+            if not os.path.exists(expenses_file):
                 self.shopping_table.setRowCount(0)
                 return 0
-            
-            shopping_df = pd.read_csv(shopping_file)
-            self.shopping_table.setRowCount(len(shopping_df))
-            
-            for row, (_, item) in enumerate(shopping_df.iterrows()):
+
+            expenses_df = pd.read_csv(expenses_file)
+            self.shopping_table.setRowCount(len(expenses_df))
+
+            for row, (_, item) in enumerate(expenses_df.iterrows()):
                 # ID
                 self.shopping_table.setItem(row, 0, QTableWidgetItem(str(item.get('item_id', 'N/A'))))
                 
@@ -289,7 +289,7 @@ class DataSourcesViewer(QWidget):
                     price_item.setForeground(QColor("#6c757d"))
                 self.shopping_table.setItem(row, 5, price_item)
             
-            return len(shopping_df)
+            return len(expenses_df)
             
         except Exception as e:
             self.shopping_table.setRowCount(0)

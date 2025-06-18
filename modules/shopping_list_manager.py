@@ -1,26 +1,26 @@
 """
-Shopping List Management Module
+Expenses List Management Module
 
 This module provides functionality to:
 - Mark items as purchased with today's date
 - Update inventory when items are purchased
-- Manage shopping list status and dates
-- Provide proper integration between shopping and inventory
+- Manage expenses list status and dates
+- Provide proper integration between expenses and inventory
 """
 
 import os
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional
-from shopping_inventory_sync import ShoppingInventorySync
+from shopping_inventory_sync import ExpensesInventorySync
 
-class ShoppingListManager:
-    """Manages shopping list operations and inventory integration"""
-    
+class ExpensesListManager:
+    """Manages expenses list operations and inventory integration"""
+
     def __init__(self, data_dir: str = "data"):
         self.data_dir = data_dir
-        self.shopping_file = os.path.join(data_dir, "shopping_list.csv")
-        self.sync_manager = ShoppingInventorySync(data_dir)
+        self.expenses_file = os.path.join(data_dir, "expenses_list.csv")
+        self.sync_manager = ExpensesInventorySync(data_dir)
         
     def mark_items_as_purchased(self, item_ids: List[int], purchase_date: Optional[str] = None) -> Dict[str, int]:
         """
@@ -76,10 +76,10 @@ class ShoppingListManager:
                     results['error_items'].append(f"Error processing item {item_id}: {e}")
                     print(f"❌ Error processing item {item_id}: {e}")
             
-            # Save updated shopping list
+            # Save updated expenses list
             if results['marked_purchased'] > 0:
-                shopping_df.to_csv(self.shopping_file, index=False)
-                print(f"💾 Updated shopping list with {results['marked_purchased']} purchased items")
+                shopping_df.to_csv(self.expenses_file, index=False)
+                print(f"💾 Updated expenses list with {results['marked_purchased']} purchased items")
                 
                 # Sync to inventory
                 sync_results = self.sync_manager.sync_purchased_items()
@@ -206,7 +206,7 @@ class ShoppingListManager:
 
 def main():
     """Test the shopping list management functionality"""
-    manager = ShoppingListManager()
+    manager = ExpensesListManager()
     
     print("🛒 Shopping List Management Test")
     print("=" * 50)

@@ -1,0 +1,68 @@
+recipe_id,recipe_name,total_cost,cost_per_serving,others_pricing,our_pricing,cooking_time,other_charges,last_calculated
+dosa,Dosa,12.0,12.0,76,62.0,20 mins,2.0,2025-06-15 04:11:52
+2_masala_dosa,2 Masala Dosa,12.0,12.0,110,120.0,30 mins,2.0,2025-06-15 04:11:52
+2_ghee_dosa,2 Ghee Dosa,12.0,12.0,75,125.0,20 mins,2.0,2025-06-15 04:11:52
+2_paper_roast,2 Paper Roast,12.0,12.0,100,96.0,25 mins,2.0,2025-06-15 04:11:52
+idli(2_pcs),Idli(2 pcs),12.0,12.0,45,48.0,15 mins,2.0,2025-06-15 04:11:52
+podi_idli,Podi Idli,12.0,12.0,75,56.0,20 mins,2.0,2025-06-15 04:11:52
+mini_idli,Mini Idli,12.0,12.0,110,62.0,15 mins,2.0,2025-06-15 04:11:52
+idli_podimas,Idli Podimas,12.0,12.0,90,100.0,25 mins,2.0,2025-06-15 04:11:52
+tomato_chutney,Tomato Chutney,12.0,12.0,15,250.0,15 mins,2.0,2025-06-15 04:11:52
+coconut_chutney,Coconut Chutney,12.0,12.0,15,135.0,10 mins,2.0,2025-06-15 04:11:52
+sambar,Sambar,12.0,12.0,20,400.0,40 mins,2.0,2025-06-15 04:11:52
+kurma,Kurma,12.0,12.0,20,65.0,35 mins,2.0,2025-06-15 04:11:52
+ginger_tea,Ginger Tea,12.0,12.0,50,38.0,10 mins,2.0,2025-06-15 04:11:52
+tea(250_ml),Tea(250 ml),12.0,12.0,35,40.0,5 mins,2.0,2025-06-15 04:11:52
+coffee,Coffee,12.0,12.0,45,60.0,5 mins,2.0,2025-06-15 04:11:52
+boost,Boost,12.0,12.0,50,65.0,5 mins,2.0,2025-06-15 04:11:52
+horlicks,Horlicks,12.0,12.0,50,65.0,5 mins,2.0,2025-06-15 04:11:52
+black_coffee,Black Coffee,12.0,12.0,30,30.0,5 mins,2.0,2025-06-15 04:11:52
+tea(125ml),Tea(125ml),12.0,12.0,27,22.0,5 mins,2.0,2025-06-15 04:11:52
+tea(500ml),Tea(500ml),12.0,12.0,100,70.0,10 mins,2.0,2025-06-15 04:11:52
+tea(750ml),Tea(750ml),12.0,12.0,100,105.0,15 mins,2.0,2025-06-15 04:11:52
+milk,Milk,12.0,12.0,100,32.0,5 mins,2.0,2025-06-15 04:11:52
+chapathi,Chapathi,12.0,12.0,50,40.0,20 mins,2.0,2025-06-15 04:11:52
+kuli_paniyaram,Kuli Paniyaram,12.0,12.0,90,100.0,20 mins,2.0,2025-06-15 04:11:52
+lemon_rice,Lemon Rice,12.0,12.0,80,56.0,15 mins,2.0,2025-06-15 04:11:52
+tomato_rice,Tomato Rice,12.0,12.0,80,60.0,20 mins,2.0,2025-06-15 04:11:52
+plain_rice,Plain Rice,12.0,12.0,70,50.0,15 mins,2.0,2025-06-15 04:11:52
+curd_rice,Curd Rice,12.0,12.0,80,62.0,10 mins,2.0,2025-06-15 04:11:52
+cooked_rice(inventoryside),cooked rice(InventorySide),12.0,12.0,300,280.0,30 mins,2.0,2025-06-15 04:11:52
+idly_5_pcs,Idly 5 pcs,12.0,12.0,55,52.0,15 mins,2.0,2025-06-15 04:11:52
+mini_podi_idli,Mini Podi Idli,12.0,12.0,69,50.0,15 mins,2.0,2025-06-15 04:11:52
+ghee_mini_idli_with_sambhar_(15_pcs),Ghee Mini Idli with Sambhar (15 pcs),12.0,12.0,100,68.0,20 mins,2.0,2025-06-15 04:11:52
+onion_egg_dosa,Onion Egg Dosa,12.0,12.0,120,110.0,20 mins,2.0,2025-06-15 04:11:52
+onion_dosa,Onion Dosa,12.0,12.0,60,90.0,15 mins,2.0,2025-06-15 04:11:52
+tomato_dosa,Tomato Dosa,12.0,12.0,60,60.0,15 mins,2.0,2025-06-15 04:11:52
+egg_dosa,Egg Dosa,12.0,12.0,80,85.0,20 mins,2.0,2025-06-15 04:11:52
+masala_dosa,Masala Dosa,12.0,12.0,110,115.0,30 mins,2.0,2025-06-15 04:11:52
+paper_roast,Paper Roast,12.0,12.0,100,62.0,25 mins,2.0,2025-06-15 04:11:52
+ghee_dosa,Ghee Dosa,12.0,12.0,100,90.0,20 mins,2.0,2025-06-15 04:11:52
+onion_podi_dosa,Onion Podi Dosa,12.0,12.0,100,90.0,18 mins,2.0,2025-06-15 04:11:52
+chappathi_and_channa_(2_pcs),Chappathi and Channa (2 pcs),12.0,12.0,90,105.0,25 mins,2.0,2025-06-15 04:11:52
+boiled_egg,Boiled Egg,12.0,12.0,20,22.0,10 mins,2.0,2025-06-15 04:11:52
+fish_kolambu(parai_fish),Fish Kolambu(Parai Fish),12.0,12.0,900,750.0,30 mins,2.0,2025-06-15 04:11:52
+dosa_with_fish_kolambu(parai_fish),Dosa with Fish Kolambu(Parai Fish),12.0,12.0,110,73.0,25 mins,2.0,2025-06-15 04:11:52
+2_masala_dosa_with_fish_kolambu(parai_fish),2 Masala Dosa with Fish Kolambu(Parai Fish),12.0,12.0,75,152.0,35 mins,2.0,2025-06-15 04:11:52
+2_ghee_dosa_with_fish_kolambu(parai_fish),2 Ghee Dosa with Fish Kolambu(Parai Fish),12.0,12.0,100,94.0,25 mins,2.0,2025-06-15 04:11:52
+2_paper_roast_with_fish_kolambu(parai_fish),2 Paper Roast with Fish Kolambu(Parai Fish),12.0,12.0,45,75.0,30 mins,2.0,2025-06-15 04:11:52
+idli(2_pcs)_with_fish_kolambu(parai_fish),Idli(2 pcs) with Fish Kolambu(Parai Fish),12.0,12.0,110,190.0,20 mins,2.0,2025-06-15 04:11:52
+mini_idli_with_fish_kolambu(parai_fish),Mini Idli with Fish Kolambu(Parai Fish),12.0,12.0,50,90.0,20 mins,2.0,2025-06-15 04:11:52
+chapathi_with_fish_kolambu(parai_fish),Chapathi with Fish Kolambu(Parai Fish),12.0,12.0,90,80.0,25 mins,2.0,2025-06-15 04:11:52
+kuli_paniyaram_with_fish_kolambu(parai_fish),Kuli Paniyaram with Fish Kolambu(Parai Fish),12.0,12.0,70,70.0,25 mins,2.0,2025-06-15 04:11:52
+onion_dosa_with_fish_kolambu(parai_fish),Onion Dosa with Fish Kolambu(Parai Fish),12.0,12.0,60,102.0,20 mins,2.0,2025-06-15 04:11:52
+tomato_dosa_with_fish_kolambu(parai_fish),Tomato Dosa with Fish Kolambu(Parai Fish),12.0,12.0,80,125.0,20 mins,2.0,2025-06-15 04:11:52
+egg_dosa_with_fish_kolambu(parai_fish),Egg Dosa with Fish Kolambu(Parai Fish),12.0,12.0,300,182.0,25 mins,2.0,2025-06-15 04:11:52
+plain_rice_with_fish_kolambu(parai_fish),Plain rice with Fish Kolambu(Parai Fish),12.0,12.0,110,125.0,20 mins,2.0,2025-06-15 04:11:52
+masala_dosa_with_fish_kolambu(parai_fish),Masala Dosa with Fish Kolambu(Parai Fish),12.0,12.0,100,125.0,35 mins,2.0,2025-06-15 04:11:52
+paper_roast_with_fish_kolambu(parai_fish),Paper Roast with Fish Kolambu(Parai Fish),12.0,12.0,100,125.0,30 mins,2.0,2025-06-15 04:11:52
+ghee_dosa_with_fish_kolambu(parai_fish),Ghee Dosa with Fish Kolambu(Parai Fish),12.0,12.0,100,125.0,25 mins,2.0,2025-06-15 04:11:52
+carrot_and_coriander_uthapam,Carrot and Coriander Uthapam,12.0,12.0,80,125.0,18 mins,2.0,2025-06-15 04:11:52
+onion_uttapam,Onion Uttapam,12.0,12.0,100,90.0,16 mins,2.0,2025-06-15 04:11:52
+tomato_uttapam,Tomato Uttapam,12.0,12.0,100,80.0,17 mins,2.0,2025-06-15 04:11:52
+plain_uttapam,Plain Uttapam,12.0,12.0,100,70.0,18 mins,2.0,2025-06-15 04:11:52
+double_omelette,Double Omelette,12.0,12.0,80,70.0,10 mins,2.0,2025-06-15 04:11:52
+onion_bread_omellete,Onion bread omellete,12.0,12.0,120,102.0,12 mins,2.0,2025-06-15 04:11:52
+plain_bread_omellete,Plain bread omellete,12.0,12.0,100,92.0,10 mins,2.0,2025-06-15 04:11:52
+chicken_gravy,Chicken Gravy,12.0,12.0,170,100.0,35 mins,2.0,2025-06-15 04:11:52
+chicken_gravy(250g),Chicken Gravy(250G),12.0,12.0,120,190.0,35 mins,2.0,2025-06-15 04:11:52

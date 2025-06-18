@@ -1,0 +1,42 @@
+budget_id,category,budget_amount,actual_amount,period,date,notes
+1,Groceries,500.0,156.7,Monthly,2025-06-06,
+2,Dining Out,200.0,45.0,Monthly,2025-05-30,
+3,Kitchen Equipment,100.0,0.0,Monthly,2025-05-23,
+4,Cleaning Supplies,50.0,12.5,Monthly,2025-05-16,
+5,Raw Materials,800.0,234.5,Monthly,2025-06-01,
+6,Utilities,150.0,89.3,Monthly,2025-06-01,
+7,Staff Wages,1200.0,800.0,Monthly,2025-06-01,
+8,Marketing,75.0,25.0,Monthly,2025-06-01,
+9,Gas,2000.0,0.0,Monthly,,Auto-created for category synchronization
+10,Nuts & Seeds,1000.0,0.0,Monthly,,Auto-created for category synchronization
+11,Unknown,1000.0,0.0,Monthly,,Auto-created for category synchronization
+12,Maintenance,2000.0,0.0,Monthly,,Auto-created for category synchronization
+13,Condiments,1000.0,0.0,Monthly,,Auto-created for category synchronization
+14,Aromatics,1000.0,0.0,Monthly,,Auto-created for category synchronization
+15,Fruits,1500.0,0.0,Monthly,,Auto-created for category synchronization
+16,Spices & Herbs,1000.0,0.0,Monthly,,Auto-created for category synchronization
+17,Snacks,1000.0,0.0,Monthly,,Auto-created for category synchronization
+18,Grains,1000.0,0.0,Monthly,,Auto-created for category synchronization
+19,Seafood,3000.0,0.0,Monthly,,Auto-created for category synchronization
+20,Oils,1000.0,0.0,Monthly,,Auto-created for category synchronization
+21,Canned Goods,1000.0,0.0,Monthly,,Auto-created for category synchronization
+22,Vegetables,2000.0,0.0,Monthly,,Auto-created for category synchronization
+23,Sweeteners,1000.0,0.0,Monthly,,Auto-created for category synchronization
+24,Packing Materials,1500.0,0.0,Monthly,,Auto-created for category synchronization
+25,Eggs,1000.0,0.0,Monthly,,Auto-created for category synchronization
+26,Bread & Bakery,1000.0,0.0,Monthly,,Auto-created for category synchronization
+27,Bakery Items,1000.0,0.0,Monthly,,Auto-created for category synchronization
+28,Grains & Cereals,3000.0,0.0,Monthly,,Auto-created for category synchronization
+29,Beverages,1200.0,0.0,Monthly,,Auto-created for category synchronization
+30,Missing Ingredient,1000.0,0.0,Monthly,,Auto-created for category synchronization
+31,Meat & Poultry,4000.0,0.0,Monthly,,Auto-created for category synchronization
+32,Prepared Foods,1000.0,0.0,Monthly,,Auto-created for category synchronization
+33,Poultry,1000.0,0.0,Monthly,,Auto-created for category synchronization
+34,Oils & Fats,800.0,0.0,Monthly,,Auto-created for category synchronization
+35,Dairy Products,2500.0,0.0,Monthly,,Auto-created for category synchronization
+36,Spices,1000.0,0.0,Monthly,,Auto-created for category synchronization
+37,Equipment,5000.0,0.0,Monthly,,Auto-created for category synchronization
+38,Frozen Foods,1000.0,0.0,Monthly,,Auto-created for category synchronization
+39,Legumes,1000.0,0.0,Monthly,,Auto-created for category synchronization
+40,Dairy,1000.0,0.0,Monthly,,Auto-created for category synchronization
+41,Revenue,0.0,320.0,Monthly,,Auto-tracked from sales

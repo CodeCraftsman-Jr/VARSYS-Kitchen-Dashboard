@@ -31,7 +31,7 @@ class ModuleTester:
         # Test each module
         modules_to_test = [
             ("Inventory Module", self.test_inventory_module),
-            ("Shopping Module", self.test_shopping_module),
+            ("Expenses Module", self.test_expenses_module),
             ("Pricing Module", self.test_pricing_module),
             ("Sales Module", self.test_sales_module),
             ("Cleaning Module", self.test_cleaning_module),
@@ -96,8 +96,8 @@ class ModuleTester:
             'reorder_level': [5, 2, 10, 5, 3, 10, 5, 2, 1, 1, 1, 1, 0, 12, 2, 0, 0, 0, 0, 0]
         })
         
-    def create_sample_shopping_data(self):
-        """Create sample shopping list data"""
+    def create_sample_expenses_data(self):
+        """Create sample expenses list data"""
         return pd.DataFrame({
             'item_id': range(1, 16),
             'item_name': [
@@ -109,6 +109,11 @@ class ModuleTester:
                 'Bakery', 'Dairy', 'Dairy', 'Dairy', 'Fruits',
                 'Fruits', 'Fruits', 'Grains', 'Canned Goods', 'Herbs',
                 'Vegetables', 'Vegetables', 'Meat', 'Seafood', 'Seafood'
+            ],
+            'budget_category': [
+                'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials',
+                'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials',
+                'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials'
             ],
             'quantity': [2, 1, 0.5, 4, 2, 1, 3, 1, 2, 1, 0.5, 1, 1, 1, 0.5],
             'unit': ['loaves', 'pack', 'kg', 'cups', 'kg', 'bunch', 'kg', 'pack', 'cans', 'pack', 'kg', 'bunch', 'kg', 'kg', 'kg'],
@@ -206,25 +211,25 @@ class ModuleTester:
         except ImportError:
             raise Exception("Inventory module not available")
             
-    def test_shopping_module(self):
-        """Test shopping module"""
+    def test_expenses_module(self):
+        """Test expenses module"""
         try:
-            from modules.shopping_fixed import ShoppingWidget
+            from modules.expenses_fixed import ExpensesWidget
 
-            sample_data = self.create_sample_shopping_data()
-            data = {'shopping_list': sample_data}
+            sample_data = self.create_sample_expenses_data()
+            data = {'expenses_list': sample_data}
 
             # Test widget creation - FIXED: correct argument order (data, parent)
-            widget = ShoppingWidget(data, self.app)
+            widget = ExpensesWidget(data, self.app)
             assert widget is not None, "Widget creation failed"
 
             # Test data loading
             widget.load_data()
 
-            self.logger.info("Shopping module test completed successfully")
+            self.logger.info("Expenses module test completed successfully")
 
         except ImportError:
-            raise Exception("Shopping module not available")
+            raise Exception("Expenses module not available")
             
     def test_pricing_module(self):
         """Test pricing module"""

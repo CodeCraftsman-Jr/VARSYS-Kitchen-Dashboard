@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Version management for VARSYS Kitchen Dashboard
+Enhanced with Git-based update capabilities
 """
 
 import json
@@ -9,8 +10,16 @@ import requests
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 
+# Git integration imports (optional)
+try:
+    import git
+    from git import Repo, GitCommandError
+    GIT_AVAILABLE = True
+except ImportError:
+    GIT_AVAILABLE = False
+
 # Current version information
-__version__ = "1.1.1"
+__version__ = "1.2.1"
 __build__ = "2025.06.16"
 __author__ = "VARSYS"
 __description__ = "Professional Kitchen Management Dashboard with Firebase Login & Cloud Sync"

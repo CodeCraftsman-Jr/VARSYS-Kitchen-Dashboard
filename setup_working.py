@@ -43,6 +43,8 @@ include_files = [
     ("update_manager.py", "update_manager.py"),
     ("updater.py", "updater.py"),
     ("enhanced_updater.py", "enhanced_updater.py"),
+    ("git_updater.py", "git_updater.py"),
+    ("hybrid_updater.py", "hybrid_updater.py"),
     ("update_checker.py", "update_checker.py"),
     ("firebase_installer.py", "firebase_installer.py"),
     ("firebase_protection.py", "firebase_protection.py"),
@@ -124,6 +126,19 @@ except ImportError:
 packages.extend(firebase_packages)
 print(f"   Total Firebase packages added: {len(firebase_packages)}")
 print("   Note: Enhanced Firebase support with httplib2 fix")
+
+# Try to include Git packages for enhanced auto-update
+git_packages = []
+try:
+    import git
+    git_packages.extend(["git", "gitdb", "smmap"])
+    print("   Including: GitPython for enhanced auto-update")
+except ImportError:
+    print("   Warning: GitPython not available - using HTTP-only updates")
+
+# Add Git packages to main packages list
+packages.extend(git_packages)
+print(f"   Total Git packages added: {len(git_packages)}")
 
 # Build options with enhanced Firebase support
 build_exe_options = {

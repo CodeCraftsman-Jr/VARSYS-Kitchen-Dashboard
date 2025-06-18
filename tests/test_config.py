@@ -94,7 +94,7 @@ TEST_CONFIG = {
     # Expected data files
     'expected_data_files': [
         'inventory.csv',
-        'shopping_list.csv',
+        'expenses_list.csv',
         'recipes.csv',
         'recipe_ingredients.csv',
         'meal_plan.csv',

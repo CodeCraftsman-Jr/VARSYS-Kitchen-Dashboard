@@ -143,7 +143,7 @@ class TestRunner(QThread):
         # Test expected data keys
         expected_keys = [
             'inventory', 'meal_plan', 'recipes', 'budget', 'sales',
-            'shopping_list', 'waste', 'cleaning_maintenance', 'items',
+            'expenses_list', 'waste', 'cleaning_maintenance', 'items',
             'categories', 'recipe_ingredients', 'pricing', 'packing_materials'
         ]
         
@@ -183,27 +183,28 @@ class TestRunner(QThread):
         except ImportError:
             raise Exception("Inventory module not available")
 
-    def test_shopping_module(self):
-        """Test shopping module functionality"""
+    def test_expenses_module(self):
+        """Test expenses module functionality"""
         try:
-            from modules.shopping_fixed import ShoppingWidget
-            
-            # Create sample shopping data
+            from modules.expenses_fixed import ExpensesWidget
+
+            # Create sample expenses data
             sample_data = pd.DataFrame({
                 'item_id': [1, 2, 3],
                 'item_name': ['Milk', 'Bread', 'Eggs'],
                 'category': ['Dairy', 'Bakery', 'Dairy'],
+                'budget_category': ['Kitchen Essentials', 'Kitchen Essentials', 'Kitchen Essentials'],
                 'quantity': [2, 1, 12],
                 'unit': ['liters', 'loaf', 'pieces'],
                 'priority': ['High', 'Medium', 'Low']
             })
-            
+
             # Test widget creation
-            shopping_widget = ShoppingWidget({'shopping_list': sample_data})
-            assert shopping_widget is not None, "Shopping widget creation failed"
-            
+            expenses_widget = ExpensesWidget({'expenses_list': sample_data})
+            assert expenses_widget is not None, "Expenses widget creation failed"
+
         except ImportError:
-            raise Exception("Shopping module not available")
+            raise Exception("Expenses module not available")
 
     def test_pricing_module(self):
         """Test pricing module functionality"""
@@ -542,7 +543,7 @@ class TestRunner(QThread):
         
         # Test navigation between modules
         assert hasattr(self.app, 'show_inventory_page'), "App should have inventory navigation"
-        assert hasattr(self.app, 'show_shopping_page'), "App should have shopping navigation"
+        assert hasattr(self.app, 'show_expenses_page'), "App should have expenses navigation"
 
 
 class ComprehensiveTestSuite:

@@ -31,44 +31,111 @@ except ImportError:
 
 class PricingCard(QFrame):
     """Modern pricing metrics card widget"""
-    
+
     def __init__(self, title, value, subtitle="", color="#2563eb", parent=None):
         super().__init__(parent)
-        self.setFixedHeight(120)
+        self.setFixedHeight(130)  # Slightly taller for better proportions
+        self.setMinimumWidth(220)  # Slightly wider
+        self.setMaximumWidth(280)  # Better maximum width
+
+        # Store color for later use
+        self.color = color
+
+        # Ensure the widget is visible
+        self.setVisible(True)
+
+        # Professional card styling
         self.setStyleSheet(f"""
             QFrame {{
                 background-color: white;
-                border: 1px solid #e2e8f0;
+                border: 2px solid #e5e7eb;
                 border-radius: 12px;
-                padding: 16px;
+                padding: 4px;
             }}
             QFrame:hover {{
                 border-color: {color};
-                background-color: #f8fafc;
+                background-color: #f9fafb;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }}
         """)
-        
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(8)
-        
-        # Title
-        title_label = QLabel(title)
-        title_label.setStyleSheet("color: #64748b; font-size: 12px; font-weight: 500;")
-        layout.addWidget(title_label)
-        
-        # Value
-        value_label = QLabel(str(value))
-        value_label.setStyleSheet(f"color: {color}; font-size: 24px; font-weight: 700;")
-        layout.addWidget(value_label)
-        
-        # Subtitle
+
+        # Title - Professional styling
+        self.title_label = QLabel(title)
+        self.title_label.setStyleSheet("""
+            QLabel {
+                color: #6b7280;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                background: transparent;
+                border: none;
+            }
+        """)
+        layout.addWidget(self.title_label)
+
+        # Value - Large, bold, colored
+        self.value_label = QLabel(str(value))
+        self.value_label.setStyleSheet(f"""
+            QLabel {{
+                color: {color};
+                font-size:18px;
+                font-weight: 700;
+                background: transparent;
+                border: none;
+                padding: 2px 0px;
+            }}
+        """)
+        self.value_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.value_label)
+
+        # Subtitle - Subtle styling
         if subtitle:
-            subtitle_label = QLabel(subtitle)
-            subtitle_label.setStyleSheet("color: #94a3b8; font-size: 11px;")
-            layout.addWidget(subtitle_label)
-        
+            self.subtitle_label = QLabel(subtitle)
+            self.subtitle_label.setStyleSheet("""
+                QLabel {
+                    color: #9ca3af;
+                    font-size: 11px;
+                    font-weight: 500;
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            layout.addWidget(self.subtitle_label)
+        else:
+            self.subtitle_label = None
+
         layout.addStretch()
+
+        # Debug: Print card creation
+        print(f"✅ Created pricing card: {title} = {value}")
+
+    def update_value(self, new_value):
+        """Update the card value"""
+        try:
+            print(f"🔄 Updating card '{self.title_label.text()}' value to: {new_value}")
+
+            # Update the text
+            self.value_label.setText(str(new_value))
+
+            # Make sure the label is visible
+            self.value_label.show()
+            self.show()
+
+            # Force immediate UI refresh
+            self.value_label.update()
+            self.update()
+
+            print(f"✅ Card '{self.title_label.text()}' updated successfully")
+
+        except Exception as e:
+            print(f"❌ Error updating card: {e}")
+            import traceback
+            traceback.print_exc()
 
 class PricingManagementWidget(QWidget):
     """Advanced pricing management widget with comprehensive cost analysis"""
@@ -171,8 +238,7 @@ class PricingManagementWidget(QWidget):
         }
 
     def init_recipe_pricing_data(self):
-        """Initialize recipe pricing data from CSV files first, then fallback to hardcoded data"""
-        # First try to load from CSV files
+        """Initialize recipe pricing data from CSV files - no hardcoded fallbacks"""
         self.recipe_pricing_data = {}
 
         # Load from main pricing CSV file
@@ -183,160 +249,58 @@ class PricingManagementWidget(QWidget):
             pricing_csv_path = os.path.join('data', 'pricing.csv')
             if os.path.exists(pricing_csv_path):
                 pricing_df = pd.read_csv(pricing_csv_path)
-                self.logger.info(f"Loading pricing data from {pricing_csv_path}")
+                self.logger.info(f"📂 Loading pricing data from {pricing_csv_path}")
 
-                for _, row in pricing_df.iterrows():
-                    recipe_name = row.get('recipe_name', '')
-                    if recipe_name:
-                        self.recipe_pricing_data[recipe_name] = {
-                            'others_pricing': float(row.get('others_pricing', 0)),
-                            'our_pricing': float(row.get('our_pricing', 0)),
-                            'cooking_time': str(row.get('cooking_time', '')),
-                            'other_charges': float(row.get('other_charges', 2.0))
-                        }
-
-                self.logger.info(f"Loaded {len(self.recipe_pricing_data)} recipes from CSV")
-
-                # If we successfully loaded data from CSV, return early
-                if self.recipe_pricing_data:
+                if pricing_df.empty:
+                    self.logger.warning("⚠️ Pricing CSV file exists but is empty")
                     return
 
+                loaded_count = 0
+                for _, row in pricing_df.iterrows():
+                    recipe_name = row.get('recipe_name', '')
+                    if recipe_name and pd.notna(recipe_name):
+                        self.recipe_pricing_data[recipe_name] = {
+                            'others_pricing': self._safe_float(row.get('others_pricing', 0)),
+                            'our_pricing': self._safe_float(row.get('our_pricing', 0)),
+                            'cooking_time': str(row.get('cooking_time', '')),
+                            'other_charges': self._safe_float(row.get('other_charges', 2.0)),
+                            'cost_of_making': self._safe_float(row.get('cost_of_making', 0)),
+                            'profit': self._safe_float(row.get('profit', 0)),
+                            'profit_percentage': self._safe_float(row.get('profit_percentage', 0)),
+                            'pkg_cost': self._safe_float(row.get('pkg_cost', 0)),
+                            'electricity_cost': self._safe_float(row.get('electricity_cost', 0)),
+                            'gas_cost': self._safe_float(row.get('gas_cost', 0)),
+                            'gst_amount': self._safe_float(row.get('gst_amount', 0))
+                        }
+                        loaded_count += 1
+
+                self.logger.info(f"✅ Loaded pricing data for {loaded_count} recipes from CSV")
+                if self.recipe_pricing_data:
+                    sample_recipes = list(self.recipe_pricing_data.keys())[:3]
+                    self.logger.info(f"📋 Sample recipes: {sample_recipes}")
+            else:
+                self.logger.warning(f"❌ Pricing CSV file not found: {pricing_csv_path}")
+                self.logger.info("💡 Create a pricing.csv file with recipe pricing data to populate this section")
+
         except Exception as e:
-            self.logger.error(f"Error loading pricing data from CSV: {e}")
+            self.logger.error(f"❌ Error loading pricing data from CSV: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
 
-        # Fallback to hardcoded data if CSV loading fails
-        self.logger.info("Using fallback hardcoded pricing data")
-        self.recipe_pricing_data = {
-            # Basic Items
-            "Dosa": {"others_pricing": 76, "our_pricing": 62, "cooking_time": "20 mins"},
-            "2 Masala Dosa": {"others_pricing": 110, "our_pricing": 120, "cooking_time": "30 mins"},
-            "2 Ghee Dosa": {"others_pricing": 75, "our_pricing": 125, "cooking_time": "20 mins"},
-            "2 Paper Roast": {"others_pricing": 100, "our_pricing": 96, "cooking_time": "25 mins"},
-            "Idli(2 pcs)": {"others_pricing": 45, "our_pricing": 48, "cooking_time": "15 mins"},
-            "Podi Idli": {"others_pricing": 75, "our_pricing": 56, "cooking_time": "20 mins"},
-            "Mini Idli": {"others_pricing": 110, "our_pricing": 62, "cooking_time": "15 mins"},
-            "Idli Podimas": {"others_pricing": 90, "our_pricing": 100, "cooking_time": "25 mins"},
+        # Always ensure we have a valid dictionary
+        if not isinstance(self.recipe_pricing_data, dict):
+            self.recipe_pricing_data = {}
 
-            # Chutneys and Sides
-            "Tomato Chutney": {"others_pricing": 15, "our_pricing": 250, "cooking_time": "10 mins"},
-            "Coconut Chutney": {"others_pricing": 15, "our_pricing": 135, "cooking_time": "10 mins"},
-            "Sambar": {"others_pricing": 20, "our_pricing": 400, "cooking_time": "30 mins"},
-            "Kurma": {"others_pricing": 20, "our_pricing": 65, "cooking_time": "25 mins"},
+        self.logger.info(f"📊 Final pricing data count: {len(self.recipe_pricing_data)} recipes")
 
-            # Beverages
-            "Ginger Tea": {"others_pricing": 50, "our_pricing": 38, "cooking_time": "5 mins"},
-            "Tea(250 ml)": {"others_pricing": 35, "our_pricing": 40, "cooking_time": "5 mins"},
-            "Coffee": {"others_pricing": 45, "our_pricing": 60, "cooking_time": "5 mins"},
-            "Boost": {"others_pricing": 50, "our_pricing": 65, "cooking_time": "5 mins"},
-            "Horlicks": {"others_pricing": 50, "our_pricing": 65, "cooking_time": "5 mins"},
-            "Black Coffee": {"others_pricing": 30, "our_pricing": 30, "cooking_time": "5 mins"},
-            "Tea(125ml)": {"others_pricing": 27, "our_pricing": 22, "cooking_time": "5 mins"},
-            "Tea(500ml)": {"others_pricing": 100, "our_pricing": 70, "cooking_time": "5 mins"},
-            "Tea(750ml)": {"others_pricing": 100, "our_pricing": 105, "cooking_time": "5 mins"},
-            "Milk": {"others_pricing": 100, "our_pricing": 32, "cooking_time": "2 mins"},
-
-            # Rice Items
-            "Chapathi": {"others_pricing": 50, "our_pricing": 40, "cooking_time": "15 mins"},
-            "Kuli Paniyaram": {"others_pricing": 90, "our_pricing": 100, "cooking_time": "20 mins"},
-            "Lemon Rice": {"others_pricing": 80, "our_pricing": 56, "cooking_time": "20 mins"},
-            "Tomato Rice": {"others_pricing": 80, "our_pricing": 60, "cooking_time": "20 mins"},
-            "Plain Rice": {"others_pricing": 70, "our_pricing": 50, "cooking_time": "15 mins"},
-            "Curd Rice": {"others_pricing": 80, "our_pricing": 62, "cooking_time": "15 mins"},
-            "cooked rice(InventorySide)": {"others_pricing": 300, "our_pricing": 280, "cooking_time": "20 mins"},
-
-            # Additional Idli Varieties
-            "Idly 5 pcs": {"others_pricing": 55, "our_pricing": 52, "cooking_time": "20 mins"},
-            "Mini Podi Idli": {"others_pricing": 69, "our_pricing": 50, "cooking_time": "20 mins"},
-            "Ghee Mini Idli with Sambhar (15 pcs)": {"others_pricing": 100, "our_pricing": 68, "cooking_time": "25 mins"},
-
-            # Dosa Varieties
-            "Onion Egg Dosa": {"others_pricing": 120, "our_pricing": 110, "cooking_time": "25 mins"},
-            "Onion Dosa": {"others_pricing": 60, "our_pricing": 90, "cooking_time": "20 mins"},
-            "Tomato Dosa": {"others_pricing": 60, "our_pricing": 60, "cooking_time": "20 mins"},
-            "Egg Dosa": {"others_pricing": 80, "our_pricing": 85, "cooking_time": "20 mins"},
-            "Masala Dosa": {"others_pricing": 110, "our_pricing": 115, "cooking_time": "25 mins"},
-            "Paper Roast": {"others_pricing": 100, "our_pricing": 62, "cooking_time": "25 mins"},
-            "Ghee Dosa": {"others_pricing": 100, "our_pricing": 90, "cooking_time": "20 mins"},
-            "Onion Podi Dosa": {"others_pricing": 100, "our_pricing": 90, "cooking_time": "25 mins"},
-            "Idli Podimas": {"others_pricing": 90, "our_pricing": 100, "cooking_time": "25 mins"},
-            "Tomato Chutney": {"others_pricing": 15, "our_pricing": 250, "cooking_time": "15 mins"},
-            "Coconut Chutney": {"others_pricing": 15, "our_pricing": 135, "cooking_time": "10 mins"},
-            "Sambar": {"others_pricing": 20, "our_pricing": 400, "cooking_time": "40 mins"},
-            "Kurma": {"others_pricing": 20, "our_pricing": 65, "cooking_time": "35 mins"},
-
-            # Beverages
-            "Ginger Tea": {"others_pricing": 50, "our_pricing": 38, "cooking_time": "10 mins"},
-            "Tea(250 ml)": {"others_pricing": 35, "our_pricing": 40, "cooking_time": "5 mins"},
-            "Coffee": {"others_pricing": 45, "our_pricing": 60, "cooking_time": "5 mins"},
-            "Boost": {"others_pricing": 50, "our_pricing": 65, "cooking_time": "5 mins"},
-            "Horlicks": {"others_pricing": 50, "our_pricing": 65, "cooking_time": "5 mins"},
-            "Black Coffee": {"others_pricing": 30, "our_pricing": 30, "cooking_time": "5 mins"},
-            "Tea(125ml)": {"others_pricing": 27, "our_pricing": 22, "cooking_time": "5 mins"},
-            "Tea(500ml)": {"others_pricing": 100, "our_pricing": 70, "cooking_time": "10 mins"},
-            "Tea(750ml)": {"others_pricing": 100, "our_pricing": 105, "cooking_time": "15 mins"},
-            "Milk": {"others_pricing": 100, "our_pricing": 32, "cooking_time": "5 mins"},
-
-            # Main Dishes
-            "Chapathi": {"others_pricing": 50, "our_pricing": 40, "cooking_time": "20 mins"},
-            "Kuli Paniyaram": {"others_pricing": 90, "our_pricing": 100, "cooking_time": "20 mins"},
-            "Lemon Rice": {"others_pricing": 80, "our_pricing": 56, "cooking_time": "15 mins"},
-            "Tomato Rice": {"others_pricing": 80, "our_pricing": 60, "cooking_time": "20 mins"},
-            "Plain Rice": {"others_pricing": 70, "our_pricing": 50, "cooking_time": "15 mins"},
-            "Curd Rice": {"others_pricing": 80, "our_pricing": 62, "cooking_time": "10 mins"},
-            "cooked rice(InventorySide)": {"others_pricing": 300, "our_pricing": 280, "cooking_time": "30 mins"},
-
-            # Dosa Varieties
-            "Masala Dosa": {"others_pricing": 110, "our_pricing": 115, "cooking_time": "30 mins"},
-            "Paper Roast": {"others_pricing": 100, "our_pricing": 62, "cooking_time": "25 mins"},
-            "Ghee Dosa": {"others_pricing": 100, "our_pricing": 90, "cooking_time": "20 mins"},
-            "Onion Egg Dosa": {"others_pricing": 120, "our_pricing": 110, "cooking_time": "20 mins"},
-            "Onion Dosa": {"others_pricing": 60, "our_pricing": 90, "cooking_time": "15 mins"},
-            "Tomato Dosa": {"others_pricing": 60, "our_pricing": 60, "cooking_time": "15 mins"},
-            "Egg Dosa": {"others_pricing": 80, "our_pricing": 85, "cooking_time": "20 mins"},
-            "Onion Podi Dosa": {"others_pricing": 100, "our_pricing": 90, "cooking_time": "18 mins"},
-
-            # Idli Varieties
-            "Idly 5 pcs": {"others_pricing": 55, "our_pricing": 52, "cooking_time": "15 mins"},
-            "Mini Podi Idli": {"others_pricing": 69, "our_pricing": 50, "cooking_time": "15 mins"},
-            "Ghee Mini Idli with Sambhar (15 pcs)": {"others_pricing": 100, "our_pricing": 68, "cooking_time": "20 mins"},
-
-            # Special Items
-            "Chappathi and Channa (2 pcs)": {"others_pricing": 90, "our_pricing": 105, "cooking_time": "25 mins"},
-            "Boiled Egg": {"others_pricing": 20, "our_pricing": 22, "cooking_time": "10 mins"},
-
-            # Fish Items
-            "Fish Kolambu(Parai Fish)": {"others_pricing": 900, "our_pricing": 750, "cooking_time": "30 mins"},
-            "Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 110, "our_pricing": 73, "cooking_time": "25 mins"},
-            "2 Masala Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 75, "our_pricing": 152, "cooking_time": "35 mins"},
-            "2 Ghee Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 100, "our_pricing": 94, "cooking_time": "25 mins"},
-            "2 Paper Roast with Fish Kolambu(Parai Fish)": {"others_pricing": 45, "our_pricing": 75, "cooking_time": "30 mins"},
-            "Idli(2 pcs) with Fish Kolambu(Parai Fish)": {"others_pricing": 110, "our_pricing": 190, "cooking_time": "20 mins"},
-            "Mini Idli with Fish Kolambu(Parai Fish)": {"others_pricing": 50, "our_pricing": 90, "cooking_time": "20 mins"},
-            "Chapathi with Fish Kolambu(Parai Fish)": {"others_pricing": 90, "our_pricing": 80, "cooking_time": "25 mins"},
-            "Kuli Paniyaram with Fish Kolambu(Parai Fish)": {"others_pricing": 70, "our_pricing": 70, "cooking_time": "25 mins"},
-            "Onion Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 60, "our_pricing": 102, "cooking_time": "20 mins"},
-            "Tomato Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 80, "our_pricing": 125, "cooking_time": "20 mins"},
-            "Egg Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 300, "our_pricing": 182, "cooking_time": "25 mins"},
-            "Plain rice with Fish Kolambu(Parai Fish)": {"others_pricing": 110, "our_pricing": 125, "cooking_time": "20 mins"},
-            "Masala Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 100, "our_pricing": 125, "cooking_time": "35 mins"},
-            "Paper Roast with Fish Kolambu(Parai Fish)": {"others_pricing": 100, "our_pricing": 125, "cooking_time": "30 mins"},
-            "Ghee Dosa with Fish Kolambu(Parai Fish)": {"others_pricing": 100, "our_pricing": 125, "cooking_time": "25 mins"},
-
-            # Uttapam Varieties
-            "Carrot and Coriander Uthapam": {"others_pricing": 80, "our_pricing": 125, "cooking_time": "18 mins"},
-            "Onion Uttapam": {"others_pricing": 100, "our_pricing": 90, "cooking_time": "16 mins"},
-            "Tomato Uttapam": {"others_pricing": 100, "our_pricing": 80, "cooking_time": "17 mins"},
-            "Plain Uttapam": {"others_pricing": 100, "our_pricing": 70, "cooking_time": "18 mins"},
-
-            # Egg Items
-            "Double Omelette": {"others_pricing": 80, "our_pricing": 58, "cooking_time": "10 mins"},
-            "Onion bread omellete": {"others_pricing": 120, "our_pricing": 102, "cooking_time": "12 mins"},
-            "Plain bread omellete": {"others_pricing": 100, "our_pricing": 92, "cooking_time": "10 mins"},
-
-            # Chicken Items
-            "Chicken Gravy": {"others_pricing": 170, "our_pricing": 100, "cooking_time": "35 mins"},
-            "Chicken Gravy(250G)": {"others_pricing": 120, "our_pricing": 190, "cooking_time": "35 mins"},
-        }
+    def _safe_float(self, value):
+        """Safely convert value to float"""
+        try:
+            if pd.isna(value) or value == '':
+                return 0.0
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
     def init_pricing_data(self):
         """Initialize pricing data structure"""
@@ -462,6 +426,12 @@ class PricingManagementWidget(QWidget):
         cost_analysis_btn.setStyleSheet("background-color: #8b5cf6; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500;")
         cost_analysis_btn.clicked.connect(self.open_advanced_analysis)
         header_layout.addWidget(cost_analysis_btn)
+
+        # Test button for card updates
+        test_cards_btn = QPushButton("🧪 Test Cards")
+        test_cards_btn.setStyleSheet("background-color: #f59e0b; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500;")
+        test_cards_btn.clicked.connect(self.test_card_updates)
+        header_layout.addWidget(test_cards_btn)
         
         layout.addLayout(header_layout)
         
@@ -477,13 +447,24 @@ class PricingManagementWidget(QWidget):
         overview_frame.setStyleSheet("background: transparent; border: none;")
         
         overview_layout = QGridLayout(overview_frame)
-        overview_layout.setSpacing(16)
+        overview_layout.setSpacing(20)  # Increased spacing between cards
+        overview_layout.setContentsMargins(10, 10, 10, 10)  # Add margins around the grid
         
-        # Initialize overview cards
-        self.avg_cost_card = PricingCard("Average Cost", "Rs.0", "Per Dish", "#ef4444")
-        self.avg_selling_price_card = PricingCard("Average Selling Price", "Rs.0", "Per Dish", "#10b981")
-        self.avg_profit_card = PricingCard("Average Profit", "Rs.0", "Per Dish", "#3b82f6")
-        self.avg_margin_card = PricingCard("Average Margin", "0%", "Profit Percentage", "#8b5cf6")
+        # Initialize overview cards with loading state
+        print("🔄 Creating pricing cards...")
+
+        self.avg_cost_card = PricingCard("Average Cost", "Loading...", "Per Dish", "#ef4444")
+        self.avg_selling_price_card = PricingCard("Average Selling Price", "Loading...", "Per Dish", "#10b981")
+        self.avg_profit_card = PricingCard("Average Profit", "Loading...", "Per Dish", "#3b82f6")
+        self.avg_margin_card = PricingCard("Average Margin", "Loading...", "Profit Percentage", "#8b5cf6")
+
+        print("✅ Pricing cards initialized with loading state")
+
+        # Make sure cards are visible
+        self.avg_cost_card.show()
+        self.avg_selling_price_card.show()
+        self.avg_profit_card.show()
+        self.avg_margin_card.show()
         
         overview_layout.addWidget(self.avg_cost_card, 0, 0)
         overview_layout.addWidget(self.avg_selling_price_card, 0, 1)
@@ -533,14 +514,8 @@ class PricingManagementWidget(QWidget):
         # Discount Analysis Tab
         self.create_discount_analysis_tab()
 
-        # Recipe Scaling Tab
-        self.create_recipe_scaling_tab()
-
         # Enhanced Cost Breakdown Tab
         self.create_enhanced_breakdown_tab()
-
-        # Order Management Tab
-        self.create_order_management_tab()
 
         parent_layout.addWidget(self.tabs)
 
@@ -868,10 +843,10 @@ class PricingManagementWidget(QWidget):
         
         # Discount Analysis Table
         self.discount_table = QTableWidget()
-        self.discount_table.setColumnCount(8)
+        self.discount_table.setColumnCount(11)
         self.discount_table.setHorizontalHeaderLabels([
-            "Recipe Name", "Original Price", "10% Discount", "15% Discount", 
-            "25% Discount", "30% Discount", "40% Discount", "Min Profitable"
+            "Recipe Name", "Original Price", "10% Discount", "15% Discount", "20% Discount",
+            "25% Discount", "30% Discount", "35% Discount", "40% Discount", "45% Discount", "50% Discount"
         ])
         
         # Apply modern styling
@@ -882,9 +857,9 @@ class PricingManagementWidget(QWidget):
         discount_header = self.discount_table.horizontalHeader()
 
         # Set ALL columns to Interactive mode for manual resizing
-        discount_columns = ["Recipe Name", "Original Price", "10% Discount", "15% Discount",
-                           "25% Discount", "30% Discount", "40% Discount", "Min Profitable"]
-        for col in range(8):
+        discount_columns = ["Recipe Name", "Original Price", "10% Discount", "15% Discount", "20% Discount",
+                           "25% Discount", "30% Discount", "35% Discount", "40% Discount", "45% Discount", "50% Discount"]
+        for col in range(11):
             discount_header.setSectionResizeMode(col, QHeaderView.Interactive)
             print(f"   Discount Column {col} ({discount_columns[col]}): Interactive")
 
@@ -892,12 +867,15 @@ class PricingManagementWidget(QWidget):
         discount_default_widths = {
             0: 180,  # Recipe Name
             1: 120,  # Original Price
-            2: 120,  # 10% Discount
-            3: 120,  # 15% Discount
-            4: 120,  # 25% Discount
-            5: 120,  # 30% Discount
-            6: 120,  # 40% Discount
-            7: 130   # Min Profitable
+            2: 110,  # 10% Discount
+            3: 110,  # 15% Discount
+            4: 110,  # 20% Discount
+            5: 110,  # 25% Discount
+            6: 110,  # 30% Discount
+            7: 110,  # 35% Discount
+            8: 110,  # 40% Discount
+            9: 110,  # 45% Discount
+            10: 110  # 50% Discount
         }
         for col, width in discount_default_widths.items():
             self.discount_table.setColumnWidth(col, width)
@@ -912,162 +890,9 @@ class PricingManagementWidget(QWidget):
         
         self.tabs.addTab(discount_widget, "Discount Analysis")
 
-    def create_recipe_scaling_tab(self):
-        """Create recipe scaling tab for bulk cost analysis"""
-        scaling_widget = QWidget()
-        layout = QVBoxLayout(scaling_widget)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
 
-        # Scaling controls
-        controls_frame = QFrame()
-        controls_frame.setFrameStyle(QFrame.Box)
-        controls_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
-        controls_layout = QHBoxLayout(controls_frame)
 
-        # Scale factor input
-        scale_label = QLabel("Scale Factor:")
-        scale_label.setStyleSheet("font-weight: bold;")
-        controls_layout.addWidget(scale_label)
 
-        self.scale_factor_spin = QSpinBox()
-        self.scale_factor_spin.setMinimum(1)
-        self.scale_factor_spin.setMaximum(100)
-        self.scale_factor_spin.setValue(10)
-        self.scale_factor_spin.setSuffix("x")
-        controls_layout.addWidget(self.scale_factor_spin)
-
-        controls_layout.addStretch()
-
-        # Calculate button
-        calculate_btn = QPushButton("Calculate Scaled Costs")
-        calculate_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
-        """)
-        calculate_btn.clicked.connect(self.calculate_scaled_costs)
-        controls_layout.addWidget(calculate_btn)
-
-        layout.addWidget(controls_frame)
-
-        # Scaling results table
-        self.scaling_table = QTableWidget()
-        self.scaling_table.setColumnCount(8)
-        self.scaling_table.setHorizontalHeaderLabels([
-            "Recipe Name", "Single Cost", "Scaled Quantity", "Scaled Ingredient Cost",
-            "Scaled Total Cost", "Cost per Unit", "Profit Margin", "Bulk Savings"
-        ])
-
-        # Simple column resizing for scaling table
-        header = self.scaling_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Interactive)
-        self.scaling_table.setColumnWidth(0, 180)  # Recipe Name
-        self.scaling_table.setColumnWidth(1, 120)  # Single Cost
-        self.scaling_table.setColumnWidth(2, 120)  # Scaled Quantity
-        self.scaling_table.setColumnWidth(3, 140)  # Scaled Ingredient Cost
-        self.scaling_table.setColumnWidth(4, 140)  # Scaled Total Cost
-        self.scaling_table.setColumnWidth(5, 120)  # Cost per Unit
-        self.scaling_table.setColumnWidth(6, 120)  # Profit Margin
-        self.scaling_table.setColumnWidth(7, 120)  # Bulk Savings
-
-        # Set table properties
-        self.scaling_table.setAlternatingRowColors(True)
-        self.scaling_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        layout.addWidget(self.scaling_table)
-
-        self.tabs.addTab(scaling_widget, "Recipe Scaling")
-
-    def calculate_scaled_costs(self):
-        """Calculate costs for scaled recipe quantities"""
-        try:
-            scale_factor = self.scale_factor_spin.value()
-
-            if 'recipes' not in self.data or self.data['recipes'].empty:
-                return
-
-            recipes_df = self.data['recipes']
-            self.scaling_table.setRowCount(len(recipes_df))
-
-            for row, (_, recipe) in enumerate(recipes_df.iterrows()):
-                recipe_name = recipe.get('recipe_name', '')
-                recipe_id = recipe.get('recipe_id', row + 1)
-
-                # Calculate single recipe costs
-                single_ingredient_cost = self.calculate_ingredient_cost(recipe_id)
-                single_making_cost = single_ingredient_cost * 0.2
-                single_packaging_cost = self.calculate_actual_packaging_cost(recipe_name)
-                single_electricity_cost = self.calculate_electricity_cost(recipe.get('cook_time', 30), recipe_name=recipe_name)
-                single_gas_cost = self.calculate_gas_cost(recipe_data=recipe)
-                single_other_charges = 2.0
-                single_total_cost = (single_ingredient_cost + single_making_cost +
-                                   single_packaging_cost + single_electricity_cost +
-                                   single_gas_cost + single_other_charges)
-
-                # Calculate scaled costs
-                scaled_ingredient_cost = single_ingredient_cost * scale_factor
-                scaled_making_cost = single_making_cost * scale_factor
-
-                # Bulk discounts for utilities (economies of scale)
-                scaled_electricity_cost = single_electricity_cost * scale_factor * 0.85  # 15% savings
-                scaled_gas_cost = single_gas_cost * scale_factor * 0.85  # 15% savings
-
-                # Bulk packaging savings
-                scaled_packaging_cost = single_packaging_cost * scale_factor * 0.75  # 25% savings
-                scaled_other_charges = single_other_charges * scale_factor * 0.9  # 10% savings
-
-                scaled_total_cost = (scaled_ingredient_cost + scaled_making_cost +
-                                   scaled_packaging_cost + scaled_electricity_cost +
-                                   scaled_gas_cost + scaled_other_charges)
-
-                # Calculate metrics
-                cost_per_unit = scaled_total_cost / scale_factor
-                bulk_savings_per_unit = single_total_cost - cost_per_unit
-                bulk_savings_percentage = (bulk_savings_per_unit / single_total_cost) * 100
-
-                # Profit margin calculation (assuming 40% markup)
-                selling_price_per_unit = cost_per_unit * 1.4
-                profit_per_unit = selling_price_per_unit - cost_per_unit
-                profit_margin = (profit_per_unit / selling_price_per_unit) * 100
-
-                # Populate table
-                self.scaling_table.setItem(row, 0, QTableWidgetItem(recipe_name))
-                self.scaling_table.setItem(row, 1, QTableWidgetItem(f"Rs.{single_total_cost:.2f}"))
-                self.scaling_table.setItem(row, 2, QTableWidgetItem(f"{scale_factor}x"))
-                self.scaling_table.setItem(row, 3, QTableWidgetItem(f"Rs.{scaled_ingredient_cost:.2f}"))
-                self.scaling_table.setItem(row, 4, QTableWidgetItem(f"Rs.{scaled_total_cost:.2f}"))
-                self.scaling_table.setItem(row, 5, QTableWidgetItem(f"Rs.{cost_per_unit:.2f}"))
-                self.scaling_table.setItem(row, 6, QTableWidgetItem(f"{profit_margin:.1f}%"))
-
-                # Color code savings
-                savings_item = QTableWidgetItem(f"Rs.{bulk_savings_per_unit:.2f} ({bulk_savings_percentage:.1f}%)")
-                if bulk_savings_percentage > 15:
-                    savings_item.setForeground(QColor("#27ae60"))  # Green for good savings
-                elif bulk_savings_percentage > 10:
-                    savings_item.setForeground(QColor("#f39c12"))  # Orange for moderate savings
-                else:
-                    savings_item.setForeground(QColor("#e74c3c"))  # Red for low savings
-
-                self.scaling_table.setItem(row, 7, savings_item)
-
-        except Exception as e:
-            self.logger.error(f"Error calculating scaled costs: {e}")
 
     def create_enhanced_breakdown_tab(self):
         """Create enhanced cost breakdown tab"""
@@ -1091,46 +916,7 @@ class PricingManagementWidget(QWidget):
 
             self.tabs.addTab(placeholder, "📊 Enhanced Breakdown")
 
-    def create_order_management_tab(self):
-        """Create order management tab"""
-        try:
-            from modules.order_management import OrderManagementWidget
 
-            order_widget = OrderManagementWidget(self.data, self)
-            order_widget.order_added.connect(self.on_order_added)
-            order_widget.order_updated.connect(self.on_order_updated)
-
-            self.tabs.addTab(order_widget, "📋 Order Management")
-
-        except Exception as e:
-            self.logger.error(f"Error creating order management tab: {e}")
-            # Create placeholder tab
-            placeholder = QWidget()
-            placeholder_layout = QVBoxLayout(placeholder)
-            placeholder_label = QLabel("Order management not available.\nPlease check module installation.")
-            placeholder_label.setAlignment(Qt.AlignCenter)
-            placeholder_label.setStyleSheet("color: #64748b; font-size: 16px;")
-            placeholder_layout.addWidget(placeholder_label)
-
-            self.tabs.addTab(placeholder, "📋 Order Management")
-
-    def on_order_added(self, order_data):
-        """Handle new order added"""
-        try:
-            self.logger.info(f"New order added: {order_data['order_id']}")
-            # Update pricing overview if needed
-            self.update_pricing_overview()
-        except Exception as e:
-            self.logger.error(f"Error handling order added: {e}")
-
-    def on_order_updated(self, order_data):
-        """Handle order updated"""
-        try:
-            self.logger.info(f"Order updated: {order_data['order_id']}")
-            # Update pricing overview if needed
-            self.update_pricing_overview()
-        except Exception as e:
-            self.logger.error(f"Error handling order updated: {e}")
 
     def on_cost_breakdown_updated(self, recipe_id, new_cost):
         """Handle cost breakdown updates"""
@@ -1150,8 +936,98 @@ class PricingManagementWidget(QWidget):
                 self.load_data_no_missing_check()
                 self.data_loaded = True
                 self.logger.info("Pricing data loaded successfully")
+
+                # Force update cards after a short delay to ensure UI is ready
+                QTimer.singleShot(500, self.force_update_cards)
             except Exception as e:
                 self.logger.error(f"Error in lazy data loading: {e}")
+
+    def force_update_cards(self):
+        """Force update overview cards"""
+        try:
+            print("🔄 Force updating overview cards...")
+            self.update_overview_cards()
+
+            # Also force a UI refresh
+            if hasattr(self, 'avg_cost_card'):
+                self.avg_cost_card.repaint()
+                self.avg_selling_price_card.repaint()
+                self.avg_profit_card.repaint()
+                self.avg_margin_card.repaint()
+                print("🎨 Forced card repaint")
+        except Exception as e:
+            print(f"❌ Error in force update: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def refresh_card_display(self):
+        """Force refresh the card display"""
+        try:
+            from PySide6.QtWidgets import QApplication
+
+            # Make sure cards are visible
+            if hasattr(self, 'avg_cost_card'):
+                self.avg_cost_card.show()
+                self.avg_selling_price_card.show()
+                self.avg_profit_card.show()
+                self.avg_margin_card.show()
+
+                # Force repaint
+                self.avg_cost_card.repaint()
+                self.avg_selling_price_card.repaint()
+                self.avg_profit_card.repaint()
+                self.avg_margin_card.repaint()
+
+                # Process all pending events
+                QApplication.processEvents()
+
+                print("🎨 Refreshed card display")
+        except Exception as e:
+            print(f"❌ Error refreshing card display: {e}")
+
+    def test_card_updates(self):
+        """Test method to manually update cards with sample values"""
+        try:
+            print("🧪 Testing card updates with sample values...")
+
+            # Check if cards exist
+            if not hasattr(self, 'avg_cost_card'):
+                print("❌ Cards not found! Creating them...")
+                return
+
+            print(f"📋 Found cards: {type(self.avg_cost_card)}")
+
+            # Update with test values
+            print("🔄 Updating cost card...")
+            self.avg_cost_card.update_value("Rs.95.50")
+
+            print("🔄 Updating selling price card...")
+            self.avg_selling_price_card.update_value("Rs.135.75")
+
+            print("🔄 Updating profit card...")
+            self.avg_profit_card.update_value("Rs.40.25")
+
+            print("🔄 Updating margin card...")
+            self.avg_margin_card.update_value("42.2%")
+
+            # Force refresh
+            print("🎨 Forcing display refresh...")
+            self.refresh_card_display()
+
+            print("✅ Test card updates completed")
+
+            # Show a message box to confirm
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Test Complete", "Card update test completed! Check the cards above.")
+
+        except Exception as e:
+            print(f"❌ Error in test card updates: {e}")
+            import traceback
+            traceback.print_exc()
+
+            # Show error message
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Test Failed", f"Card update test failed: {str(e)}")
 
     def load_data_lazy(self):
         """Load data lazily to prevent initial lag"""
@@ -1503,7 +1379,7 @@ class PricingManagementWidget(QWidget):
                 if ingredient_cost is None:
                     self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
                     self.discount_table.setItem(row, 1, QTableWidgetItem("❌ Missing Ingredients"))
-                    for col in range(2, 8):
+                    for col in range(2, 11):
                         self.discount_table.setItem(row, col, QTableWidgetItem("N/A"))
                     continue
 
@@ -1513,22 +1389,26 @@ class PricingManagementWidget(QWidget):
                 # Calculate discounted prices
                 discount_10 = original_price * 0.9
                 discount_15 = original_price * 0.85
+                discount_20 = original_price * 0.8
                 discount_25 = original_price * 0.75
                 discount_30 = original_price * 0.7
+                discount_35 = original_price * 0.65
                 discount_40 = original_price * 0.6
-
-                # Find minimum profitable price (break-even + 5%)
-                min_profitable = total_cost * 1.05
+                discount_45 = original_price * 0.55
+                discount_50 = original_price * 0.5
 
                 # Populate table
                 self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
                 self.discount_table.setItem(row, 1, QTableWidgetItem(f"Rs.{original_price:.2f}"))
                 self.discount_table.setItem(row, 2, QTableWidgetItem(f"Rs.{discount_10:.2f}"))
                 self.discount_table.setItem(row, 3, QTableWidgetItem(f"Rs.{discount_15:.2f}"))
-                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
-                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
-                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
-                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{min_profitable:.2f}"))
+                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_20:.2f}"))
+                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
+                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
+                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{discount_35:.2f}"))
+                self.discount_table.setItem(row, 8, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
+                self.discount_table.setItem(row, 9, QTableWidgetItem(f"Rs.{discount_45:.2f}"))
+                self.discount_table.setItem(row, 10, QTableWidgetItem(f"Rs.{discount_50:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating discount analysis (no missing check): {e}")
@@ -2436,7 +2316,7 @@ class PricingManagementWidget(QWidget):
                 if ingredient_cost is None:
                     self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
                     self.discount_table.setItem(row, 1, QTableWidgetItem("❌ Missing Ingredients"))
-                    for col in range(2, 8):
+                    for col in range(2, 11):
                         self.discount_table.setItem(row, col, QTableWidgetItem("N/A"))
                     continue
 
@@ -2446,22 +2326,26 @@ class PricingManagementWidget(QWidget):
                 # Calculate discounted prices
                 discount_10 = original_price * 0.9
                 discount_15 = original_price * 0.85
+                discount_20 = original_price * 0.8
                 discount_25 = original_price * 0.75
                 discount_30 = original_price * 0.7
+                discount_35 = original_price * 0.65
                 discount_40 = original_price * 0.6
-
-                # Find minimum profitable price (break-even + 5%)
-                min_profitable = total_cost * 1.05
+                discount_45 = original_price * 0.55
+                discount_50 = original_price * 0.5
 
                 # Populate table
                 self.discount_table.setItem(row, 0, QTableWidgetItem(recipe_name))
                 self.discount_table.setItem(row, 1, QTableWidgetItem(f"Rs.{original_price:.2f}"))
                 self.discount_table.setItem(row, 2, QTableWidgetItem(f"Rs.{discount_10:.2f}"))
                 self.discount_table.setItem(row, 3, QTableWidgetItem(f"Rs.{discount_15:.2f}"))
-                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
-                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
-                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
-                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{min_profitable:.2f}"))
+                self.discount_table.setItem(row, 4, QTableWidgetItem(f"Rs.{discount_20:.2f}"))
+                self.discount_table.setItem(row, 5, QTableWidgetItem(f"Rs.{discount_25:.2f}"))
+                self.discount_table.setItem(row, 6, QTableWidgetItem(f"Rs.{discount_30:.2f}"))
+                self.discount_table.setItem(row, 7, QTableWidgetItem(f"Rs.{discount_35:.2f}"))
+                self.discount_table.setItem(row, 8, QTableWidgetItem(f"Rs.{discount_40:.2f}"))
+                self.discount_table.setItem(row, 9, QTableWidgetItem(f"Rs.{discount_45:.2f}"))
+                self.discount_table.setItem(row, 10, QTableWidgetItem(f"Rs.{discount_50:.2f}"))
 
         except Exception as e:
             self.logger.error(f"Error populating discount analysis: {e}")
@@ -2469,11 +2353,25 @@ class PricingManagementWidget(QWidget):
     def update_overview_cards(self):
         """Update overview metric cards"""
         try:
+            print("🔄 Starting overview cards update...")
+
+            # Check if cards exist
+            if not hasattr(self, 'avg_cost_card') or self.avg_cost_card is None:
+                print("❌ Cards not initialized yet")
+                return
+
             if 'recipes' not in self.data or self.data['recipes'].empty:
+                print("⚠️ No recipes data available")
+                # Show no data message
+                self.avg_cost_card.update_value("No Data")
+                self.avg_selling_price_card.update_value("No Data")
+                self.avg_profit_card.update_value("No Data")
+                self.avg_margin_card.update_value("No Data")
                 return
 
             recipes_df = self.data['recipes']
             total_recipes = len(recipes_df)
+            print(f"📊 Processing {total_recipes} recipes...")
 
             total_cost = 0
             total_selling_price = 0
@@ -2481,21 +2379,30 @@ class PricingManagementWidget(QWidget):
             valid_recipes = 0
 
             for _, recipe in recipes_df.iterrows():
-                recipe_id = recipe.get('recipe_id', 0)
-                ingredient_cost = self.calculate_ingredient_cost(recipe_id)
+                recipe_name = recipe.get('recipe_name', 'Unknown')
 
-                # Skip if ingredient cost is None (missing ingredients)
-                if ingredient_cost is None:
-                    continue
+                # Get pricing from CSV data (no hardcoded fallbacks)
+                pricing_data = self.recipe_pricing_data.get(recipe_name, {})
+                our_pricing = pricing_data.get('our_pricing', 0)
+                cost_of_making = pricing_data.get('cost_of_making', 0)
 
-                cost = ingredient_cost * 1.5
-                selling_price = cost * 1.4
-                profit = selling_price - cost
+                # Only include recipes with valid pricing data
+                if our_pricing > 0:
+                    # Use actual cost if available, otherwise estimate
+                    if cost_of_making > 0:
+                        actual_cost = cost_of_making
+                    else:
+                        # Fallback estimation (60% of selling price)
+                        actual_cost = our_pricing * 0.6
 
-                total_cost += cost
-                total_selling_price += selling_price
-                total_profit += profit
-                valid_recipes += 1
+                    profit = our_pricing - actual_cost
+
+                    total_cost += actual_cost
+                    total_selling_price += our_pricing
+                    total_profit += profit
+                    valid_recipes += 1
+
+            print(f"📈 Found {valid_recipes} recipes with pricing data")
 
             if valid_recipes > 0:
                 avg_cost = total_cost / valid_recipes
@@ -2503,20 +2410,38 @@ class PricingManagementWidget(QWidget):
                 avg_profit = total_profit / valid_recipes
                 avg_margin = (avg_profit / avg_cost * 100) if avg_cost > 0 else 0
 
-                # Update cards
-                self.avg_cost_card.findChildren(QLabel)[1].setText(f"Rs.{avg_cost:.2f}")
-                self.avg_selling_price_card.findChildren(QLabel)[1].setText(f"Rs.{avg_selling_price:.2f}")
-                self.avg_profit_card.findChildren(QLabel)[1].setText(f"Rs.{avg_profit:.2f}")
-                self.avg_margin_card.findChildren(QLabel)[1].setText(f"{avg_margin:.1f}%")
+                # Update cards using the new direct method
+                self.avg_cost_card.update_value(f"Rs.{avg_cost:.2f}")
+                self.avg_selling_price_card.update_value(f"Rs.{avg_selling_price:.2f}")
+                self.avg_profit_card.update_value(f"Rs.{avg_profit:.2f}")
+                self.avg_margin_card.update_value(f"{avg_margin:.1f}%")
+
+                # Force a complete UI refresh
+                self.refresh_card_display()
+
+                print(f"✅ Updated pricing cards: Cost={avg_cost:.2f}, Selling={avg_selling_price:.2f}, Profit={avg_profit:.2f}, Margin={avg_margin:.1f}%")
             else:
                 # No valid recipes with complete pricing
-                self.avg_cost_card.findChildren(QLabel)[1].setText("❌ Missing Data")
-                self.avg_selling_price_card.findChildren(QLabel)[1].setText("❌ Missing Data")
-                self.avg_profit_card.findChildren(QLabel)[1].setText("❌ Missing Data")
-                self.avg_margin_card.findChildren(QLabel)[1].setText("❌ Missing Data")
+                self.avg_cost_card.update_value("No Pricing Data")
+                self.avg_selling_price_card.update_value("No Pricing Data")
+                self.avg_profit_card.update_value("No Pricing Data")
+                self.avg_margin_card.update_value("No Pricing Data")
+
+                print("⚠️ No valid recipes found for pricing calculations")
+                print("💡 Add pricing data to data/pricing.csv to see calculations")
 
         except Exception as e:
             self.logger.error(f"Error updating overview cards: {e}")
+            print(f"❌ Error updating pricing cards: {e}")
+            import traceback
+            traceback.print_exc()
+
+            # Show error state
+            if hasattr(self, 'avg_cost_card') and self.avg_cost_card is not None:
+                self.avg_cost_card.update_value("Error")
+                self.avg_selling_price_card.update_value("Error")
+                self.avg_profit_card.update_value("Error")
+                self.avg_margin_card.update_value("Error")
 
     def refresh_all_tables(self):
         """Refresh all pricing tables with current data"""

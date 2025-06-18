@@ -1221,34 +1221,114 @@ class MealPlanningWidget(QWidget):
         # Clear and prepare the ingredients table
         self.ingredients_table.setRowCount(0)
         
-        # Check if we have recipe_ingredients data in a structured format
-        if 'recipe_ingredients' in recipe and pd.notna(recipe['recipe_ingredients']):
+        # First try to get ingredients from recipe_ingredients.csv
+        recipe_ingredients_df = self.data.get('recipe_ingredients', pd.DataFrame())
+        ingredients_displayed = False
+
+        print(f"🔍 DEBUG: Recipe ingredients dataframe info:")
+        print(f"   - DataFrame empty: {recipe_ingredients_df.empty}")
+        print(f"   - DataFrame shape: {recipe_ingredients_df.shape if not recipe_ingredients_df.empty else 'N/A'}")
+        print(f"   - DataFrame columns: {list(recipe_ingredients_df.columns) if not recipe_ingredients_df.empty else 'N/A'}")
+        print(f"   - Recipe has recipe_id: {'recipe_id' in recipe}")
+        print(f"   - Recipe ID value: {recipe.get('recipe_id', 'NOT_FOUND')}")
+
+        if not recipe_ingredients_df.empty and 'recipe_id' in recipe:
+            # Get ingredients for this recipe from the separate CSV file
+            # Convert both recipe IDs to float for proper comparison
+            try:
+                recipe_id = float(recipe['recipe_id'])
+                print(f"   - Converted recipe_id to float: {recipe_id}")
+
+                # Show unique recipe IDs in the dataframe
+                unique_recipe_ids = recipe_ingredients_df['recipe_id'].unique()
+                print(f"   - Available recipe IDs in CSV: {unique_recipe_ids[:10]}...")  # Show first 10
+
+                recipe_ingredients = recipe_ingredients_df[
+                    recipe_ingredients_df['recipe_id'].astype(float) == recipe_id
+                ]
+
+                print(f"🔍 Looking for ingredients for recipe ID: {recipe_id}")
+                print(f"   Found {len(recipe_ingredients)} ingredients in CSV")
+            except Exception as e:
+                print(f"❌ Error processing recipe ID: {e}")
+                recipe_ingredients = pd.DataFrame()
+
+            if not recipe_ingredients.empty:
+                # Set the table row count
+                self.ingredients_table.setRowCount(len(recipe_ingredients))
+
+                # Populate the ingredients table from CSV data
+                for i, (_, ingredient) in enumerate(recipe_ingredients.iterrows()):
+                    # Item name
+                    item_name = str(ingredient.get('item_name', 'Unknown'))
+                    self.ingredients_table.setItem(i, 0, QTableWidgetItem(item_name))
+
+                    # Quantity
+                    quantity = str(ingredient.get('quantity', '0'))
+                    self.ingredients_table.setItem(i, 1, QTableWidgetItem(quantity))
+
+                    # Unit
+                    unit = str(ingredient.get('unit', 'units'))
+                    self.ingredients_table.setItem(i, 2, QTableWidgetItem(unit))
+
+                    # Check if item is in inventory (column 3)
+                    in_stock = "No"
+                    in_stock_color = QColor(255, 200, 200)  # Light red for not in stock
+
+                    # Get the inventory dataframe
+                    inventory_df = self.data.get('inventory', pd.DataFrame())
+
+                    # Check if item exists in inventory
+                    if not inventory_df.empty and 'item_name' in inventory_df.columns:
+                        inventory_item = inventory_df[inventory_df['item_name'] == item_name]
+                        if not inventory_item.empty:
+                            # Item exists, check quantity
+                            if 'quantity' in inventory_item.columns:
+                                try:
+                                    inv_qty = float(inventory_item['quantity'].values[0])
+                                    if inv_qty > 0:
+                                        in_stock = "Yes"
+                                        in_stock_color = QColor(200, 255, 200)  # Light green for in stock
+                                except (ValueError, IndexError):
+                                    pass
+
+                    # Set the in stock status with color
+                    in_stock_item = QTableWidgetItem(in_stock)
+                    in_stock_item.setBackground(in_stock_color)
+                    self.ingredients_table.setItem(i, 3, in_stock_item)
+
+                    print(f"   ✅ Added ingredient: {item_name} - {quantity} {unit} (In Stock: {in_stock})")
+
+                ingredients_displayed = True
+
+        # If no ingredients from CSV, try structured JSON format
+        if not ingredients_displayed and 'recipe_ingredients' in recipe and pd.notna(recipe['recipe_ingredients']):
             # Parse the recipe_ingredients JSON string
             try:
                 import json
                 ingredients_list = json.loads(recipe['recipe_ingredients'])
-                
+
                 # Set the table row count
                 self.ingredients_table.setRowCount(len(ingredients_list))
-                
+
                 # Populate the ingredients table
                 for i, ingredient in enumerate(ingredients_list):
                     # Item name
                     self.ingredients_table.setItem(i, 0, QTableWidgetItem(ingredient['item_name']))
-                    
+
                     # Quantity
                     self.ingredients_table.setItem(i, 1, QTableWidgetItem(str(ingredient['quantity'])))
-                    
+
                     # Unit
                     self.ingredients_table.setItem(i, 2, QTableWidgetItem(ingredient['unit']))
-                    
+
                     # Check if item is in inventory
                     in_stock = "No"
                     in_stock_color = QColor(255, 200, 200)  # Light red for not in stock
-                    
+
                     # Get the inventory dataframe
                     inventory_df = self.data['inventory']
-                    
+
                     # Check if item exists in inventory
                     if 'item_name' in inventory_df.columns:
                         inventory_item = inventory_df[inventory_df['item_name'] == ingredient['item_name']]
@@ -1259,18 +1339,19 @@ class MealPlanningWidget(QWidget):
                                 if inv_qty > 0:
                                     in_stock = "Yes"
                                     in_stock_color = QColor(200, 255, 200)  # Light green for in stock
-                    
+
                     # Set the in stock status with color
                     in_stock_item = QTableWidgetItem(in_stock)
                     in_stock_item.setBackground(in_stock_color)
                     self.ingredients_table.setItem(i, 3, in_stock_item)
-            
+
+                ingredients_displayed = True
+
             except Exception as e:
                 print(f"Error parsing recipe ingredients: {e}")
-                # Fall back to the old format
-                self._display_legacy_ingredients(recipe)
-        else:
-            # Use the old format for ingredients
+
+        # If still no ingredients displayed, use the legacy format
+        if not ingredients_displayed:
             self._display_legacy_ingredients(recipe)
         
         # Set the recipe instructions
@@ -1281,23 +1362,90 @@ class MealPlanningWidget(QWidget):
     
     def _display_legacy_ingredients(self, recipe):
         """Display ingredients from the old format as a fallback."""
+        # First try to get ingredients from recipe_ingredients.csv
+        recipe_ingredients_df = self.data.get('recipe_ingredients', pd.DataFrame())
+
+        if not recipe_ingredients_df.empty and 'recipe_id' in recipe:
+            # Get ingredients for this recipe from the separate CSV file
+            # Convert both recipe IDs to float for proper comparison
+            recipe_id = float(recipe['recipe_id'])
+            recipe_ingredients = recipe_ingredients_df[
+                recipe_ingredients_df['recipe_id'].astype(float) == recipe_id
+            ]
+
+            if not recipe_ingredients.empty:
+                # Set the table row count
+                self.ingredients_table.setRowCount(len(recipe_ingredients))
+
+                # Populate the ingredients table from CSV data
+                for i, (_, ingredient) in enumerate(recipe_ingredients.iterrows()):
+                    # Item name
+                    item_name = str(ingredient.get('item_name', 'Unknown'))
+                    self.ingredients_table.setItem(i, 0, QTableWidgetItem(item_name))
+
+                    # Quantity
+                    quantity = str(ingredient.get('quantity', '0'))
+                    self.ingredients_table.setItem(i, 1, QTableWidgetItem(quantity))
+
+                    # Unit
+                    unit = str(ingredient.get('unit', 'units'))
+                    self.ingredients_table.setItem(i, 2, QTableWidgetItem(unit))
+
+                    # Check if item is in inventory (column 3)
+                    in_stock = "No"
+                    in_stock_color = QColor(255, 200, 200)  # Light red for not in stock
+
+                    # Get the inventory dataframe
+                    inventory_df = self.data.get('inventory', pd.DataFrame())
+
+                    # Check if item exists in inventory
+                    if not inventory_df.empty and 'item_name' in inventory_df.columns:
+                        inventory_item = inventory_df[inventory_df['item_name'] == item_name]
+                        if not inventory_item.empty:
+                            # Item exists, check quantity
+                            if 'quantity' in inventory_item.columns:
+                                try:
+                                    inv_qty = float(inventory_item['quantity'].values[0])
+                                    if inv_qty > 0:
+                                        in_stock = "Yes"
+                                        in_stock_color = QColor(200, 255, 200)  # Light green for in stock
+                                except (ValueError, IndexError):
+                                    pass
+
+                    # Set the in stock status with color
+                    in_stock_item = QTableWidgetItem(in_stock)
+                    in_stock_item.setBackground(in_stock_color)
+                    self.ingredients_table.setItem(i, 3, in_stock_item)
+
+                return  # Successfully displayed ingredients from CSV
+
+        # Fallback to old text-based ingredients format
         if 'ingredients' in recipe and pd.notna(recipe['ingredients']):
             ingredients = recipe['ingredients'].split(',')
             self.ingredients_table.setRowCount(len(ingredients))
-            
+
             for i, ingredient in enumerate(ingredients):
                 # Try to parse simple text ingredients
                 ingredient = ingredient.strip()
                 self.ingredients_table.setItem(i, 0, QTableWidgetItem(ingredient))
                 self.ingredients_table.setItem(i, 1, QTableWidgetItem("1"))  # Default quantity
                 self.ingredients_table.setItem(i, 2, QTableWidgetItem("unit"))  # Default unit
-                
+
                 # Check inventory (same logic as above)
                 in_stock = "Unknown"
                 in_stock_color = QColor(255, 255, 200)  # Light yellow for unknown
                 in_stock_item = QTableWidgetItem(in_stock)
                 in_stock_item.setBackground(in_stock_color)
                 self.ingredients_table.setItem(i, 3, in_stock_item)
+        else:
+            # No ingredients found at all
+            self.ingredients_table.setRowCount(1)
+            no_ingredients_item = QTableWidgetItem("No ingredients found for this recipe")
+            no_ingredients_item.setBackground(QColor(255, 255, 200))  # Light yellow
+            self.ingredients_table.setItem(0, 0, no_ingredients_item)
+            self.ingredients_table.setItem(0, 1, QTableWidgetItem(""))
+            self.ingredients_table.setItem(0, 2, QTableWidgetItem(""))
+            self.ingredients_table.setItem(0, 3, QTableWidgetItem(""))
     
     def show_add_recipe_dialog(self):
         # Create a dialog for adding a new recipe with improved layout

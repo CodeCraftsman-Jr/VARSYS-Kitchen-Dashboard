@@ -1,0 +1,28 @@
+category_id,category_name,category_type,parent_id,budget_amount,spent_amount,description
+1,Kitchen Essentials,Parent,,50000.0,0.0,Main category for all kitchen and food-related expenses
+2,Maintenance,Parent,,15000.0,0.0,Main category for maintenance and repair expenses
+3,Gas,Parent,,8000.0,0.0,Main category for gas supply expenses
+4,Grains,Child,1.0,0.0,0.0,"Rice, pasta, wheat, etc."
+5,Baking,Child,1.0,0.0,0.0,"Flour, sugar, baking powder, etc."
+6,Spices,Child,1.0,0.0,0.0,"Salt, herbs, spices, powders"
+7,Oils,Child,1.0,0.0,0.0,"Cooking oils, ghee, butter"
+8,Meat,Child,1.0,0.0,0.0,"Beef, pork, lamb, etc."
+9,Poultry,Child,1.0,0.0,0.0,"Chicken, turkey, duck, etc."
+10,Vegetables,Child,1.0,0.0,0.0,Fresh vegetables
+11,Dairy,Child,1.0,0.0,0.0,"Milk, cheese, yogurt, etc."
+12,Fruits,Child,1.0,0.0,0.0,Fresh fruits
+13,Legumes,Child,1.0,0.0,0.0,"Beans, lentils, chickpeas, etc."
+14,Prepared Foods,Child,1.0,0.0,0.0,"Cooked items, chutneys, gravies"
+15,Beverages,Child,1.0,0.0,0.0,"Tea, coffee, milk drinks"
+16,Nuts & Seeds,Child,1.0,0.0,0.0,"Cashews, peanuts, sesame seeds"
+17,Condiments,Child,1.0,0.0,0.0,"Sauces, pastes, pickles"
+18,Seafood,Child,1.0,0.0,0.0,"Fish, prawns, shellfish"
+19,Eggs,Child,1.0,0.0,0.0,"Chicken eggs, duck eggs"
+20,Bread & Bakery,Child,1.0,0.0,0.0,"Bread, naan, chapathi"
+21,Sweeteners,Child,1.0,0.0,0.0,"Sugar, jaggery, honey"
+22,Aromatics,Child,1.0,0.0,0.0,Items with unknown category
+23,Repairing,Child,2.0,0.0,0.0,Repair and fixing expenses
+24,Spares,Child,2.0,0.0,0.0,Spare parts and replacement items
+25,Indian Gas,Child,3.0,0.0,0.0,Indian Gas supply
+26,HP Gas,Child,3.0,0.0,0.0,HP Gas supply
+27,Local Gas Supply,Child,3.0,0.0,0.0,Local gas supply services

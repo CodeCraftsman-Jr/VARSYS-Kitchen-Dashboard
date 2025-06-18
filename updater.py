@@ -319,13 +319,23 @@ del "%~f0" >nul 2>&1
 _updater_instance = None
 
 def get_updater(logger=None):
-    """Get global updater instance with enhanced functionality"""
+    """Get global updater instance with hybrid Git/HTTP functionality"""
     global _updater_instance
     if _updater_instance is None:
-        # Try to use enhanced updater if available, fallback to basic
+        # Try to use hybrid updater first (Git + HTTP), then enhanced, then basic
         try:
-            from enhanced_updater import get_enhanced_updater
-            _updater_instance = get_enhanced_updater(logger)
+            from hybrid_updater import get_hybrid_updater
+            _updater_instance = get_hybrid_updater(logger)
+            if logger:
+                logger.info("Using hybrid Git/HTTP updater")
         except ImportError:
-            _updater_instance = SecureUpdater(logger)
+            try:
+                from enhanced_updater import get_enhanced_updater
+                _updater_instance = get_enhanced_updater(logger)
+                if logger:
+                    logger.info("Using enhanced HTTP updater")
+            except ImportError:
+                _updater_instance = SecureUpdater(logger)
+                if logger:
+                    logger.info("Using basic HTTP updater")
     return _updater_instance

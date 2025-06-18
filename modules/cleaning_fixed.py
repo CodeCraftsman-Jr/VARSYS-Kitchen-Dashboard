@@ -71,6 +71,79 @@ class CleaningWidget(QWidget):
         # Initialize edit mode variables
         self.edit_mode = False
         self.original_task_name = None
+
+    def load_staff_options(self):
+        """Load staff members into the combo box"""
+        try:
+            self.assigned_staff_combo.clear()
+            self.assigned_staff_combo.addItem("Unassigned", "")
+
+            # Check if staff data exists
+            if 'staff' in self.data and not self.data['staff'].empty:
+                staff_df = self.data['staff']
+                active_staff = staff_df[staff_df['status'] == 'Active']
+
+                for _, staff in active_staff.iterrows():
+                    staff_name = staff.get('staff_name', '')
+                    staff_id = staff.get('staff_id', '')
+                    if staff_name:
+                        self.assigned_staff_combo.addItem(staff_name, staff_id)
+
+        except Exception as e:
+            print(f"Error loading staff options: {e}")
+
+    def open_staff_management(self):
+        """Open the staff management dialog"""
+        try:
+            from modules.staff_management import StaffManagementWidget
+            from PySide6.QtWidgets import QDialog, QVBoxLayout
+
+            # Create a dialog to host the staff management widget
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Staff Management & Task Assignments")
+            dialog.setModal(True)
+            dialog.resize(1200, 800)
+
+            layout = QVBoxLayout(dialog)
+
+            # Create staff management widget
+            staff_widget = StaffManagementWidget(self.data)
+            staff_widget.data_changed.connect(self.refresh_data)
+            layout.addWidget(staff_widget)
+
+            # Show dialog
+            dialog.exec()
+
+        except ImportError:
+            QMessageBox.warning(
+                self, "Feature Not Available",
+                "Staff management module is not available. Please check the installation."
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error",
+                f"Failed to open staff management: {str(e)}"
+            )
+
+    def refresh_data(self):
+        """Refresh the cleaning data after staff management changes"""
+        try:
+            # Reload staff options
+            self.load_staff_options()
+
+            # Refresh the cleaning dataframe
+            if 'cleaning_maintenance' in self.data:
+                self.cleaning_df = self.data['cleaning_maintenance'].copy()
+
+            # Update the task list
+            self.update_task_list()
+
+            # Update calendar if it exists
+            if hasattr(self, 'calendar'):
+                self.highlight_task_dates()
+
+        except Exception as e:
+            print(f"Error refreshing data: {e}")
         
     def setup_schedule_tab(self):
         # Create layout for the tab
@@ -108,20 +181,22 @@ class CleaningWidget(QWidget):
         
         # Tasks table
         self.tasks_table = QTableWidget()
-        self.tasks_table.setColumnCount(7)
+        self.tasks_table.setColumnCount(9)
         self.tasks_table.setHorizontalHeaderLabels([
-            "Task", "Frequency", "Last Completed", "Next Due", "Days Left", "Priority", "Notes"
+            "Task", "Assigned Staff", "Frequency", "Last Completed", "Next Due", "Days Left", "Priority", "Schedule Type", "Notes"
         ])
 
         # Apply universal column resizing functionality
         tasks_default_column_widths = {
-            0: 200,  # Task
-            1: 100,  # Frequency
-            2: 120,  # Last Completed
-            3: 120,  # Next Due
-            4: 80,   # Days Left
-            5: 80,   # Priority
-            6: 200   # Notes
+            0: 180,  # Task
+            1: 120,  # Assigned Staff
+            2: 100,  # Frequency
+            3: 120,  # Last Completed
+            4: 120,  # Next Due
+            5: 80,   # Days Left
+            6: 80,   # Priority
+            7: 100,  # Schedule Type
+            8: 200   # Notes
         }
 
         # Apply column resizing with settings persistence
@@ -137,19 +212,40 @@ class CleaningWidget(QWidget):
         # Action buttons
         buttons_widget = QWidget()
         buttons_layout = QHBoxLayout(buttons_widget)
-        
+
         self.mark_completed_button = QPushButton("Mark as Completed")
         self.mark_completed_button.clicked.connect(self.mark_task_completed)
         buttons_layout.addWidget(self.mark_completed_button)
-        
+
         self.edit_task_button = QPushButton("Edit Task")
         self.edit_task_button.clicked.connect(self.edit_task)
         buttons_layout.addWidget(self.edit_task_button)
-        
+
         self.delete_task_button = QPushButton("Delete Task")
         self.delete_task_button.clicked.connect(self.delete_task)
         buttons_layout.addWidget(self.delete_task_button)
-        
+
+        # Add separator
+        buttons_layout.addStretch()
+
+        # Staff Management button
+        self.staff_mgmt_button = QPushButton("👥 Manage Staff & Assignments")
+        self.staff_mgmt_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+        """)
+        self.staff_mgmt_button.clicked.connect(self.open_staff_management)
+        buttons_layout.addWidget(self.staff_mgmt_button)
+
         layout.addWidget(buttons_widget)
         
         # Update the task list
@@ -223,36 +319,42 @@ class CleaningWidget(QWidget):
         for i, (_, row) in enumerate(filtered_df.iterrows()):
             # Task name
             self.tasks_table.setItem(i, 0, QTableWidgetItem(self.safe_string_convert(row['task_name'])))
-            
+
+            # Assigned Staff
+            if 'assigned_staff_name' in row and pd.notnull(row['assigned_staff_name']):
+                self.tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(row['assigned_staff_name'])))
+            else:
+                self.tasks_table.setItem(i, 1, QTableWidgetItem("Unassigned"))
+
             # Frequency
             if 'frequency' in row:
-                self.tasks_table.setItem(i, 1, QTableWidgetItem(self.safe_string_convert(row['frequency'])))
+                self.tasks_table.setItem(i, 2, QTableWidgetItem(self.safe_string_convert(row['frequency'])))
             else:
-                self.tasks_table.setItem(i, 1, QTableWidgetItem(""))
-            
+                self.tasks_table.setItem(i, 2, QTableWidgetItem(""))
+
             # Last completed
             if 'last_completed' in row and pd.notnull(row['last_completed']):
                 try:
                     last_completed = pd.to_datetime(row['last_completed'])
-                    self.tasks_table.setItem(i, 2, QTableWidgetItem(last_completed.strftime('%Y-%m-%d')))
+                    self.tasks_table.setItem(i, 3, QTableWidgetItem(last_completed.strftime('%Y-%m-%d')))
                 except:
-                    self.tasks_table.setItem(i, 2, QTableWidgetItem(self.safe_string_convert(row['last_completed'])))
+                    self.tasks_table.setItem(i, 3, QTableWidgetItem(self.safe_string_convert(row['last_completed'])))
             else:
-                self.tasks_table.setItem(i, 2, QTableWidgetItem("Never"))
-            
+                self.tasks_table.setItem(i, 3, QTableWidgetItem("Never"))
+
             # Next due
             if 'next_due' in row and pd.notnull(row['next_due']):
                 try:
                     next_due = pd.to_datetime(row['next_due'])
-                    self.tasks_table.setItem(i, 3, QTableWidgetItem(next_due.strftime('%Y-%m-%d')))
+                    self.tasks_table.setItem(i, 4, QTableWidgetItem(next_due.strftime('%Y-%m-%d')))
                 except:
-                    self.tasks_table.setItem(i, 3, QTableWidgetItem(self.safe_string_convert(row['next_due'])))
+                    self.tasks_table.setItem(i, 4, QTableWidgetItem(self.safe_string_convert(row['next_due'])))
             else:
-                self.tasks_table.setItem(i, 3, QTableWidgetItem("Not scheduled"))
-            
+                self.tasks_table.setItem(i, 4, QTableWidgetItem("Not scheduled"))
+
             # Days left
             days_left_item = QTableWidgetItem(self.safe_string_convert(row['days_until_due']))
-            
+
             # Color code based on days left
             if row['days_until_due'] <= 0:  # Overdue
                 days_left_item.setBackground(QColor(255, 0, 0, 100))  # Red
@@ -260,14 +362,14 @@ class CleaningWidget(QWidget):
                 days_left_item.setBackground(QColor(255, 165, 0, 100))  # Orange
             elif row['days_until_due'] <= 7:  # Due this week
                 days_left_item.setBackground(QColor(255, 255, 0, 100))  # Yellow
-            
-            self.tasks_table.setItem(i, 4, days_left_item)
-            
+
+            self.tasks_table.setItem(i, 5, days_left_item)
+
             # Priority
             if 'priority' in row:
                 priority_value = self.safe_string_convert(row['priority'])
                 priority_item = QTableWidgetItem(priority_value)
-                
+
                 # Color code based on priority
                 if priority_value == "High":
                     priority_item.setBackground(QColor(255, 0, 0, 100))  # Red
@@ -275,18 +377,24 @@ class CleaningWidget(QWidget):
                     priority_item.setBackground(QColor(255, 165, 0, 100))  # Orange
                 elif priority_value == "Low":
                     priority_item.setBackground(QColor(255, 255, 0, 100))  # Yellow
-                
-                self.tasks_table.setItem(i, 5, priority_item)
+
+                self.tasks_table.setItem(i, 6, priority_item)
             else:
-                self.tasks_table.setItem(i, 5, QTableWidgetItem(""))
-            
+                self.tasks_table.setItem(i, 6, QTableWidgetItem(""))
+
+            # Schedule Type
+            if 'schedule_type' in row and pd.notnull(row['schedule_type']):
+                self.tasks_table.setItem(i, 7, QTableWidgetItem(self.safe_string_convert(row['schedule_type'])))
+            else:
+                self.tasks_table.setItem(i, 7, QTableWidgetItem("Manual"))
+
             # Notes
             if 'notes' in row:
                 # Use our safe string conversion helper
                 notes_str = self.safe_string_convert(row['notes'])
-                self.tasks_table.setItem(i, 6, QTableWidgetItem(notes_str))
+                self.tasks_table.setItem(i, 8, QTableWidgetItem(notes_str))
             else:
-                self.tasks_table.setItem(i, 6, QTableWidgetItem(""))
+                self.tasks_table.setItem(i, 8, QTableWidgetItem(""))
                 
     def mark_task_completed(self):
         # Get selected row
@@ -364,12 +472,34 @@ class CleaningWidget(QWidget):
         
         # Populate form with task data
         self.task_name_input.setText(task_name)
-        
+
+        # Set assigned staff
+        if 'assigned_staff_name' in task.columns and pd.notnull(task['assigned_staff_name'].values[0]):
+            staff_name = task['assigned_staff_name'].values[0]
+            index = self.assigned_staff_combo.findText(staff_name)
+            if index >= 0:
+                self.assigned_staff_combo.setCurrentIndex(index)
+            else:
+                self.assigned_staff_combo.setCurrentIndex(0)  # Unassigned
+        else:
+            self.assigned_staff_combo.setCurrentIndex(0)  # Unassigned
+
         if 'frequency' in task.columns:
             frequency = task['frequency'].values[0]
             index = self.frequency_combo.findText(frequency)
             if index >= 0:
                 self.frequency_combo.setCurrentIndex(index)
+
+        # Set schedule type
+        if 'schedule_type' in task.columns and pd.notnull(task['schedule_type'].values[0]):
+            schedule_type = task['schedule_type'].values[0]
+            index = self.schedule_type_combo.findText(schedule_type)
+            if index >= 0:
+                self.schedule_type_combo.setCurrentIndex(index)
+            else:
+                self.schedule_type_combo.setCurrentIndex(0)  # Manual
+        else:
+            self.schedule_type_combo.setCurrentIndex(0)  # Manual
         
         if 'last_completed' in task.columns and pd.notnull(task['last_completed'].values[0]):
             try:
@@ -447,11 +577,21 @@ class CleaningWidget(QWidget):
         # Task name
         self.task_name_input = QLineEdit()
         form_layout.addRow("Task Name:", self.task_name_input)
-        
+
+        # Assigned Staff
+        self.assigned_staff_combo = QComboBox()
+        self.load_staff_options()
+        form_layout.addRow("Assign to Staff:", self.assigned_staff_combo)
+
         # Frequency
         self.frequency_combo = QComboBox()
         self.frequency_combo.addItems(["Daily", "Weekly", "Bi-weekly", "Monthly", "Quarterly", "Yearly"])
         form_layout.addRow("Frequency:", self.frequency_combo)
+
+        # Schedule Type
+        self.schedule_type_combo = QComboBox()
+        self.schedule_type_combo.addItems(["Manual", "daily", "weekly", "monthly", "custom"])
+        form_layout.addRow("Schedule Type:", self.schedule_type_combo)
         
         # Last completed
         self.last_completed_input = QDateEdit()
@@ -493,7 +633,10 @@ class CleaningWidget(QWidget):
     def add_or_update_task(self):
         # Get form values
         task_name = self.task_name_input.text()
+        assigned_staff_name = self.assigned_staff_combo.currentText()
+        assigned_staff_id = self.assigned_staff_combo.currentData()
         frequency = self.frequency_combo.currentText()
+        schedule_type = self.schedule_type_combo.currentText()
         last_completed = self.last_completed_input.date().toString("yyyy-MM-dd")
         next_due = self.next_due_input.date().toString("yyyy-MM-dd")
         priority = self.priority_input.currentText()
@@ -515,7 +658,10 @@ class CleaningWidget(QWidget):
             task_index = self.cleaning_df[self.cleaning_df['task_name'] == self.original_task_name].index
             if len(task_index) > 0:
                 self.cleaning_df.loc[task_index, 'task_name'] = task_name
+                self.cleaning_df.loc[task_index, 'assigned_staff_name'] = assigned_staff_name if assigned_staff_name != "Unassigned" else ""
+                self.cleaning_df.loc[task_index, 'assigned_staff_id'] = assigned_staff_id if assigned_staff_id else ""
                 self.cleaning_df.loc[task_index, 'frequency'] = frequency
+                self.cleaning_df.loc[task_index, 'schedule_type'] = schedule_type
                 self.cleaning_df.loc[task_index, 'last_completed'] = last_completed
                 self.cleaning_df.loc[task_index, 'next_due'] = next_due
                 self.cleaning_df.loc[task_index, 'priority'] = priority
@@ -542,7 +688,10 @@ class CleaningWidget(QWidget):
             # Create new task
             new_task = pd.DataFrame({
                 'task_name': [task_name],
+                'assigned_staff_name': [assigned_staff_name if assigned_staff_name != "Unassigned" else ""],
+                'assigned_staff_id': [assigned_staff_id if assigned_staff_id else ""],
                 'frequency': [frequency],
+                'schedule_type': [schedule_type],
                 'last_completed': [last_completed],
                 'next_due': [next_due],
                 'priority': [priority],
@@ -569,7 +718,9 @@ class CleaningWidget(QWidget):
     
     def reset_form(self):
         self.task_name_input.clear()
+        self.assigned_staff_combo.setCurrentIndex(0)  # Reset to "Unassigned"
         self.frequency_combo.setCurrentIndex(0)
+        self.schedule_type_combo.setCurrentIndex(0)  # Reset to "Manual"
         self.last_completed_input.setDate(QDate.currentDate())
         self.next_due_input.setDate(QDate.currentDate().addDays(7))
         self.priority_input.setCurrentIndex(0)

@@ -1,0 +1,70 @@
+item_id,item_name,category,quantity,unit,priority,last_price,location,notes,status,current_price,avg_price,date_added,date_purchased
+1.0,Oil,Oils,1500.0,ml,High,219.0,Local Market,Missing from Dosa With Fish Kolambu(Parai Fish),Purchased,219.0,219.0,2025-06-09,2025-06-09
+2.0,Fish Kolambu(Parai Fish),Prepared Foods,1600.0,grams,High,142.0,Local Market,Missing from Dosa With Fish Kolambu(Parai Fish),Purchased,142.0,142.0,2025-06-09,2025-06-09
+3.0,Dosa batter,Prepared Foods,7000.0,grams,High,200.0,Local Market,Missing from Dosa With Fish Kolambu(Parai Fish),Purchased,200.0,200.0,2025-06-09,2025-06-09
+4.0,Eggs,Eggs,2.0,units,High,14.0,Local Market,Missing from Double Omelette,Purchased,14.0,14.0,2025-06-09,2025-06-09
+5.0,Pepper,Spices,100.0,grams,High,70.0,Local Market,Missing from Double Omelette,Purchased,70.0,70.0,2025-06-09,2025-06-09
+6.0,turmeric powder,Spices,2.0,grams,High,0.6,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,0.6,0.6,2025-06-09,2025-06-09
+7.0,Urad Dal(ulunda parupu),Legumes,450.0,grams,High,140.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,140.0,140.0,2025-06-09,2025-06-09
+8.0,Chicken Masala,Spices,50.0,grams,High,15.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,15.0,15.0,2025-06-09,2025-06-09
+9.0,Red chilli Powder,Spices,85.0,grams,High,32.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,32.0,32.0,2025-06-09,2025-06-09
+10.0,Garam Masala,Spices,30.0,grams,High,18.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,18.0,18.0,2025-06-09,2025-06-09
+11.0,kadalai parupu(bengal gram),Legumes,177.0,grams,High,20.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,20.0,20.0,2025-06-09,2025-06-09
+12.0,garlic ginger paste,Condiments,15.0,grams,High,3.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,3.0,3.0,2025-06-09,2025-06-09
+13.0,tomato,Vegetables,3000.0,grams,High,90.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,90.0,90.0,2025-06-09,2025-06-09
+14.0,onion,Vegetables,1000.0,grams,High,50.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,50.0,50.0,2025-06-09,2025-06-09
+15.0,Chicken gravy,Prepared Foods,1250.0,grams,High,276.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,276.0,276.0,2025-06-09,2025-06-09
+16.0,Potatoes,Vegetables,1000.0,grams,High,60.0,Local Market,Missing from 2 Masala Dosa With Chicken Gravy,Purchased,60.0,60.0,2025-06-09,2025-06-09
+17.0,Coffee powder,Beverages,2.0,grams,High,1.0,Local Market,Missing from Black Coffee,Purchased,1.0,1.0,2025-06-09,2025-06-09
+18.0,Sugar,Sweeteners,460.0,grams,High,23.0,Local Market,Missing from Black Coffee,Purchased,23.0,23.0,2025-06-09,2025-06-09
+19.0,Boost,Beverages,1.0,grams,High,5.0,Local Market,Missing from Boost,Purchased,5.0,5.0,2025-06-09,2025-06-09
+20.0,Milk,Dairy,500.0,grams,High,38.0,Local Market,Missing from Boost,Purchased,38.0,38.0,2025-06-09,2025-06-09
+21.0,Tomato Chutni(Cooked),Prepared Foods,600.0,grams,High,35.0,Local Market,Missing from Carrot and Coriander Uthapam,Purchased,35.0,35.0,2025-06-09,2025-06-09
+22.0,Coconut Chutni(Cooked),Prepared Foods,520.0,grams,High,30.0,Local Market,Missing from Carrot and Coriander Uthapam,Purchased,30.0,30.0,2025-06-09,2025-06-09
+23.0,Sambhar,Prepared Foods,1200.0,grams,High,65.0,Local Market,Missing from Carrot and Coriander Uthapam,Purchased,65.0,65.0,2025-06-09,2025-06-09
+24.0,Carrot,Vegetables,200.0,grams,High,30.0,Local Market,Missing from Carrot and Coriander Uthapam,Purchased,30.0,30.0,2025-06-09,2025-06-09
+25.0,Coriander(kothamali),Spices,44.0,grams,High,5.0,Local Market,Missing from Carrot and Coriander Uthapam,Purchased,5.0,5.0,2025-06-09,2025-06-09
+26.0,Curry Leaves(Karuvepulai),Spices,20.0,grams,High,3.0,Local Market,Missing from Carrot Dosa,Purchased,3.0,3.0,2025-06-09,2025-06-09
+27.0,Mustard Urad Dal(Kadugu Uluntha Parupu),Legumes,60.0,grams,High,15.0,Local Market,Missing from Carrot Rice,Purchased,15.0,15.0,2025-06-09,2025-06-09
+28.0,garlic,Spices,100.0,grams,High,20.0,Local Market,Missing from Carrot Rice,Purchased,20.0,20.0,2025-06-09,2025-06-09
+29.0,green chilli,Spices,173.0,grams,High,20.0,Local Market,Missing from Carrot Rice,Purchased,20.0,20.0,2025-06-09,2025-06-09
+30.0,Salt,Spices,500.0,grams,High,25.0,Local Market,Missing from Chapathi,Purchased,25.0,25.0,2025-06-09,2025-06-09
+31.0,Wheat,Grains,2500.0,grams,High,131.0,Local Market,Missing from Chapathi,Purchased,131.0,131.0,2025-06-09,2025-06-09
+32.0,clove(lavagam),Spices,4.0,grams,High,2.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,2.0,2.0,2025-06-09,2025-06-09
+33.0,Cardamon(Yelakai),Spices,16.0,grams,High,3.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,3.0,3.0,2025-06-09,2025-06-09
+34.0,cinamon(pattai),Spices,1.0,grams,High,0.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,0.01,0.01,2025-06-09,2025-06-09
+35.0,corainder powder(mali powder),Spices,2.0,grams,High,0.56,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,0.56,0.56,2025-06-09,2025-06-09
+36.0,Fennel Seed(Sombu)-saunf,Spices,15.0,grams,High,3.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,3.0,3.0,2025-06-09,2025-06-09
+37.0,cashew nut,Nuts & Seeds,6.0,grams,High,1.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,1.0,1.0,2025-06-09,2025-06-09
+38.0,Green Beans,Vegetables,110.0,grams,High,25.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,25.0,25.0,2025-06-09,2025-06-09
+39.0,Coconut,Fruits,900.0,grams,High,120.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,120.0,120.0,2025-06-09,2025-06-09
+40.0,beans,Legumes,15.0,grams,High,0.0,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,0.01,0.01,2025-06-09,2025-06-09
+41.0,white channa,Legumes,174.0,grams,High,22.5,Local Market,Missing from Chappathi and Channa (2 pcs),Purchased,22.5,22.5,2025-06-09,2025-06-09
+42.0,Chicken,Poultry,500.0,grams,High,200.0,Local Market,Missing from Chicken Gravy,Purchased,200.0,200.0,2025-06-09,2025-06-09
+43.0,Star Anise(Annachipu),Spices,14.0,grams,High,3.0,Local Market,Missing from Chicken Gravy,Purchased,3.0,3.0,2025-06-09,2025-06-09
+44.0,bring leaf,Spices,20.0,grams,High,3.0,Local Market,Missing from Chicken Gravy,Purchased,3.0,3.0,2025-06-09,2025-06-09
+45.0,kolambu molaga thool,Spices,2000.0,grams,High,750.0,Local Market,Missing from Chicken Gravy,Purchased,750.0,750.0,2025-06-09,2025-06-09
+46.0,Fried Gram Split(Pottu Kadalai),Legumes,236.0,grams,High,45.0,Local Market,Missing from Coconut Chutney,Purchased,45.0,45.0,2025-06-09,2025-06-09
+47.0,ginger,Spices,38.0,grams,High,10.0,Local Market,Missing from Coconut Rice,Purchased,10.0,10.0,2025-06-09,2025-06-09
+48.0,Bheemas Rice,Grains,10000.0,grams,High,740.0,Local Market,Missing from Coconut Rice,Purchased,740.0,740.0,2025-06-09,2025-06-09
+49.0,cooked rice,Prepared Foods,1000.0,grams,High,22.2,Local Market,Missing from Curd Rice,Purchased,22.2,22.2,2025-06-09,2025-06-09
+50.0,Curd,Dairy,500.0,grams,High,34.0,Local Market,Missing from Curd Rice,Purchased,34.0,34.0,2025-06-09,2025-06-09
+51.0,Ghee,Oils,250.0,ml,High,185.0,Local Market,Missing from 2 Ghee Dosa,Purchased,185.0,185.0,2025-06-09,2025-06-09
+52.0,Tea powder,Beverages,20.0,grams,High,3.0,Local Market,Missing from Ginger Tea,Purchased,3.0,3.0,2025-06-09,2025-06-09
+53.0,Green tea leaves,Beverages,20.0,grams,High,0.0,Local Market,Missing from Green Tea,Purchased,0.01,0.01,2025-06-09,2025-06-09
+54.0,Horlicks,Beverages,1.0,grams,High,5.0,Local Market,Missing from Horlicks,Purchased,5.0,5.0,2025-06-09,2025-06-09
+55.0,Lemons,Fruits,1.0,grams,High,5.0,Local Market,Missing from Lemon Rice,Purchased,5.0,5.0,2025-06-09,2025-06-09
+56.0,toovaram parupu(toor dal),Legumes,490.0,grams,High,90.0,Local Market,Missing from Lemon Rice,Purchased,90.0,90.0,2025-06-09,2025-06-09
+57.0,Peanuts,Nuts & Seeds,163.0,grams,High,36.0,Local Market,Missing from Lemon Rice,Purchased,36.0,36.0,2025-06-09,2025-06-09
+58.0,Pepper Powder(Milagu Thool),Spices,16.0,grams,High,3.0,Local Market,Missing from Egg Dosa,Purchased,3.0,3.0,2025-06-09,2025-06-09
+59.0,Pulli,Condiments,50.0,grams,High,18.0,Local Market,Missing from Fish Kolambu(Parai Fish),Purchased,18.0,18.0,2025-06-09,2025-06-09
+60.0,Fish(Parai Fish),Seafood,16.0,grams,High,150.0,Local Market,Missing from Fish Kolambu(Parai Fish),Purchased,150.0,150.0,2025-06-09,2025-06-09
+61.0,Cumin Powder(seraga Thool),Spices,50.0,grams,High,10.0,Local Market,Missing from Masala Egg Fry,Purchased,10.0,10.0,2025-06-09,2025-06-09
+62.0,Idli podi,Spices,25.0,grams,High,3.0,Local Market,Missing from Mini Podi Idli,Purchased,3.0,3.0,2025-06-09,2025-06-09
+63.0,bread,Bread & Bakery,14.0,grams,High,40.0,Local Market,Missing from Onion Bread Omelette,Purchased,40.0,40.0,2025-06-09,2025-06-09
+64.0,perugayam(asafoetida),Spices,50.0,grams,High,30.0,Local Market,Missing from Sambar,Purchased,30.0,30.0,2025-06-12,2025-06-12
+65.0,sambhar podi,Spices,40.0,grams,High,8.0,Local Market,Missing from Sambar,Purchased,8.0,8.0,2025-06-12,2025-06-12
+66.0,Pasiparupu(algae lenthils),Legumes,111.0,grams,High,16.0,Local Market,Missing from Sambar,Purchased,16.0,16.0,2025-06-12,2025-06-12
+67.0,Bringal,Vegetables,250.0,grams,High,20.0,Local Market,Missing from Sambar,Purchased,20.0,20.0,2025-06-12,2025-06-12
+68.0,vellam(jaggery),Sweeteners,500.0,grams,High,40.0,Local Market,Missing from Sweet Kuli Paniyaram,Purchased,40.0,40.0,2025-06-12,2025-06-12
+69.0,Dry Chilli,Spices,72.0,grams,High,9.0,Local Market,Missing from Tomato Chutney,Purchased,9.0,9.0,2025-06-12,2025-06-12

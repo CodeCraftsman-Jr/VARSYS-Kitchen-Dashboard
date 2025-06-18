@@ -1,3 +1,1 @@
 sale_id,date,order_id,platform,customer,item_name,quantity,subtotal,taxes,delivery_fee,discount,total_amount,payment_method,status,notes,recipe_name,price
-1.0,2025-06-15,,,,,1.0,,,,,60.0,Cash,,,Coffee,60.0
-1.0,2025-06-15 00:00:00,,,,,1.0,,,,,60.0,Cash,,,Coffee,60.0
