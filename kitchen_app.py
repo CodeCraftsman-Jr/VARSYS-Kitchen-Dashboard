@@ -246,6 +246,12 @@ class KitchenDashboardApp(QMainWindow):
         # Startup notification settings (can be configured)
         self.show_startup_notifications = True  # Set to False to disable startup notifications
 
+        # WhatsApp Integration Configuration
+        self.WHATSAPP_ENABLED = False  # Set to True to re-enable WhatsApp integration
+
+        # Initialize WhatsApp Message Logger for standalone messaging system
+        self.whatsapp_message_logger = None
+
         # Initialize pending notification storage
         self.pending_login_notification = None
         self.pending_sync_notification = None
@@ -410,23 +416,36 @@ class KitchenDashboardApp(QMainWindow):
             self.show_firebase_required_dialog()
             return
 
-        # Initialize WhatsApp Startup Manager for automatic connection
-        self.logger.log_section_header("WhatsApp Startup Integration")
-        try:
-            from modules.whatsapp_startup_manager import WhatsAppStartupManager
-            self.whatsapp_startup_manager = WhatsAppStartupManager(self)
+        # WhatsApp Integration - DISABLED for standalone messaging system
+        if self.WHATSAPP_ENABLED:
+            self.logger.log_section_header("WhatsApp Startup Integration")
+            try:
+                from modules.whatsapp_startup_manager import WhatsAppStartupManager
+                self.whatsapp_startup_manager = WhatsAppStartupManager(self)
 
-            # Add callback for startup completion
-            self.whatsapp_startup_manager.add_startup_callback(self._on_whatsapp_startup_complete)
+                # Add callback for startup completion
+                self.whatsapp_startup_manager.add_startup_callback(self._on_whatsapp_startup_complete)
 
-            self.logger.info(f"WhatsApp startup manager initialized: {self.whatsapp_startup_manager}")
-            self.logger.log_section_footer("WhatsApp Startup Integration", True, "WhatsApp automation ready")
-        except Exception as e:
-            import traceback
-            self.logger.error(f"Failed to initialize WhatsApp startup manager: {e}")
-            self.logger.error(f"Traceback: {traceback.format_exc()}")
-            self.logger.log_section_footer("WhatsApp Startup Integration", False, f"WhatsApp startup failed: {e}")
+                self.logger.info(f"WhatsApp startup manager initialized: {self.whatsapp_startup_manager}")
+                self.logger.log_section_footer("WhatsApp Startup Integration", True, "WhatsApp automation ready")
+            except Exception as e:
+                import traceback
+                self.logger.error(f"Failed to initialize WhatsApp startup manager: {e}")
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
+                self.logger.log_section_footer("WhatsApp Startup Integration", False, f"WhatsApp startup failed: {e}")
+                self.whatsapp_startup_manager = None
+        else:
+            self.logger.info("WhatsApp integration disabled - using standalone messaging system")
             self.whatsapp_startup_manager = None
+
+            # Initialize WhatsApp Message Logger for standalone messaging
+            try:
+                from modules.whatsapp_message_logger import WhatsAppMessageLogger
+                self.whatsapp_message_logger = WhatsAppMessageLogger(data=self.data, main_app=self)
+                self.logger.info("✅ WhatsApp Message Logger initialized for standalone messaging system")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize WhatsApp Message Logger: {e}")
+                self.whatsapp_message_logger = None
 
         # Initialize System Tray for background operation
         self.logger.log_section_header("System Tray Initialization")
@@ -500,7 +519,10 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error sending enhanced startup notification: {e}")
 
     def _on_whatsapp_startup_complete(self, success, message):
-        """Callback when WhatsApp startup process completes"""
+        """Callback when WhatsApp startup process completes - DISABLED"""
+        if not self.WHATSAPP_ENABLED:
+            return
+
         try:
             if success:
                 self.logger.info(f"✅ WhatsApp startup successful: {message}")
@@ -520,7 +542,10 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error in WhatsApp startup callback: {e}")
 
     def _show_whatsapp_setup_if_needed(self):
-        """Show WhatsApp setup dialog if needed"""
+        """Show WhatsApp setup dialog if needed - DISABLED"""
+        if not self.WHATSAPP_ENABLED:
+            return
+
         try:
             if self.whatsapp_startup_manager:
                 success = self.whatsapp_startup_manager.show_setup_dialog_if_needed(self)
@@ -532,7 +557,11 @@ class KitchenDashboardApp(QMainWindow):
             self.logger.error(f"Error showing WhatsApp setup dialog: {e}")
 
     def start_whatsapp_automation(self):
-        """Start automatic WhatsApp connection process"""
+        """Start automatic WhatsApp connection process - DISABLED"""
+        if not self.WHATSAPP_ENABLED:
+            self.logger.info("WhatsApp automation disabled - using standalone messaging system")
+            return
+
         try:
             if self.whatsapp_startup_manager:
                 success = self.whatsapp_startup_manager.start_automatic_connection()
@@ -2727,8 +2756,8 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         """Mark that data has been changed and needs saving"""
         self.data_changed = True
 
-        # Trigger real-time WhatsApp notifications if available
-        if hasattr(self, 'whatsapp_notifications') and self.whatsapp_notifications:
+        # Trigger WhatsApp message logging for standalone messaging system
+        if self.WHATSAPP_ENABLED and hasattr(self, 'whatsapp_notifications') and self.whatsapp_notifications:
             try:
                 if data_type == 'inventory':
                     self.whatsapp_notifications.on_inventory_updated(item_name)
@@ -2743,6 +2772,23 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
                     self.whatsapp_notifications.force_check_all()
             except Exception as e:
                 self.logger.error(f"Error triggering WhatsApp notifications: {e}")
+        else:
+            # Use standalone WhatsApp message logging system
+            try:
+                if hasattr(self, 'whatsapp_message_logger'):
+                    if data_type == 'inventory':
+                        self.whatsapp_message_logger.check_inventory_notifications(item_name)
+                    elif data_type == 'cleaning_maintenance':
+                        self.whatsapp_message_logger.check_cleaning_notifications()
+                    elif data_type == 'packing_materials':
+                        self.whatsapp_message_logger.check_packing_notifications(item_name)
+                    elif data_type == 'gas_tracking':
+                        self.whatsapp_message_logger.check_gas_notifications()
+                    else:
+                        # General data change - check all notification types
+                        self.whatsapp_message_logger.check_all_notifications()
+            except Exception as e:
+                self.logger.error(f"Error logging WhatsApp messages: {e}")
 
     def initialize_ui(self):
         """Initialize the UI after authentication - ONLINE-ONLY MODE"""
@@ -7972,150 +8018,181 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
             appliance_placeholder.setAlignment(Qt.AlignCenter)
             appliance_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
             settings_tabs.addTab(appliance_placeholder, "⚡ Appliances")
-        # WhatsApp Integration Tab
-        try:
-            # Check if dependencies are available at runtime
-            from modules.whatsapp_integration import check_selenium_dependencies, WhatsAppIntegrationWidget
+        # WhatsApp Integration Tab - DISABLED for standalone messaging system
+        if self.WHATSAPP_ENABLED:
+            try:
+                # Check if dependencies are available at runtime
+                from modules.whatsapp_integration import check_selenium_dependencies, WhatsAppIntegrationWidget
 
-            selenium_available, webdriver_manager_available = check_selenium_dependencies()
+                selenium_available, webdriver_manager_available = check_selenium_dependencies()
 
-            if selenium_available:
-                # Dependencies are available, create the full WhatsApp integration
-                whatsapp_container = QWidget()
-                whatsapp_layout = QVBoxLayout(whatsapp_container)
-                whatsapp_layout.setContentsMargins(20, 20, 20, 20)
+                if selenium_available:
+                    # Dependencies are available, create the full WhatsApp integration
+                    whatsapp_container = QWidget()
+                    whatsapp_layout = QVBoxLayout(whatsapp_container)
+                    whatsapp_layout.setContentsMargins(20, 20, 20, 20)
 
-                # Pass user info for Firebase sync
-                user_info = getattr(self, 'user_info', None)
-                whatsapp_widget = WhatsAppIntegrationWidget(self.data, user_info, parent=self)
+                    # Pass user info for Firebase sync
+                    user_info = getattr(self, 'user_info', None)
+                    whatsapp_widget = WhatsAppIntegrationWidget(self.data, user_info, parent=self)
 
-                # Set reference to main app for startup manager access
-                whatsapp_widget.main_app = self
-                self.logger.info(f"Set main_app reference on WhatsApp widget: {whatsapp_widget}")
-                self.logger.info(f"WhatsApp widget main_app: {getattr(whatsapp_widget, 'main_app', 'NOT SET')}")
-                self.logger.info(f"Main app whatsapp_startup_manager: {getattr(self, 'whatsapp_startup_manager', 'NOT SET')}")
+                    # Set reference to main app for startup manager access
+                    whatsapp_widget.main_app = self
+                    self.logger.info(f"Set main_app reference on WhatsApp widget: {whatsapp_widget}")
+                    self.logger.info(f"WhatsApp widget main_app: {getattr(whatsapp_widget, 'main_app', 'NOT SET')}")
+                    self.logger.info(f"Main app whatsapp_startup_manager: {getattr(self, 'whatsapp_startup_manager', 'NOT SET')}")
 
-                # Initialize automated notifications system
-                try:
-                    from modules.whatsapp_automated_notifications import WhatsAppAutomatedNotifications
-                    self.whatsapp_notifications = WhatsAppAutomatedNotifications(
-                        data=self.data,
-                        whatsapp_widget=whatsapp_widget,
-                        main_app=self
-                    )
-                    # Start monitoring
-                    self.whatsapp_notifications.start_monitoring()
-                    self.logger.info("✅ WhatsApp automated notifications system initialized and started")
-
-                    # Store reference in whatsapp widget for easy access
-                    whatsapp_widget.automated_notifications = self.whatsapp_notifications
-
-                except Exception as e:
-                    self.logger.error(f"Failed to initialize WhatsApp automated notifications: {e}")
-                    self.whatsapp_notifications = None
-
-                # Update startup status now that main_app reference is set
-                if hasattr(whatsapp_widget, 'update_startup_status'):
-                    whatsapp_widget.update_startup_status()
-                    self.logger.info("Updated WhatsApp startup status after setting main_app reference")
-
-                # Connect signals for notifications
-                if hasattr(self, 'notification_manager'):
-                    whatsapp_widget.message_sent.connect(
-                        lambda msg: self.notify_success(
-                            "Message Sent",
-                            f"WhatsApp message sent to {msg.get('recipient', 'Unknown')}",
-                            source='WhatsApp Integration'
+                    # Initialize automated notifications system
+                    try:
+                        from modules.whatsapp_automated_notifications import WhatsAppAutomatedNotifications
+                        self.whatsapp_notifications = WhatsAppAutomatedNotifications(
+                            data=self.data,
+                            whatsapp_widget=whatsapp_widget,
+                            main_app=self
                         )
-                    )
-                    whatsapp_widget.message_received.connect(
-                        lambda msg: self.notify_info(
-                            "New Message",
-                            f"WhatsApp message from {msg.get('sender', 'Unknown')}",
-                            source='WhatsApp Integration'
+                        # Start monitoring
+                        self.whatsapp_notifications.start_monitoring()
+                        self.logger.info("✅ WhatsApp automated notifications system initialized and started")
+
+                        # Store reference in whatsapp widget for easy access
+                        whatsapp_widget.automated_notifications = self.whatsapp_notifications
+
+                    except Exception as e:
+                        self.logger.error(f"Failed to initialize WhatsApp automated notifications: {e}")
+                        self.whatsapp_notifications = None
+
+                    # Update startup status now that main_app reference is set
+                    if hasattr(whatsapp_widget, 'update_startup_status'):
+                        whatsapp_widget.update_startup_status()
+                        self.logger.info("Updated WhatsApp startup status after setting main_app reference")
+
+                    # Connect signals for notifications
+                    if hasattr(self, 'notification_manager'):
+                        whatsapp_widget.message_sent.connect(
+                            lambda msg: self.notify_success(
+                                "Message Sent",
+                                f"WhatsApp message sent to {msg.get('recipient', 'Unknown')}",
+                                source='WhatsApp Integration'
+                            )
                         )
-                    )
+                        whatsapp_widget.message_received.connect(
+                            lambda msg: self.notify_info(
+                                "New Message",
+                                f"WhatsApp message from {msg.get('sender', 'Unknown')}",
+                                source='WhatsApp Integration'
+                            )
+                        )
 
-                whatsapp_layout.addWidget(whatsapp_widget)
-                settings_tabs.addTab(whatsapp_container, "📱 WhatsApp")
-                self.logger.info("WhatsApp integration added to Settings tab")
-            else:
-                # Dependencies not available, show installation interface
-                raise ImportError("Selenium dependencies not available")
+                    whatsapp_layout.addWidget(whatsapp_widget)
+                    settings_tabs.addTab(whatsapp_container, "📱 WhatsApp")
+                    self.logger.info("WhatsApp integration added to Settings tab")
+                else:
+                    # Dependencies not available, show installation interface
+                    raise ImportError("Selenium dependencies not available")
 
-        except ImportError as e:
-            self.logger.warning(f"WhatsApp integration not available: {e}")
-            # Create placeholder with setup instructions
+            except ImportError as e:
+                self.logger.warning(f"WhatsApp integration not available: {e}")
+                # Create placeholder with setup instructions
+                whatsapp_placeholder = QWidget()
+                placeholder_layout = QVBoxLayout(whatsapp_placeholder)
+                placeholder_layout.setContentsMargins(20, 20, 20, 20)
+
+                title_label = QLabel("📱 WhatsApp Integration")
+                title_label.setFont(QFont("Arial", 16, QFont.Bold))
+                title_label.setStyleSheet("color: #1e293b; margin-bottom: 20px;")
+                placeholder_layout.addWidget(title_label)
+
+                info_label = QLabel("""
+                <h3>WhatsApp Integration Setup</h3>
+                <p>WhatsApp integration provides powerful messaging capabilities with Firebase sync.</p>
+                <p><strong>Features Available:</strong></p>
+                <ul>
+                <li>📱 WhatsApp Web integration</li>
+                <li>🔄 Multi-device Firebase sync</li>
+                <li>👥 Contact management</li>
+                <li>💬 Message history</li>
+                <li>📢 Broadcast messaging</li>
+                <li>📝 Message templates</li>
+                <li>🤖 Automatic ChromeDriver management</li>
+                </ul>
+                """)
+                info_label.setWordWrap(True)
+                info_label.setOpenExternalLinks(True)
+                info_label.setStyleSheet("color: #374151; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;")
+                placeholder_layout.addWidget(info_label)
+
+                # Add automatic installation button
+                install_button = QPushButton("🚀 Install WhatsApp Dependencies Automatically")
+                install_button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #10b981;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 12px 24px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #059669;
+                    }
+                    QPushButton:pressed {
+                        background-color: #047857;
+                    }
+                """)
+                install_button.clicked.connect(self.install_whatsapp_dependencies)
+                placeholder_layout.addWidget(install_button)
+
+                # Add manual installation info
+                manual_label = QLabel("""
+                <p><strong>Manual Installation (if automatic fails):</strong></p>
+                <p>1. Open command prompt as administrator</p>
+                <p>2. Run: <code>pip install selenium webdriver-manager</code></p>
+                <p>3. Restart the application</p>
+                """)
+                manual_label.setWordWrap(True)
+                manual_label.setStyleSheet("color: #6b7280; font-size: 12px; padding: 10px; background-color: #f9fafb; border-radius: 6px; margin-top: 10px;")
+                placeholder_layout.addWidget(manual_label)
+
+                placeholder_layout.addStretch()
+                settings_tabs.addTab(whatsapp_placeholder, "📱 WhatsApp")
+            except Exception as e:
+                self.logger.error(f"Error adding WhatsApp integration to settings: {e}")
+                whatsapp_error_placeholder = QLabel("WhatsApp integration error.\nPlease check the logs for details.")
+                whatsapp_error_placeholder.setAlignment(Qt.AlignCenter)
+                whatsapp_error_placeholder.setStyleSheet("font-size: 16px; color: #ef4444; padding: 40px;")
+                settings_tabs.addTab(whatsapp_error_placeholder, "📱 WhatsApp")
+        else:
+            # Show standalone messaging system status
             whatsapp_placeholder = QWidget()
             placeholder_layout = QVBoxLayout(whatsapp_placeholder)
             placeholder_layout.setContentsMargins(20, 20, 20, 20)
 
-            title_label = QLabel("📱 WhatsApp Integration")
+            title_label = QLabel("📱 WhatsApp Messaging System")
             title_label.setFont(QFont("Arial", 16, QFont.Bold))
             title_label.setStyleSheet("color: #1e293b; margin-bottom: 20px;")
             placeholder_layout.addWidget(title_label)
 
             info_label = QLabel("""
-            <h3>WhatsApp Integration Setup</h3>
-            <p>WhatsApp integration provides powerful messaging capabilities with Firebase sync.</p>
-            <p><strong>Features Available:</strong></p>
+            <h3>Standalone WhatsApp Messaging</h3>
+            <p>WhatsApp messaging is now handled by a separate standalone application for better reliability and performance.</p>
+            <p><strong>Current Status:</strong></p>
             <ul>
-            <li>📱 WhatsApp Web integration</li>
-            <li>🔄 Multi-device Firebase sync</li>
-            <li>👥 Contact management</li>
-            <li>💬 Message history</li>
-            <li>📢 Broadcast messaging</li>
-            <li>📝 Message templates</li>
-            <li>🤖 Automatic ChromeDriver management</li>
+            <li>📝 Messages are logged to shared JSON file</li>
+            <li>🔄 Standalone messenger processes messages automatically</li>
+            <li>⚡ Main application runs faster without WhatsApp dependencies</li>
+            <li>🛡️ Better error isolation and recovery</li>
             </ul>
+            <p><strong>To enable integrated WhatsApp:</strong></p>
+            <p>Set <code>WHATSAPP_ENABLED = True</code> in the application configuration.</p>
             """)
             info_label.setWordWrap(True)
-            info_label.setOpenExternalLinks(True)
-            info_label.setStyleSheet("color: #374151; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;")
+            info_label.setStyleSheet("color: #374151; background-color: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px solid #0ea5e9;")
             placeholder_layout.addWidget(info_label)
-
-            # Add automatic installation button
-            install_button = QPushButton("🚀 Install WhatsApp Dependencies Automatically")
-            install_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #10b981;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 12px 24px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    margin: 10px;
-                }
-                QPushButton:hover {
-                    background-color: #059669;
-                }
-                QPushButton:pressed {
-                    background-color: #047857;
-                }
-            """)
-            install_button.clicked.connect(self.install_whatsapp_dependencies)
-            placeholder_layout.addWidget(install_button)
-
-            # Add manual installation info
-            manual_label = QLabel("""
-            <p><strong>Manual Installation (if automatic fails):</strong></p>
-            <p>1. Open command prompt as administrator</p>
-            <p>2. Run: <code>pip install selenium webdriver-manager</code></p>
-            <p>3. Restart the application</p>
-            """)
-            manual_label.setWordWrap(True)
-            manual_label.setStyleSheet("color: #6b7280; font-size: 12px; padding: 10px; background-color: #f9fafb; border-radius: 6px; margin-top: 10px;")
-            placeholder_layout.addWidget(manual_label)
 
             placeholder_layout.addStretch()
             settings_tabs.addTab(whatsapp_placeholder, "📱 WhatsApp")
-        except Exception as e:
-            self.logger.error(f"Error adding WhatsApp integration to settings: {e}")
-            whatsapp_error_placeholder = QLabel("WhatsApp integration error.\nPlease check the logs for details.")
-            whatsapp_error_placeholder.setAlignment(Qt.AlignCenter)
-            whatsapp_error_placeholder.setStyleSheet("font-size: 16px; color: #ef4444; padding: 40px;")
-            settings_tabs.addTab(whatsapp_error_placeholder, "📱 WhatsApp")
 
 
 
@@ -8161,7 +8238,15 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
         self.logger.info("Enhanced Settings page with Firebase and Enterprise tabs displayed")
 
     def install_whatsapp_dependencies(self):
-        """Install WhatsApp dependencies automatically from the main application"""
+        """Install WhatsApp dependencies automatically from the main application - DISABLED"""
+        if not self.WHATSAPP_ENABLED:
+            QMessageBox.information(
+                self, "WhatsApp Integration Disabled",
+                "WhatsApp integration is currently disabled in favor of the standalone messaging system.\n\n"
+                "To enable integrated WhatsApp, set WHATSAPP_ENABLED = True in the application configuration."
+            )
+            return
+
         try:
             from PySide6.QtWidgets import QProgressDialog
             import subprocess
@@ -10107,7 +10192,7 @@ if __name__ == "__main__":
         window = KitchenDashboardApp()
         logger.log_section_footer("Application Initialization", True)
 
-        # Show loading screen with main app reference for WhatsApp initialization
+        # Show loading screen with main app reference
         from modules.startup_loading_screen import show_startup_loading_screen
         loading_screen = show_startup_loading_screen(window)
 
@@ -10118,8 +10203,8 @@ if __name__ == "__main__":
             logger.log_section_footer("UI Display", True)
             logger.info("Application ready - entering main event loop")
 
-            # WhatsApp automation is now started during loading phase
-            # No need to start it again here
+            # WhatsApp integration disabled - using standalone messaging system
+            # Messages are logged to shared JSON file for processing by standalone messenger
 
         loading_screen.loading_finished.connect(on_loading_finished)
 

@@ -1,0 +1,19 @@
+{
+  "messages": [
+    {
+      "id": "12768ec4-17d0-407a-a39f-8d1729b9556a",
+      "timestamp": "2025-06-20T03:47:17.098523",
+      "message_type": "test",
+      "content": "Test message for standalone system",
+      "sanitized_content": "Test message for standalone system",
+      "priority": "LOW",
+      "sent_status": "pending",
+      "retry_count": 0,
+      "max_retries": 3,
+      "created_by": "kitchen_app",
+      "error_message": null
+    }
+  ],
+  "last_updated": "2025-06-20T03:47:17.120943",
+  "version": "1.0"
+}

@@ -1023,6 +1023,9 @@ class MealPlanningWidget(QWidget):
         self.recipe_table.setSelectionMode(QTableWidget.SingleSelection)
         self.recipe_table.itemSelectionChanged.connect(self.show_recipe_details)
 
+        # Enable sorting functionality for recipe table (regular table - remove duplicates)
+        self.recipe_table.setSortingEnabled(True)
+
         # Enable context menu for right-click actions
         self.recipe_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.recipe_table.customContextMenuRequested.connect(self.show_recipe_context_menu)

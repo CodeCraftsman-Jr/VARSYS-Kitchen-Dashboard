@@ -233,6 +233,11 @@ class ShoppingWidget(QWidget):
         print("✅ Applied universal column resizing to shopping table")
 
         self.shopping_table.setSelectionBehavior(QTableWidget.SelectRows)
+
+        # Enable sorting functionality for shopping list table (regular table - remove duplicates)
+        self.shopping_table.setSortingEnabled(True)
+        self.shopping_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         layout.addWidget(self.shopping_table)
         
         # Action buttons
@@ -1240,6 +1245,11 @@ class ShoppingWidget(QWidget):
         )
 
         print("✅ Applied universal column resizing to shopping history table")
+
+        # Enable sorting functionality for shopping history table (history table - preserve all records)
+        self.history_table.setSortingEnabled(True)
+        self.history_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         layout.addWidget(self.history_table)
         
         # Update the history

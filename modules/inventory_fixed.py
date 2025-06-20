@@ -378,7 +378,8 @@ class InventoryWidget(QWidget):
         self.inventory_table_widget = UniversalTableWidget(
             data=self.inventory_df,
             columns=inventory_columns,
-            parent=self
+            parent=self,
+            is_history_table=False  # Inventory is a regular table - remove duplicates
         )
 
         # Connect signals

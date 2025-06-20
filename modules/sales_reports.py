@@ -257,7 +257,11 @@ class SalesReportsWidget(QWidget):
         )
 
         print("✅ Applied universal column resizing to sales reports table")
-        
+
+        # Enable sorting functionality for sales reports table (history table - preserve all records)
+        self.sales_table.setSortingEnabled(True)
+        self.sales_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         layout.addWidget(self.sales_table)
         
         self.tabs.addTab(overview_widget, "Sales Overview")

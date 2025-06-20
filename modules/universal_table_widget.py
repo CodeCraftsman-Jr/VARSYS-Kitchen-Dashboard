@@ -20,9 +20,14 @@ class UniversalTableWidget(QWidget):
     row_selected = Signal(int)  # Emitted when a row is selected
     data_filtered = Signal(int)  # Emitted when data is filtered (count of visible rows)
     
-    def __init__(self, data=None, columns=None, parent=None):
+    def __init__(self, data=None, columns=None, parent=None, is_history_table=None):
         super().__init__(parent)
         self.logger = logging.getLogger(__name__)
+
+        # Determine if this is a history table
+        self.is_history_table = is_history_table
+        if self.is_history_table is None:
+            self.is_history_table = self._detect_history_table(data, columns)
 
         # Handle duplicates and sort data before storing
         self.original_data = data if data is not None else pd.DataFrame()
@@ -202,70 +207,126 @@ class UniversalTableWidget(QWidget):
         
         layout.addWidget(self.table)
 
+    def _detect_history_table(self, data, columns):
+        """Automatically detect if this is a history table based on data structure and column names"""
+        if data is None or (hasattr(data, 'empty') and data.empty):
+            if columns:
+                # Check column names for history indicators
+                history_indicators = ['date', 'history', 'log', 'transaction', 'purchase', 'sale', 'waste', 'expense']
+                column_str = ' '.join(str(col).lower() for col in columns)
+                return any(indicator in column_str for indicator in history_indicators)
+            return False
+
+        # Check data columns for history indicators
+        if hasattr(data, 'columns'):
+            history_indicators = [
+                'date', 'history', 'log', 'transaction', 'purchase_date', 'sale_date',
+                'date_purchased', 'date_added', 'waste_id', 'sale_id', 'expense_id',
+                'last_purchase_date', 'created_at', 'updated_at'
+            ]
+            column_names = [str(col).lower() for col in data.columns]
+
+            # If it has multiple date columns or specific ID patterns, likely a history table
+            date_columns = [col for col in column_names if any(indicator in col for indicator in ['date', 'time', 'created', 'updated'])]
+            id_columns = [col for col in column_names if col.endswith('_id') and col != 'item_id']
+
+            # History tables typically have date columns and transaction IDs
+            if len(date_columns) >= 1 and len(id_columns) >= 1:
+                return True
+
+            # Check for specific history table patterns
+            return any(indicator in ' '.join(column_names) for indicator in history_indicators)
+
+        return False
+
     def handle_duplicates_and_sort(self, data):
-        """Handle duplicate entries and apply default sorting"""
+        """Handle duplicate entries and apply default sorting based on table type"""
         if data.empty:
             return data
 
         try:
-            # Handle data sorting and organization (preserve all entries)
-            if 'item_id' in data.columns:
-                # For inventory data: preserve all entries but sort intelligently
-                print(f"📦 Processing inventory data with {len(data)} items")
+            print(f"📊 Processing {'history' if self.is_history_table else 'regular'} table with {len(data)} entries")
 
-                # Check for duplicates but don't remove them automatically
-                duplicate_ids = data[data.duplicated(subset=['item_id'], keep=False)]
-                if not duplicate_ids.empty:
-                    unique_duplicate_ids = duplicate_ids['item_id'].nunique()
-                    print(f"📊 Found {len(duplicate_ids)} entries with {unique_duplicate_ids} duplicate IDs (preserved)")
+            # For history tables: preserve ALL entries, only sort
+            if self.is_history_table:
+                print("📜 History table detected - preserving all entries")
+                return self._sort_data_intelligently(data, preserve_all=True)
 
-                # Apply intelligent sorting: first by item_name, then by expiry_date (non-null first)
-                sort_columns = ['item_name']
-                if 'expiry_date' in data.columns:
-                    # Sort so items with expiry dates appear first
-                    data['expiry_date_sort'] = data['expiry_date'].fillna('9999-12-31')  # Put NaN dates at end
-                    sort_columns.extend(['expiry_date_sort', 'item_id'])
-                else:
-                    sort_columns.append('item_id')
-
-                data_sorted = data.sort_values(sort_columns, na_position='last')
-
-                # Clean up temporary sort column if created
-                if 'expiry_date_sort' in data_sorted.columns:
-                    data_sorted = data_sorted.drop('expiry_date_sort', axis=1)
-
-                print(f"📋 Sorted inventory by item name and expiry date - showing all {len(data_sorted)} entries")
-                return data_sorted
-
-            elif 'recipe_id' in data.columns:
-                # For recipe data: similar handling
-                data_deduplicated = data.drop_duplicates(subset=['recipe_id'], keep='last')
-                if 'recipe_name' in data_deduplicated.columns:
-                    data_deduplicated = data_deduplicated.sort_values('recipe_name', na_position='last')
-                return data_deduplicated
-
-            elif 'staff_id' in data.columns:
-                # For staff data: similar handling
-                data_deduplicated = data.drop_duplicates(subset=['staff_id'], keep='last')
-                if 'staff_name' in data_deduplicated.columns:
-                    data_deduplicated = data_deduplicated.sort_values('staff_name', na_position='last')
-                return data_deduplicated
-
-            else:
-                # For other data: apply general sorting
-                # Try to find a name column for sorting
-                name_columns = [col for col in data.columns if 'name' in col.lower()]
-                if name_columns:
-                    data = data.sort_values(name_columns[0], na_position='last')
-                    print(f"📋 Sorted data by {name_columns[0]}")
-                elif 'category' in data.columns:
-                    data = data.sort_values('category', na_position='last')
-                    print(f"📋 Sorted data by category")
-
-                return data
+            # For regular tables: remove duplicates and sort
+            print("📋 Regular table detected - removing duplicates")
+            return self._sort_data_intelligently(data, preserve_all=False)
 
         except Exception as e:
             self.logger.error(f"Error handling duplicates and sorting: {e}")
+            return data
+
+    def _sort_data_intelligently(self, data, preserve_all=True):
+        """Sort data intelligently based on available columns"""
+        try:
+            # Find the primary key column for duplicate removal
+            primary_key_col = None
+            for col in data.columns:
+                if col.endswith('_id') and col in data.columns:
+                    primary_key_col = col
+                    break
+
+            # Handle duplicates based on table type
+            if not preserve_all and primary_key_col:
+                # Remove duplicates for regular tables
+                original_count = len(data)
+                data = data.drop_duplicates(subset=[primary_key_col], keep='last')
+                removed_count = original_count - len(data)
+                if removed_count > 0:
+                    print(f"🗑️ Removed {removed_count} duplicate entries based on {primary_key_col}")
+            elif preserve_all and primary_key_col:
+                # Just report duplicates for history tables
+                duplicate_entries = data[data.duplicated(subset=[primary_key_col], keep=False)]
+                if not duplicate_entries.empty:
+                    unique_duplicates = duplicate_entries[primary_key_col].nunique()
+                    print(f"📊 Found {len(duplicate_entries)} entries with {unique_duplicates} duplicate IDs (preserved)")
+
+            # Apply intelligent sorting
+            sort_columns = []
+
+            # Priority 1: Name columns
+            name_columns = [col for col in data.columns if 'name' in col.lower()]
+            if name_columns:
+                sort_columns.append(name_columns[0])
+
+            # Priority 2: Date columns (most recent first for history, oldest first for regular)
+            date_columns = [col for col in data.columns if any(keyword in col.lower() for keyword in ['date', 'time', 'created', 'updated'])]
+            if date_columns:
+                # For history tables, sort by date descending (newest first)
+                # For regular tables, sort by date ascending (oldest first)
+                sort_columns.append(date_columns[0])
+
+            # Priority 3: Category columns
+            if 'category' in data.columns and 'category' not in sort_columns:
+                sort_columns.append('category')
+
+            # Priority 4: Primary key as tiebreaker
+            if primary_key_col and primary_key_col not in sort_columns:
+                sort_columns.append(primary_key_col)
+
+            # Apply sorting
+            if sort_columns:
+                # For history tables with dates, sort descending by date
+                if self.is_history_table and date_columns:
+                    ascending_order = [True] * len(sort_columns)
+                    # Make date column descending (newest first)
+                    date_col_index = next((i for i, col in enumerate(sort_columns) if col in date_columns), None)
+                    if date_col_index is not None:
+                        ascending_order[date_col_index] = False
+                    data = data.sort_values(sort_columns, ascending=ascending_order, na_position='last')
+                else:
+                    data = data.sort_values(sort_columns, na_position='last')
+
+                print(f"📋 Sorted data by: {', '.join(sort_columns)}")
+
+            return data
+
+        except Exception as e:
+            self.logger.error(f"Error in intelligent sorting: {e}")
             return data
 
     def has_date_columns(self):
@@ -478,9 +539,15 @@ class UniversalTableWidget(QWidget):
         if current_row >= 0:
             self.row_selected.emit(current_row)
     
-    def update_data(self, new_data):
+    def update_data(self, new_data, is_history_table=None):
         """Update the table with new data"""
         self.original_data = new_data if new_data is not None else pd.DataFrame()
+
+        # Update history table detection if provided
+        if is_history_table is not None:
+            self.is_history_table = is_history_table
+        elif self.is_history_table is None:
+            self.is_history_table = self._detect_history_table(new_data, self.columns)
 
         # Handle duplicates and sort new data
         if not self.original_data.empty:

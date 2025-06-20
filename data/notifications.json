@@ -66,6 +66,32 @@
       "color": "#f39c12"
     },
     {
+      "id": 1750414744507,
+      "title": "WhatsApp Connection",
+      "message": "WhatsApp integration not available: Connection failed",
+      "type": "warning",
+      "category": "warning",
+      "priority": 3,
+      "source": "System",
+      "timestamp": "2025-06-20T03:19:04.507750",
+      "read": false,
+      "icon": "⚠️",
+      "color": "#f39c12"
+    },
+    {
+      "id": 1750415152188,
+      "title": "WhatsApp Connection",
+      "message": "WhatsApp integration not available: Connection failed",
+      "type": "warning",
+      "category": "warning",
+      "priority": 3,
+      "source": "System",
+      "timestamp": "2025-06-20T03:25:52.188613",
+      "read": false,
+      "icon": "⚠️",
+      "color": "#f39c12"
+    },
+    {
       "id": 1750334525918,
       "title": "Login Successful",
       "message": "Welcome back! Logged in as dominicvasanth777@gmail.com",
@@ -1283,6 +1309,58 @@
       "priority": 4,
       "source": "System",
       "timestamp": "2025-06-19T17:11:35.515207",
+      "read": false,
+      "icon": "✅",
+      "color": "#27ae60"
+    },
+    {
+      "id": 1750414696179,
+      "title": "System Tray Ready",
+      "message": "Kitchen Dashboard is now running in the background. Click the tray icon to access features.",
+      "type": "success",
+      "category": "success",
+      "priority": 4,
+      "source": "System Tray",
+      "timestamp": "2025-06-20T03:18:16.179376",
+      "read": false,
+      "icon": "✅",
+      "color": "#27ae60"
+    },
+    {
+      "id": 1750414932713,
+      "title": "System Tray Ready",
+      "message": "Kitchen Dashboard is now running in the background. Click the tray icon to access features.",
+      "type": "success",
+      "category": "success",
+      "priority": 4,
+      "source": "System Tray",
+      "timestamp": "2025-06-20T03:22:12.713919",
+      "read": false,
+      "icon": "✅",
+      "color": "#27ae60"
+    },
+    {
+      "id": 1750416664384,
+      "title": "System Tray Ready",
+      "message": "Kitchen Dashboard is now running in the background. Click the tray icon to access features.",
+      "type": "success",
+      "category": "success",
+      "priority": 4,
+      "source": "System Tray",
+      "timestamp": "2025-06-20T03:51:04.384609",
+      "read": false,
+      "icon": "✅",
+      "color": "#27ae60"
+    },
+    {
+      "id": 1750417949418,
+      "title": "System Tray Ready",
+      "message": "Kitchen Dashboard is now running in the background. Click the tray icon to access features.",
+      "type": "success",
+      "category": "success",
+      "priority": 4,
+      "source": "System Tray",
+      "timestamp": "2025-06-20T04:12:29.418324",
       "read": false,
       "icon": "✅",
       "color": "#27ae60"
@@ -2523,85 +2601,7 @@
       "read": false,
       "icon": "⚙️",
       "color": "#9b59b6"
-    },
-    {
-      "id": 1750373619398,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T15:53:39.398126",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
-    },
-    {
-      "id": 1750373687999,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T15:54:47.999252",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
-    },
-    {
-      "id": 1750374192854,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T16:03:12.854887",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
-    },
-    {
-      "id": 1750374352431,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T16:05:52.431240",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
-    },
-    {
-      "id": 1750374817774,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T16:13:37.774968",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
-    },
-    {
-      "id": 1750374875432,
-      "title": "System Ready",
-      "message": "VARSYS Kitchen Dashboard initialized successfully",
-      "type": "system",
-      "category": "system",
-      "priority": 6,
-      "source": "Application",
-      "timestamp": "2025-06-19T16:14:35.432113",
-      "read": false,
-      "icon": "⚙️",
-      "color": "#9b59b6"
     }
   ],
-  "last_updated": "2025-06-19T17:15:44.735878"
+  "last_updated": "2025-06-20T04:13:57.426470"
 }

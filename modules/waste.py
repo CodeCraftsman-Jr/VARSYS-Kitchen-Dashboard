@@ -113,6 +113,10 @@ class WasteWidget(QWidget):
         self.waste_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.waste_table.setAlternatingRowColors(True)
 
+        # Enable sorting functionality for waste table (history table - preserve all records)
+        self.waste_table.setSortingEnabled(True)
+        self.waste_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         # Apply universal column resizing functionality
         waste_default_column_widths = {
             0: 120,  # Date

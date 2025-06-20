@@ -106,7 +106,8 @@ class StaffManagementWidget(QWidget):
         self.staff_table_widget = UniversalTableWidget(
             data=self.data.get('staff', pd.DataFrame()),
             columns=staff_columns,
-            parent=self
+            parent=self,
+            is_history_table=False  # Staff is a regular table - remove duplicates
         )
 
         # Connect signals for row selection

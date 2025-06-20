@@ -101,6 +101,10 @@ class SalesWidget(QWidget):
         self.sales_table.setMinimumHeight(300)
         self.sales_table.setMaximumHeight(500)
 
+        # Enable sorting functionality for sales table (history table - preserve all records)
+        self.sales_table.setSortingEnabled(True)
+        self.sales_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         # Apply universal column resizing functionality
         sales_default_column_widths = {
             0: 80,   # Sale ID

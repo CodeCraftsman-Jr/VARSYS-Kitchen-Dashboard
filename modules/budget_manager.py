@@ -113,6 +113,10 @@ class BudgetManager(QWidget):
             hierarchy_default_widths
         )
 
+        # Enable sorting functionality for budget hierarchy table (regular table - remove duplicates)
+        self.hierarchy_table.setSortingEnabled(True)
+        self.hierarchy_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         category_layout.addWidget(self.hierarchy_table)
 
         # Edit category section
@@ -1070,7 +1074,8 @@ class BudgetManager(QWidget):
         self.expense_table_widget = UniversalTableWidget(
             data=self.expenses_df if hasattr(self, 'expenses_df') else pd.DataFrame(),
             columns=expense_columns,
-            parent=self
+            parent=self,
+            is_history_table=True  # Expense tracking is a history table - preserve all records
         )
 
         # Connect signals for row selection

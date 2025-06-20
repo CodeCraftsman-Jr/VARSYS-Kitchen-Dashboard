@@ -1214,7 +1214,11 @@ class SalesOrderManagementWidget(QWidget):
         )
 
         print("✅ Applied universal column resizing to sales orders table")
-        
+
+        # Enable sorting functionality for sales orders table (history table - preserve all records)
+        self.orders_table.setSortingEnabled(True)
+        self.orders_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+
         parent_layout.addWidget(self.orders_table)
     
     def create_new_order(self):

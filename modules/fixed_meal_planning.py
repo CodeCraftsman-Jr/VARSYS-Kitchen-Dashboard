@@ -922,6 +922,9 @@ class FixedMealPlanningWidget(QWidget):
         self.recipe_table.setSelectionMode(QTableWidget.SingleSelection)
         self.recipe_table.setEditTriggers(QTableWidget.NoEditTriggers)
 
+        # Enable sorting functionality for fixed recipe table (regular table - remove duplicates)
+        self.recipe_table.setSortingEnabled(True)
+
         # FIXED: Enable manual column resizing for Fixed Recipe table
         print("🔧 Setting up Fixed Recipe table column resizing...")
         fixed_recipe_header = self.recipe_table.horizontalHeader()

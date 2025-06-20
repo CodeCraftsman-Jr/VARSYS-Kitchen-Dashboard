@@ -1,0 +1,10 @@
+{
+  "notification_settings": {
+    "low_stock_enabled": true,
+    "cleaning_reminders_enabled": true,
+    "packing_materials_enabled": true,
+    "gas_level_warnings_enabled": true,
+    "last_notification_times": {}
+  },
+  "last_updated": "2025-06-20T03:47:17.089994"
+}
