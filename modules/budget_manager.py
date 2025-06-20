@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import os
 import logging
 from utils.table_styling import apply_universal_column_resizing
+from modules.universal_table_widget import UniversalTableWidget
 
 class BudgetManager(QWidget):
     def __init__(self, data, parent=None):
@@ -1064,32 +1065,19 @@ class BudgetManager(QWidget):
         header.setAlignment(Qt.AlignCenter)
         layout.addWidget(header)
 
-        # Expense table
-        self.expense_table = QTableWidget()
-        self.expense_table.setColumnCount(6)
-        self.expense_table.setHorizontalHeaderLabels(["Date", "Main Category", "Sub Category", "Amount", "Source", "Notes"])
-        self.expense_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.expense_table.verticalHeader().setVisible(False)
-
-        # Apply universal column resizing functionality
-        expense_default_column_widths = {
-            0: 120,  # Date
-            1: 150,  # Main Category
-            2: 150,  # Sub Category
-            3: 120,  # Amount
-            4: 120,  # Source
-            5: 200   # Notes
-        }
-
-        # Apply column resizing with settings persistence
-        self.expense_table_resizer = apply_universal_column_resizing(
-            self.expense_table,
-            'expense_column_settings.json',
-            expense_default_column_widths
+        # Expense table with universal filtering and sorting
+        expense_columns = ["Date", "Main Category", "Sub Category", "Amount", "Source", "Notes"]
+        self.expense_table_widget = UniversalTableWidget(
+            data=self.expenses_df if hasattr(self, 'expenses_df') else pd.DataFrame(),
+            columns=expense_columns,
+            parent=self
         )
 
+        # Connect signals for row selection
+        self.expense_table_widget.row_selected.connect(self.on_expense_row_selected)
+
         print("✅ Applied universal column resizing to expense table")
-        layout.addWidget(self.expense_table)
+        layout.addWidget(self.expense_table_widget)
 
         # Populate expense table
         self.populate_expense_table()
@@ -1185,44 +1173,53 @@ class BudgetManager(QWidget):
             self.budget_table.setItem(i, 3, period_item)
 
     def populate_expense_table(self):
-        """Populate the expense table with hierarchical category data"""
-        self.expense_table.setRowCount(0)  # Clear existing rows
+        """Populate the expense table with hierarchical category data using universal table widget"""
+        try:
+            if len(self.expenses_df) == 0:
+                # Update with empty dataframe
+                self.expense_table_widget.update_data(pd.DataFrame())
+                return
 
-        if len(self.expenses_df) == 0:
-            return
+            # Prepare data for universal table widget
+            display_data = self.expenses_df.copy()
 
-        # Add expenses to the table
-        for i, (_, expense) in enumerate(self.expenses_df.iterrows()):
-            self.expense_table.insertRow(i)
+            # Ensure all required columns exist
+            required_columns = ['date', 'main_category', 'sub_category', 'amount', 'source', 'notes']
+            for col in required_columns:
+                if col not in display_data.columns:
+                    if col == 'main_category' and 'category' in display_data.columns:
+                        display_data['main_category'] = display_data['category']
+                    elif col == 'sub_category':
+                        display_data['sub_category'] = 'General'
+                    else:
+                        display_data[col] = ''
 
-            # Add expense data with hierarchical categories
-            date_item = QTableWidgetItem(str(expense['date']) if 'date' in expense else "")
+            # Format amount column with currency
+            if 'amount' in display_data.columns:
+                display_data['amount'] = display_data['amount'].apply(
+                    lambda x: f"₹ {float(x):.2f}" if pd.notna(x) else "₹ 0.00"
+                )
 
-            # Handle both old and new expense formats
-            if 'main_category' in expense and 'sub_category' in expense:
-                # New hierarchical format
-                main_category_item = QTableWidgetItem(str(expense['main_category']))
-                sub_category_item = QTableWidgetItem(str(expense['sub_category']))
-            else:
-                # Old format - try to split or use as main category
-                old_category = str(expense.get('category', ''))
-                main_category_item = QTableWidgetItem(old_category)
-                sub_category_item = QTableWidgetItem("General")
+            # Reorder columns to match expected layout
+            column_order = ['date', 'main_category', 'sub_category', 'amount', 'source', 'notes']
+            display_data = display_data.reindex(columns=column_order, fill_value='')
 
-            # Format amount with currency symbol
-            amount = float(expense['amount']) if 'amount' in expense and pd.notna(expense['amount']) else 0
-            amount_item = QTableWidgetItem(f"₹ {amount:.2f}")
+            # Update the universal table widget
+            self.expense_table_widget.update_data(display_data)
+            print(f"✅ Updated expense table with {len(display_data)} entries")
 
-            source_item = QTableWidgetItem(str(expense['source']) if 'source' in expense else "")
-            notes_item = QTableWidgetItem(str(expense['notes']) if 'notes' in expense else "")
+        except Exception as e:
+            print(f"❌ Error populating expense table: {e}")
+            self.expense_table_widget.update_data(pd.DataFrame())
 
-            # Set items in table with new column structure
-            self.expense_table.setItem(i, 0, date_item)
-            self.expense_table.setItem(i, 1, main_category_item)
-            self.expense_table.setItem(i, 2, sub_category_item)
-            self.expense_table.setItem(i, 3, amount_item)
-            self.expense_table.setItem(i, 4, source_item)
-            self.expense_table.setItem(i, 5, notes_item)
+    def on_expense_row_selected(self, row_index):
+        """Handle expense row selection"""
+        try:
+            if row_index >= 0 and row_index < len(self.expenses_df):
+                selected_expense = self.expenses_df.iloc[row_index]
+                print(f"Selected expense: {selected_expense.get('main_category', 'Unknown')} - ₹{selected_expense.get('amount', 0)}")
+        except Exception as e:
+            print(f"Error handling expense row selection: {e}")
 
     def load_budget_details(self):
         """Load the selected budget details into the form"""

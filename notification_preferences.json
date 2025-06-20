@@ -1,0 +1,14 @@
+{
+  "sound_enabled": true,
+  "desktop_notifications": true,
+  "email_notifications": false,
+  "sms_notifications": false,
+  "do_not_disturb_enabled": false,
+  "theme": "auto",
+  "animation_enabled": true,
+  "compact_mode": false,
+  "auto_dismiss_success": true,
+  "auto_dismiss_delay": 5000,
+  "notification_position": "top_right",
+  "max_visible_notifications": 5
+}

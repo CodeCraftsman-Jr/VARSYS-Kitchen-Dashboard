@@ -7,6 +7,50 @@ import inspect
 from datetime import datetime
 from PySide6.QtCore import QObject, Signal
 
+class SafeUnicodeFormatter(logging.Formatter):
+    """Custom formatter that safely handles Unicode characters"""
+
+    def format(self, record):
+        # Get the formatted message
+        formatted = super().format(record)
+
+        # Replace emoji characters that cause encoding issues
+        emoji_replacements = {
+            '✅': '[SUCCESS]', '❌': '[ERROR]', '⚠️': '[WARNING]',
+            '🔄': '[REFRESH]', '📋': '[LIST]', '📱': '[MOBILE]',
+            '🔍': '[SEARCH]', '💾': '[SAVE]', '🎯': '[TARGET]',
+            '🚀': '[START]', '🔧': '[DEBUG]', '📊': '[DATA]',
+            '🎉': '[CELEBRATION]', '💡': '[IDEA]', '🔔': '[NOTIFICATION]',
+            '📤': '[UPLOAD]', '📥': '[DOWNLOAD]', '🌐': '[NETWORK]',
+            '🔒': '[SECURE]', '📈': '[CHART]', '📉': '[DECLINE]',
+            '🚨': '[ALERT]', '🔴': '[RED]', '🟢': '[GREEN]',
+            '🟡': '[YELLOW]', '🔵': '[BLUE]', '⭐': '[STAR]',
+            '💰': '[MONEY]', '📝': '[NOTE]', '📅': '[CALENDAR]',
+            '⏰': '[CLOCK]', '🔑': '[KEY]', '🎨': '[DESIGN]',
+            '📸': '[PHOTO]', '🎵': '[MUSIC]', '🔊': '[SOUND]',
+            '📡': '[SIGNAL]', '🌟': '[FEATURE]', '🏆': '[TROPHY]',
+            'ℹ️': '[INFO]', '🔥': '[FIREBASE]', '💻': '[COMPUTER]'
+        }
+
+        for emoji, replacement in emoji_replacements.items():
+            formatted = formatted.replace(emoji, replacement)
+
+        # Final fallback: encode to ASCII with replacement for any remaining Unicode
+        try:
+            formatted.encode('ascii')
+            return formatted
+        except UnicodeEncodeError:
+            return formatted.encode('ascii', errors='replace').decode('ascii')
+
+    def formatException(self, ei):
+        """Format exception with safe Unicode handling"""
+        result = super().formatException(ei)
+        try:
+            result.encode('ascii')
+            return result
+        except UnicodeEncodeError:
+            return result.encode('ascii', errors='replace').decode('ascii')
+
 class LogSignal(QObject):
     """Signal emitter for logs to enable communication with UI"""
     new_log = Signal(str, str, str, str, str)  # level, message, timestamp, caller_info, stack_trace
@@ -54,6 +98,22 @@ class AppLogger:
         # Console handler for logging to console with UTF-8 encoding and organized output
         class OrganizedConsoleHandler(logging.StreamHandler):
             def __init__(self, stream=None):
+                # Force UTF-8 encoding for console output on Windows
+                import sys
+                import io
+                if sys.platform == 'win32' and stream is None:
+                    # Try to reconfigure stdout to use UTF-8
+                    try:
+                        if hasattr(sys.stdout, 'reconfigure'):
+                            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+                        stream = sys.stdout
+                    except (AttributeError, OSError):
+                        # Fallback: create a UTF-8 wrapper
+                        try:
+                            stream = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+                        except:
+                            stream = sys.stdout
+
                 super().__init__(stream)
                 self.last_category = None
                 self.message_count = 0
@@ -64,76 +124,9 @@ class AppLogger:
                     stream = self.stream
 
                     # Replace problematic Unicode characters with their ASCII equivalents
-                    msg = msg.replace('₹', 'Rs.')
-                    msg = msg.replace('€', 'EUR')
-                    msg = msg.replace('£', 'GBP')
-                    msg = msg.replace('¥', 'JPY')
+                    msg = self._safe_encode_message(msg)
 
-                    # Remove emoji characters that cause encoding issues
-                    emoji_replacements = {
-                        '🔍': '[SEARCH]',
-                        '📄': '[FILE]',
-                        '✅': '[SUCCESS]',
-                        '📋': '[LIST]',
-                        '📊': '[DATA]',
-                        '🆕': '[NEW]',
-                        '❌': '[ERROR]',
-                        '⏱️': '[TIME]',
-                        '🚀': '[START]',
-                        '🖥️': '[SYSTEM]',
-                        '📁': '[FOLDER]',
-                        '🖱️': '[UI]',
-                        '🔧': '[DEBUG]',
-                        '⚠️': '[WARNING]',
-                        '🔔': '[NOTIFICATION]',
-                        '🍳': '[KITCHEN]',
-                        '🟢': '[ACTIVE]',
-                        '🔥': '[FIREBASE]',
-                        '💾': '[SAVE]',
-                        '🎯': '[TARGET]',
-                        '🔄': '[REFRESH]',
-                        '📦': '[PACKAGE]',
-                        '🌐': '[NETWORK]',
-                        '🔒': '[SECURE]',
-                        '🔓': '[UNLOCK]',
-                        '📈': '[CHART]',
-                        '📉': '[DECLINE]',
-                        '💡': '[IDEA]',
-                        '🚨': '[ALERT]',
-                        '🔴': '[RED]',
-                        '🟡': '[YELLOW]',
-                        '🟠': '[ORANGE]',
-                        '🔵': '[BLUE]',
-                        '🟣': '[PURPLE]',
-                        '⭐': '[STAR]',
-                        '💰': '[MONEY]',
-                        '🛒': '[CART]',
-                        '📝': '[NOTE]',
-                        '📅': '[CALENDAR]',
-                        '⏰': '[CLOCK]',
-                        '🔑': '[KEY]',
-                        '🎨': '[DESIGN]',
-                        '🧪': '[TEST]',
-                        '🔬': '[ANALYZE]',
-                        '📱': '[MOBILE]',
-                        '💻': '[COMPUTER]',
-                        '🖨️': '[PRINT]',
-                        '📸': '[PHOTO]',
-                        '🎵': '[MUSIC]',
-                        '🔊': '[SOUND]',
-                        '🔇': '[MUTE]',
-                        '📡': '[SIGNAL]',
-                        '🌟': '[FEATURE]',
-                        '🎉': '[CELEBRATION]',
-                        '🎊': '[PARTY]',
-                        '🏆': '[TROPHY]',
-                        '🥇': '[GOLD]',
-                        '🥈': '[SILVER]',
-                        '🥉': '[BRONZE]'
-                    }
 
-                    for emoji, replacement in emoji_replacements.items():
-                        msg = msg.replace(emoji, replacement)
 
                     # Detect message category for organization
                     current_category = self._detect_category(record.getMessage())
@@ -141,9 +134,9 @@ class AppLogger:
                     # Add section headers for better organization
                     if current_category != self.last_category:
                         if self.last_category is not None:
-                            stream.write("\n" + "="*60 + "\n")
-                        stream.write(f"\n>>> {current_category.upper()} <<<\n")
-                        stream.write("="*60 + "\n")
+                            self._safe_write("\n" + "="*60 + "\n")
+                        self._safe_write(f"\n>>> {current_category.upper()} <<<\n")
+                        self._safe_write("="*60 + "\n")
                         self.last_category = current_category
                         self.message_count = 0
 
@@ -151,15 +144,100 @@ class AppLogger:
 
                     # Format the message with better structure
                     if record.levelname in ['ERROR', 'CRITICAL']:
-                        stream.write(f"[{self.message_count:03d}] *** {record.levelname} *** {msg}\n")
+                        self._safe_write(f"[{self.message_count:03d}] *** {record.levelname} *** {msg}\n")
                     elif record.levelname == 'WARNING':
-                        stream.write(f"[{self.message_count:03d}] !!! {record.levelname} !!! {msg}\n")
+                        self._safe_write(f"[{self.message_count:03d}] !!! {record.levelname} !!! {msg}\n")
                     else:
-                        stream.write(f"[{self.message_count:03d}] {record.levelname}: {msg}\n")
+                        self._safe_write(f"[{self.message_count:03d}] {record.levelname}: {msg}\n")
 
                     self.flush()
                 except Exception:
                     self.handleError(record)
+
+            def _safe_encode_message(self, msg):
+                """Safely encode message with emoji replacements"""
+                # Replace currency symbols that might cause encoding issues
+                msg = msg.replace('₹', 'Rs.')
+                msg = msg.replace('€', 'EUR')
+                msg = msg.replace('£', 'GBP')
+                msg = msg.replace('¥', 'JPY')
+
+                # Replace emoji characters that cause encoding issues
+                emoji_replacements = {
+                    '🔍': '[SEARCH]',
+                    '📄': '[FILE]',
+                    '✅': '[SUCCESS]',
+                    '📋': '[LIST]',
+                    '📊': '[DATA]',
+                    '🆕': '[NEW]',
+                    '❌': '[ERROR]',
+                    '⏱️': '[TIME]',
+                    '🚀': '[START]',
+                    '🖥️': '[SYSTEM]',
+                    '📁': '[FOLDER]',
+                    '🖱️': '[UI]',
+                    '🔧': '[DEBUG]',
+                    '⚠️': '[WARNING]',
+                    '🔔': '[NOTIFICATION]',
+                    '🍳': '[KITCHEN]',
+                    '🟢': '[ACTIVE]',
+                    '🔥': '[FIREBASE]',
+                    '💾': '[SAVE]',
+                    '🎯': '[TARGET]',
+                    '🔄': '[REFRESH]',
+                    '📦': '[PACKAGE]',
+                    '🌐': '[NETWORK]',
+                    '🔒': '[SECURE]',
+                    '🔓': '[UNLOCK]',
+                    '📈': '[CHART]',
+                    '📉': '[DECLINE]',
+                    '💡': '[IDEA]',
+                    '🚨': '[ALERT]',
+                    '🔴': '[RED]',
+                    '🟡': '[YELLOW]',
+                    '🟠': '[ORANGE]',
+                    '🔵': '[BLUE]',
+                    '🟣': '[PURPLE]',
+                    '⭐': '[STAR]',
+                    '💰': '[MONEY]',
+                    '🛒': '[CART]',
+                    '📝': '[NOTE]',
+                    '📅': '[CALENDAR]',
+                    '⏰': '[CLOCK]',
+                    '🔑': '[KEY]',
+                    '🎨': '[DESIGN]',
+                    '🧪': '[TEST]',
+                    '🔬': '[ANALYZE]',
+                    '📱': '[MOBILE]',
+                    '💻': '[COMPUTER]',
+                    '🖨️': '[PRINT]',
+                    '📸': '[PHOTO]',
+                    '🎵': '[MUSIC]',
+                    '🔊': '[SOUND]',
+                    '🔇': '[MUTE]',
+                    '📡': '[SIGNAL]',
+                    '🌟': '[FEATURE]',
+                    '🎉': '[CELEBRATION]',
+                    '🎊': '[PARTY]',
+                    '🏆': '[TROPHY]',
+                    '🥇': '[GOLD]',
+                    '🥈': '[SILVER]',
+                    '🥉': '[BRONZE]'
+                }
+
+                for emoji, replacement in emoji_replacements.items():
+                    msg = msg.replace(emoji, replacement)
+
+                return msg
+
+            def _safe_write(self, text):
+                """Safely write text with encoding fallback"""
+                try:
+                    self.stream.write(text)
+                except UnicodeEncodeError:
+                    # Fallback: encode to ASCII with replacement
+                    safe_text = text.encode('ascii', errors='replace').decode('ascii')
+                    self.stream.write(safe_text)
 
             def _detect_category(self, message):
                 """Detect the category of the log message for organization"""
@@ -188,9 +266,9 @@ class AppLogger:
         console_handler.setLevel(logging.INFO)
         
         # Create formatters and add them to handlers
-        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s')
-        error_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(funcName)s\nMESSAGE: %(message)s\n' + '='*80)
-        console_formatter = logging.Formatter('%(message)s')  # Simplified for organized output
+        file_formatter = SafeUnicodeFormatter('%(asctime)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s')
+        error_formatter = SafeUnicodeFormatter('%(asctime)s - %(levelname)s - %(pathname)s:%(lineno)d - %(funcName)s\nMESSAGE: %(message)s\n' + '='*80)
+        console_formatter = SafeUnicodeFormatter('%(message)s')  # Simplified for organized output
 
         file_handler.setFormatter(file_formatter)
         error_handler.setFormatter(error_formatter)
@@ -263,6 +341,51 @@ class AppLogger:
                 return stack[-5:] if len(stack) > 5 else stack
         except Exception:
             return ["Stack trace unavailable"]
+
+    def _safe_encode_for_logging(self, message):
+        """Safely encode message for logging to prevent Unicode errors"""
+        if not isinstance(message, str):
+            message = str(message)
+
+        # Replace common emoji with ASCII equivalents
+        emoji_replacements = {
+            '✅': '[SUCCESS]', '❌': '[ERROR]', '⚠️': '[WARNING]',
+            '🔄': '[REFRESH]', '📋': '[LIST]', '📱': '[MOBILE]',
+            '🔍': '[SEARCH]', '💾': '[SAVE]', '🎯': '[TARGET]',
+            '🚀': '[START]', '🔧': '[DEBUG]', '📊': '[DATA]',
+            '🎉': '[CELEBRATION]', '💡': '[IDEA]', '🔔': '[NOTIFICATION]',
+            '📤': '[UPLOAD]', '📥': '[DOWNLOAD]', '🌐': '[NETWORK]',
+            '🔒': '[SECURE]', '📈': '[CHART]', '📉': '[DECLINE]',
+            '🚨': '[ALERT]', '🔴': '[RED]', '🟢': '[GREEN]',
+            '🟡': '[YELLOW]', '🔵': '[BLUE]', '⭐': '[STAR]',
+            '💰': '[MONEY]', '📝': '[NOTE]', '📅': '[CALENDAR]',
+            '⏰': '[CLOCK]', '🔑': '[KEY]', '🎨': '[DESIGN]',
+            '📸': '[PHOTO]', '🎵': '[MUSIC]', '🔊': '[SOUND]',
+            '📡': '[SIGNAL]', '🌟': '[FEATURE]', '🏆': '[TROPHY]',
+            'ℹ️': '[INFO]', '📄': '[FILE]', '🖥️': '[SYSTEM]',
+            '📁': '[FOLDER]', '🖱️': '[UI]', '🍳': '[KITCHEN]',
+            '🔥': '[FIREBASE]', '📦': '[PACKAGE]', '🔓': '[UNLOCK]',
+            '🧪': '[TEST]', '🔬': '[ANALYZE]', '💻': '[COMPUTER]',
+            '🖨️': '[PRINT]', '🔇': '[MUTE]'
+        }
+
+        for emoji, replacement in emoji_replacements.items():
+            message = message.replace(emoji, replacement)
+
+        # Replace currency symbols
+        message = message.replace('₹', 'Rs.')
+        message = message.replace('€', 'EUR')
+        message = message.replace('£', 'GBP')
+        message = message.replace('¥', 'JPY')
+
+        # Final fallback: encode to ASCII with replacement for any remaining Unicode
+        try:
+            # Test if the message can be encoded
+            message.encode('ascii')
+            return message
+        except UnicodeEncodeError:
+            # If it can't be encoded, replace problematic characters
+            return message.encode('ascii', errors='replace').decode('ascii')
     
     @classmethod
     def get_log_buffer(cls):
@@ -279,7 +402,10 @@ class AppLogger:
         caller_info = self._get_caller_info()
         stack_trace = "\n".join(self._get_stack_trace(include_stack)) if include_stack else ""
 
-        self.logger.debug(message)
+        # Apply safe encoding to message before logging
+        safe_message = self._safe_encode_for_logging(message)
+
+        self.logger.debug(safe_message)
         self._add_to_buffer('DEBUG', message, caller_info, stack_trace)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.signal.new_log.emit('DEBUG', message, timestamp, caller_info, stack_trace)
@@ -289,7 +415,10 @@ class AppLogger:
         caller_info = self._get_caller_info()
         stack_trace = "\n".join(self._get_stack_trace(include_stack)) if include_stack else ""
 
-        self.logger.info(message)
+        # Apply safe encoding to message before logging
+        safe_message = self._safe_encode_for_logging(message)
+
+        self.logger.info(safe_message)
         self._add_to_buffer('INFO', message, caller_info, stack_trace)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.signal.new_log.emit('INFO', message, timestamp, caller_info, stack_trace)
@@ -299,7 +428,10 @@ class AppLogger:
         caller_info = self._get_caller_info()
         stack_trace = "\n".join(self._get_stack_trace(include_stack)) if include_stack else ""
 
-        self.logger.warning(message)
+        # Apply safe encoding to message before logging
+        safe_message = self._safe_encode_for_logging(message)
+
+        self.logger.warning(safe_message)
         self._add_to_buffer('WARNING', message, caller_info, stack_trace)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.signal.new_log.emit('WARNING', message, timestamp, caller_info, stack_trace)
@@ -309,7 +441,10 @@ class AppLogger:
         caller_info = self._get_caller_info()
         stack_trace = "\n".join(self._get_stack_trace(include_stack)) if include_stack else ""
 
-        self.logger.error(message)
+        # Apply safe encoding to message before logging
+        safe_message = self._safe_encode_for_logging(message)
+
+        self.logger.error(safe_message)
         self._add_to_buffer('ERROR', message, caller_info, stack_trace)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.signal.new_log.emit('ERROR', message, timestamp, caller_info, stack_trace)
@@ -319,7 +454,10 @@ class AppLogger:
         caller_info = self._get_caller_info()
         stack_trace = "\n".join(self._get_stack_trace(include_stack)) if include_stack else ""
 
-        self.logger.critical(message)
+        # Apply safe encoding to message before logging
+        safe_message = self._safe_encode_for_logging(message)
+
+        self.logger.critical(safe_message)
         self._add_to_buffer('CRITICAL', message, caller_info, stack_trace)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         self.signal.new_log.emit('CRITICAL', message, timestamp, caller_info, stack_trace)
@@ -453,3 +591,33 @@ class AppLogger:
 # Shorthand function to get logger instance
 def get_logger():
     return AppLogger.get_instance()
+
+# Safe print function for Unicode handling
+def safe_print(*args, **kwargs):
+    """Safe print function that handles Unicode encoding errors"""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Convert all arguments to safe ASCII
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                # Replace common emoji with ASCII equivalents
+                safe_arg = str(arg)
+                emoji_replacements = {
+                    '✅': '[SUCCESS]', '❌': '[ERROR]', '⚠️': '[WARNING]',
+                    '🔄': '[REFRESH]', '📋': '[LIST]', '📱': '[MOBILE]',
+                    '🔍': '[SEARCH]', '💾': '[SAVE]', '🎯': '[TARGET]',
+                    '🚀': '[START]', '🔧': '[DEBUG]', '📊': '[DATA]',
+                    '🎉': '[CELEBRATION]', '💡': '[IDEA]', '🔔': '[NOTIFICATION]'
+                }
+                for emoji, replacement in emoji_replacements.items():
+                    safe_arg = safe_arg.replace(emoji, replacement)
+
+                # Encode to ASCII with replacement for any remaining Unicode
+                safe_arg = safe_arg.encode('ascii', errors='replace').decode('ascii')
+                safe_args.append(safe_arg)
+            else:
+                safe_args.append(arg)
+
+        print(*safe_args, **kwargs)

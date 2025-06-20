@@ -23,15 +23,22 @@ try:
     GIT_AVAILABLE = True
 except ImportError:
     GIT_AVAILABLE = False
+    # Create a dummy RemoteProgress class for when Git is not available
+    class RemoteProgress:
+        def __init__(self):
+            pass
+        def update(self, op_code, cur_count, max_count=None, message=''):
+            pass
 
 from __version__ import __version__, is_newer_version
 
 
 class GitProgressReporter(RemoteProgress):
     """Progress reporter for Git operations"""
-    
+
     def __init__(self, progress_callback: Optional[Callable[[int], None]] = None):
-        super().__init__()
+        if GIT_AVAILABLE:
+            super().__init__()
         self.progress_callback = progress_callback
         self.last_percent = 0
     

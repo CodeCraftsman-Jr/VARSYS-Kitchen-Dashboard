@@ -12,12 +12,14 @@ import time
 
 
 class LoadingWorker(QThread):
-    """Worker thread for simulating loading operations"""
+    """Worker thread for handling loading operations with real initialization"""
     progress_updated = Signal(int, str)
     finished = Signal()
-    
-    def __init__(self):
+    whatsapp_init_requested = Signal()  # Signal to request WhatsApp initialization
+
+    def __init__(self, main_app=None):
         super().__init__()
+        self.main_app = main_app
         self.loading_steps = [
             (10, "Initializing application..."),
             (20, "Loading configuration..."),
@@ -25,43 +27,60 @@ class LoadingWorker(QThread):
             (40, "Initializing user interface..."),
             (50, "Loading modules..."),
             (60, "Setting up authentication..."),
-            (70, "Preparing data structures..."),
+            (65, "Starting WhatsApp automation..."),
+            (70, "Connecting to WhatsApp Web..."),
+            (75, "Preparing data structures..."),
             (80, "Finalizing setup..."),
             (90, "Almost ready..."),
             (100, "Application ready!")
         ]
-    
+
     def run(self):
-        """Simulate loading process"""
+        """Handle loading process with real initialization"""
         for progress, message in self.loading_steps:
             self.progress_updated.emit(progress, message)
-            # Simulate work being done
-            time.sleep(0.5)  # Adjust timing as needed
-        
+
+            # Handle specific initialization steps
+            if progress == 65 and message == "Starting WhatsApp automation...":
+                # Request WhatsApp initialization from main thread
+                self.whatsapp_init_requested.emit()
+                # Give more time for WhatsApp initialization
+                time.sleep(1.5)
+            elif progress == 70 and message == "Connecting to WhatsApp Web...":
+                # Additional time for WhatsApp connection
+                time.sleep(2.0)
+            else:
+                # Normal simulation timing
+                time.sleep(0.5)
+
         self.finished.emit()
 
 
 class StartupLoadingScreen(QSplashScreen):
     """Professional startup loading screen with progress indicators"""
-    
+
     loading_finished = Signal()
-    
-    def __init__(self):
+
+    def __init__(self, main_app=None):
         # Create a custom pixmap for the splash screen
         pixmap = self.create_splash_pixmap()
         super().__init__(pixmap)
-        
+
         # Set window flags
         self.setWindowFlags(Qt.SplashScreen | Qt.WindowStaysOnTopHint)
-        
+
+        # Store reference to main app for initialization
+        self.main_app = main_app
+
         # Initialize UI components
         self.setup_ui()
-        
+
         # Initialize worker thread
-        self.worker = LoadingWorker()
+        self.worker = LoadingWorker(main_app)
         self.worker.progress_updated.connect(self.update_progress)
         self.worker.finished.connect(self.on_loading_finished)
-        
+        self.worker.whatsapp_init_requested.connect(self.handle_whatsapp_init)
+
         # Start loading
         self.start_loading()
     
@@ -157,10 +176,19 @@ class StartupLoadingScreen(QSplashScreen):
         # Force repaint
         self.repaint()
     
+    def handle_whatsapp_init(self):
+        """Handle WhatsApp initialization request from worker thread"""
+        try:
+            if self.main_app and hasattr(self.main_app, 'start_whatsapp_automation'):
+                # Start WhatsApp automation during loading
+                self.main_app.start_whatsapp_automation()
+        except Exception as e:
+            print(f"Error during WhatsApp initialization: {e}")
+
     def on_loading_finished(self):
         """Handle loading completion"""
         QTimer.singleShot(1000, self.finish_loading)  # Show "ready" for 1 second
-    
+
     def finish_loading(self):
         """Finish loading and emit signal"""
         self.loading_finished.emit()
@@ -259,11 +287,11 @@ class SimpleLoadingDialog(QWidget):
         self.close()
 
 
-def show_startup_loading_screen():
+def show_startup_loading_screen(main_app=None):
     """Show startup loading screen and return it"""
     try:
         # Try to use the advanced splash screen
-        loading_screen = StartupLoadingScreen()
+        loading_screen = StartupLoadingScreen(main_app)
         return loading_screen
     except Exception as e:
         print(f"Failed to create advanced loading screen: {e}")

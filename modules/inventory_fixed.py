@@ -12,6 +12,12 @@ from datetime import datetime
 import os
 import json
 
+# Import the universal table widget
+try:
+    from .universal_table_widget import UniversalTableWidget
+except ImportError:
+    from modules.universal_table_widget import UniversalTableWidget
+
 # Import notification system
 try:
     from .notification_system import notify_info, notify_success, notify_warning, notify_error
@@ -289,90 +295,22 @@ class InventoryWidget(QWidget):
             print(f"Error refreshing inventory data: {e}")
 
     def setup_current_inventory_tab(self):
-        # Create layout for the tab
+        """Setup current inventory tab with universal table widget"""
         layout = QVBoxLayout(self.current_inventory_tab)
-        layout.setContentsMargins(10, 5, 10, 10)  # Reduce margins to save space
-        
-        # Add compact subheader
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        # Header with action buttons
+        header_layout = QHBoxLayout()
+
         header = QLabel("Current Inventory")
-        header.setFont(QFont("Arial", 12, QFont.Bold))
-        header.setMaximumHeight(25)  # Limit header height
-        layout.addWidget(header)
-        
-        # Check if there's data in the items tab
-        if 'items' not in self.data or len(self.data['items']) == 0:
-            # Show message when no items exist
-            no_items_label = QLabel("No items available. Please add items in the Items tab first.")
-            no_items_label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(no_items_label)
-            return
-        
-        # Filters section
-        filters_widget = QWidget()
-        filters_layout = QHBoxLayout(filters_widget)
-        
-        # Category filter
-        category_label = QLabel("Filter by Category:")
-        self.category_combo = QComboBox()
-        self.category_combo.addItem("All Categories")
-        if 'category' in self.inventory_df.columns:
-            # Filter out NaN values and convert to strings before sorting
-            categories = self.inventory_df['category'].dropna().unique()
-            category_strings = [str(cat) for cat in categories if pd.notna(cat)]
-            if category_strings:
-                self.category_combo.addItems(sorted(category_strings))
-        self.category_combo.currentIndexChanged.connect(self.apply_filters)
-        
-        # Location filter
-        location_label = QLabel("Filter by Location:")
-        self.location_combo = QComboBox()
-        self.location_combo.addItem("All Locations")
-        if 'location' in self.inventory_df.columns:
-            # Filter out NaN values and convert to strings before sorting
-            locations = self.inventory_df['location'].dropna().unique()
-            location_strings = [str(loc) for loc in locations if pd.notna(loc)]
-            if location_strings:
-                self.location_combo.addItems(sorted(location_strings))
-        self.location_combo.currentIndexChanged.connect(self.apply_filters)
-        
-        # Search box
-        search_label = QLabel("Search Items:")
-        self.search_box = QLineEdit()
-        self.search_box.setPlaceholderText("Enter search term...")
-        self.search_box.textChanged.connect(self.apply_filters)
-        
-        # Add widgets to filters layout
-        filters_layout.addWidget(category_label)
-        filters_layout.addWidget(self.category_combo)
-        filters_layout.addWidget(location_label)
-        filters_layout.addWidget(self.location_combo)
-        filters_layout.addWidget(search_label)
-        filters_layout.addWidget(self.search_box)
-        filters_layout.addStretch(1)  # Add stretch to push widgets to the left
-        
-        layout.addWidget(filters_widget)
+        header.setFont(QFont("Arial", 14, QFont.Bold))
+        header_layout.addWidget(header)
 
-        # Create a fixed header area for action buttons that stays at the top
-        header_frame = QFrame()
-        header_frame.setFrameStyle(QFrame.StyledPanel)
-        header_frame.setStyleSheet("""
-            QFrame {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-                margin: 5px 0;
-            }
-        """)
-        header_frame.setFixedHeight(60)  # Fixed height to prevent resizing
+        header_layout.addStretch()
 
-        # Action buttons section (fixed at top)
-        buttons_layout = QHBoxLayout(header_frame)
-        buttons_layout.setContentsMargins(10, 8, 10, 8)  # Consistent margins
-
-        # Edit Selected Item button
-        self.edit_inventory_button = QPushButton("Edit Selected Item")
-        self.edit_inventory_button.setFixedHeight(40)  # Fixed button height
-        self.edit_inventory_button.setStyleSheet("""
+        # Action buttons
+        edit_btn = QPushButton("✏️ Edit Selected")
+        edit_btn.setStyleSheet("""
             QPushButton {
                 background-color: #007bff;
                 color: white;
@@ -380,19 +318,14 @@ class InventoryWidget(QWidget):
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-weight: bold;
-                font-size: 12px;
-                min-width: 120px;
             }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
+            QPushButton:hover { background-color: #0056b3; }
         """)
-        self.edit_inventory_button.clicked.connect(self.edit_selected_inventory_item)
+        edit_btn.clicked.connect(self.edit_selected_inventory_item)
+        header_layout.addWidget(edit_btn)
 
-        # Refresh Data button
-        self.refresh_inventory_button = QPushButton("Refresh Data")
-        self.refresh_inventory_button.setFixedHeight(40)  # Fixed button height
-        self.refresh_inventory_button.setStyleSheet("""
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setStyleSheet("""
             QPushButton {
                 background-color: #28a745;
                 color: white;
@@ -400,873 +333,303 @@ class InventoryWidget(QWidget):
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-weight: bold;
-                font-size: 12px;
-                min-width: 100px;
             }
-            QPushButton:hover {
-                background-color: #218838;
-            }
+            QPushButton:hover { background-color: #218838; }
         """)
-        self.refresh_inventory_button.clicked.connect(self.force_refresh_inventory)
+        refresh_btn.clicked.connect(self.force_refresh_inventory)
+        header_layout.addWidget(refresh_btn)
 
-        # Show All Items button
-        self.show_all_button = QPushButton("Show All Items")
-        self.show_all_button.setFixedHeight(40)  # Fixed button height
-        self.show_all_button.setStyleSheet("""
-            QPushButton {
-                background-color: #17a2b8;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-weight: bold;
-                font-size: 12px;
-                min-width: 110px;
-            }
-            QPushButton:hover {
-                background-color: #138496;
-            }
-        """)
-        self.show_all_button.clicked.connect(self.show_all_items)
+        layout.addLayout(header_layout)
 
-        # Auto-fit columns button
-        self.autofit_button = QPushButton("📐 Auto-Fit Columns")
-        self.autofit_button.setFixedHeight(40)  # Fixed button height
-        self.autofit_button.setStyleSheet("""
-            QPushButton {
-                background-color: #9b59b6;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-weight: bold;
-                font-size: 12px;
-                min-width: 120px;
-            }
-            QPushButton:hover {
-                background-color: #8e44ad;
-            }
-        """)
-        self.autofit_button.clicked.connect(self.auto_fit_columns)
-        self.autofit_button.setToolTip("Automatically resize columns to fit screen width")
+        # Check if there's data
+        if 'inventory' not in self.data or len(self.data['inventory']) == 0:
+            no_items_label = QLabel("No inventory data available. Please add items first.")
+            no_items_label.setAlignment(Qt.AlignCenter)
+            no_items_label.setStyleSheet("color: #6c757d; font-size: 14px; padding: 40px;")
+            layout.addWidget(no_items_label)
+            return
 
-        # Column width adjustment buttons
-        # Make columns wider button
-        self.wider_button = QPushButton("🔍 Wider")
-        self.wider_button.setFixedHeight(40)
-        self.wider_button.setStyleSheet("""
-            QPushButton {
-                background-color: #fd7e14;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                padding: 8px 12px;
-            }
-            QPushButton:hover {
-                background-color: #e8590c;
-            }
-        """)
-        self.wider_button.clicked.connect(self.make_columns_wider)
-        self.wider_button.setToolTip("Make all columns wider for better data visibility")
+        # Create universal table widget for inventory
+        # Map all 21 columns to user-friendly names
+        inventory_columns = [
+            "ID",                    # item_id
+            "Name",                  # item_name
+            "Category",              # category
+            "Quantity",              # quantity
+            "Unit",                  # unit
+            "Price/Unit",            # price_per_unit
+            "Location",              # location
+            "Expiry Date",           # expiry_date
+            "Reorder Level",         # reorder_level
+            "Total Value",           # total_value
+            "Price",                 # price
+            "Qty Purchased",         # qty_purchased
+            "Qty Used",              # qty_used
+            "Avg Price",             # avg_price
+            "Description",           # description
+            "Default Cost",          # default_cost
+            "Purchase Count",        # purchase_count
+            "Total Spent",           # total_spent
+            "Last Purchase Date",    # last_purchase_date
+            "Last Purchase Price",   # last_purchase_price
+            "Last Updated"           # last_updated
+        ]
 
-        # Make columns narrower button
-        self.narrower_button = QPushButton("🔎 Narrower")
-        self.narrower_button.setFixedHeight(40)
-        self.narrower_button.setStyleSheet("""
-            QPushButton {
-                background-color: #6c757d;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                padding: 8px 12px;
-            }
-            QPushButton:hover {
-                background-color: #5a6268;
-            }
-        """)
-        self.narrower_button.clicked.connect(self.make_columns_narrower)
-        self.narrower_button.setToolTip("Make all columns narrower to fit more on screen")
+        self.inventory_table_widget = UniversalTableWidget(
+            data=self.inventory_df,
+            columns=inventory_columns,
+            parent=self
+        )
 
-        # Reset column widths button
-        self.reset_widths_button = QPushButton("↩️ Reset")
-        self.reset_widths_button.setFixedHeight(40)
-        self.reset_widths_button.setStyleSheet("""
-            QPushButton {
-                background-color: #dc3545;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                padding: 8px 12px;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
-            }
-        """)
-        self.reset_widths_button.clicked.connect(self.reset_column_widths)
-        self.reset_widths_button.setToolTip("Reset all columns to default widths")
+        # Connect signals
+        self.inventory_table_widget.row_selected.connect(self.on_inventory_row_selected)
+        self.inventory_table_widget.data_filtered.connect(self.on_inventory_data_filtered)
 
-        # Add buttons to layout with proper spacing
-        buttons_layout.addWidget(self.edit_inventory_button)
-        buttons_layout.addSpacing(10)  # Add space between buttons
-        buttons_layout.addWidget(self.refresh_inventory_button)
-        buttons_layout.addSpacing(10)  # Add space between buttons
-        buttons_layout.addWidget(self.show_all_button)
-        buttons_layout.addSpacing(10)  # Add space between buttons
-        buttons_layout.addWidget(self.autofit_button)
-        buttons_layout.addSpacing(15)  # Add more space before column width buttons
-        buttons_layout.addWidget(self.wider_button)
-        buttons_layout.addSpacing(5)
-        buttons_layout.addWidget(self.narrower_button)
-        buttons_layout.addSpacing(5)
-        buttons_layout.addWidget(self.reset_widths_button)
-        buttons_layout.addStretch()  # Push buttons to the left
+        layout.addWidget(self.inventory_table_widget)
 
-        # Add the fixed header to the layout
-        layout.addWidget(header_frame)
 
-        # Create a container for the table with proper scrolling
-        table_container = QWidget()
-        table_container_layout = QVBoxLayout(table_container)
-        table_container_layout.setContentsMargins(0, 0, 0, 0)
-        table_container_layout.setSpacing(0)
-
-        # Inventory table
-        self.inventory_table = QTableWidget()
-        self.inventory_table.setColumnCount(17)  # Added purchase tracking columns
-        self.inventory_table.setHorizontalHeaderLabels([
-            "ID", "Name", "Category", "Total Qty", "Used Qty", "Available Qty", "Unit",
-            "Avg Price", "Price/Unit", "Total Value", "Location", "Purchase Count",
-            "Total Spent", "Last Purchase Date", "Last Purchase Price", "Expiry Date", "Days Left"
-        ])
-
-        # Configure table scrolling and sizing
-        self.inventory_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.inventory_table.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.inventory_table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
-
-        # Ensure the table shows horizontal scrollbar when content is wider than view
-        self.inventory_table.setMinimumWidth(800)  # Minimum width to trigger horizontal scroll
-
-        # Optimized column widths to fit screen perfectly (total ~1100px)
-        default_column_widths = {
-            0: 35,   # ID - minimal space
-            1: 110,  # Name - essential but compact
-            2: 75,   # Category - compact
-            3: 65,   # Total Qty - compact
-            4: 60,   # Used Qty - compact
-            5: 70,   # Available Qty - compact
-            6: 40,   # Unit - minimal
-            7: 70,   # Avg Price - compact
-            8: 75,   # Price/Unit - compact
-            9: 80,   # Total Value - compact
-            10: 80,  # Location - compact
-            11: 65,  # Purchase Count - compact
-            12: 80,  # Total Spent - compact
-            13: 95,  # Last Purchase Date - reduced
-            14: 95,  # Last Purchase Price - reduced
-            15: 85,  # Expiry Date - compact
-            16: 70   # Days Left - compact
-        }
-
-        # SIMPLE AND DIRECT COLUMN RESIZING SETUP
-        print("🔧 Setting up BASIC column resizing...")
-
-        # Get the header
-        header = self.inventory_table.horizontalHeader()
-
-        # Apply column widths FIRST
-        print("🔧 Setting column widths...")
-        for col, width in default_column_widths.items():
-            self.inventory_table.setColumnWidth(col, width)
-            print(f"   Column {col}: {width}px")
-
-        # CRITICAL: Set ALL columns to Interactive mode for manual resizing
-        print("🔧 Enabling Interactive mode for all columns...")
-        for col in range(17):
-            header.setSectionResizeMode(col, QHeaderView.Interactive)
-            print(f"   Column {col}: Interactive")
-
-        # Basic header configuration
-        header.setStretchLastSection(False)
-        header.setMinimumSectionSize(30)
-
-        # Test that resizing is actually enabled
-        print("🔧 Testing resize modes...")
-        for col in range(min(5, 17)):
-            mode = header.sectionResizeMode(col)
-            print(f"   Column {col} mode: {mode} (should be 1 for Interactive)")
-
-        print("✅ Basic column resizing setup complete!")
-
-        # Load saved column settings or use defaults
-        saved_settings = self.load_column_settings()
-
-        # Get header reference for further configuration
-        header = self.inventory_table.horizontalHeader()
-
-        # Connect resize events for saving settings
-        header.sectionResized.connect(self.on_column_resized)
-
-        # Apply column widths (saved or default)
-        for col in range(17):
-            if saved_settings and f'column_{col}_width' in saved_settings:
-                # Use saved width
-                width = saved_settings[f'column_{col}_width']
-                self.inventory_table.setColumnWidth(col, width)
-                print(f"📏 Column {col}: Using saved width {width}px")
-            else:
-                # Use default width
-                width = default_column_widths.get(col, 100)
-                self.inventory_table.setColumnWidth(col, width)
-                print(f"📏 Column {col}: Using default width {width}px")
-
-        # Connect column resize event to save settings
-        header.sectionResized.connect(self.on_column_resized)
-
-        print(f"✅ All columns are now user-resizable and will remember their positions!")
-
-        # Keep other columns fixed to prevent unwanted resizing
-        # This ensures that resizing one column doesn't affect others
-
-        # SKIP RESPONSIVE TABLE SETUP TO AVOID CONFLICTS
-        print("🔧 Skipping responsive table setup to ensure manual resizing works...")
-
-        # FINAL CHECK: Ensure ALL columns are still Interactive after any other setup
-        header = self.inventory_table.horizontalHeader()
-        print("🔧 FINAL CHECK - Ensuring all columns are Interactive...")
-        for col in range(17):
-            current_mode = header.sectionResizeMode(col)
-            if current_mode != QHeaderView.Interactive:
-                header.setSectionResizeMode(col, QHeaderView.Interactive)
-                print(f"   Column {col}: {current_mode} → Interactive (FIXED)")
-            else:
-                print(f"   Column {col}: Interactive (OK)")
-
-        # Final configuration
-        header.setStretchLastSection(False)
-        header.setDefaultAlignment(Qt.AlignLeft)
-        header.setMinimumSectionSize(30)
-
-        print("✅ ALL COLUMNS ARE NOW MANUALLY RESIZABLE!")
-
-        # Apply modern table styling
-        if apply_inventory_table_styling:
-            apply_inventory_table_styling(self.inventory_table)
-        else:
-            # Enhanced fallback styling
-            self.inventory_table.setSelectionBehavior(QTableWidget.SelectRows)
-            self.inventory_table.setAlternatingRowColors(False)  # Disabled to allow custom background colors
-            self.inventory_table.verticalHeader().setDefaultSectionSize(55)  # Set row height
-            self.inventory_table.setStyleSheet("""
-                QTableWidget {
-                    background-color: white;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 8px;
-                    gridline-color: #f1f5f9;
-                    selection-background-color: #dbeafe;
-                    font-size: 13px;
-                }
-                QTableWidget::item {
-                    padding: 8px;
-                    border-bottom: 1px solid #f1f5f9;
-                    min-height: 40px;
-                }
-                QTableWidget::item:selected {
-                    color: #1e40af;
-                }
-                QHeaderView::section {
-                    background-color: #f0f9ff;
-                    border: none;
-                    border-bottom: 2px solid #0ea5e9;
-                    border-right: 1px solid #e2e8f0;
-                    padding: 12px 8px;
-                    font-weight: 600;
-                    color: #374151;
-                    min-height: 40px;
-                    font-size: 13px;
-                }
-                QScrollBar:horizontal {
-                    border: none;
-                    background: #f1f5f9;
-                    height: 14px;
-                    margin: 0px;
-                    border-radius: 7px;
-                }
-                QScrollBar::handle:horizontal {
-                    background: #cbd5e1;
-                    min-width: 20px;
-                    border-radius: 7px;
-                }
-                QScrollBar::handle:horizontal:hover {
-                    background: #94a3b8;
-                }
-                QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-                    border: none;
-                    background: none;
-                }
-            """)
-
-        # Add the table to the container
-        table_container_layout.addWidget(self.inventory_table)
-
-        # Add the table container to the main layout
-        # This ensures the table takes up remaining space and scrolls properly
-        layout.addWidget(table_container, 1)  # Stretch factor of 1 to take remaining space
-
-        # Apply initial filters
-        self.apply_filters()
-
-        # Auto-fit columns on initial load (with a small delay to ensure table is rendered)
-        from PySide6.QtCore import QTimer
-        self.initial_autofit_timer = QTimer()
-        self.initial_autofit_timer.setSingleShot(True)
-        self.initial_autofit_timer.timeout.connect(self.auto_fit_columns_on_load)
-        self.initial_autofit_timer.start(500)  # 500ms delay
-
-    def on_column_resized(self, logical_index, old_size, new_size):
-        """Handle column resize events and save settings"""
+    def on_inventory_row_selected(self, row_index):
+        """Handle inventory row selection"""
         try:
-            # Save settings after a short delay to avoid too frequent saves
-            if not hasattr(self, '_resize_timer'):
-                from PySide6.QtCore import QTimer
-                self._resize_timer = QTimer()
-                self._resize_timer.setSingleShot(True)
-                self._resize_timer.timeout.connect(self.save_column_settings)
-
-            self._resize_timer.start(500)  # Save after 500ms of no resizing
-            print(f"📏 Column {logical_index} resized from {old_size}px to {new_size}px")
+            selected_data = self.inventory_table_widget.get_selected_row_data()
+            if selected_data is not None:
+                print(f"Selected inventory item: {selected_data.get('Name', 'Unknown')}")
         except Exception as e:
-            print(f"❌ Error handling column resize: {e}")
+            print(f"Error handling inventory row selection: {e}")
+
+    def on_inventory_data_filtered(self, visible_count):
+        """Handle inventory data filtering"""
+        total_count = len(self.inventory_df)
+        print(f"Inventory filtered: {visible_count}/{total_count} items visible")
 
     def force_refresh_inventory(self):
-        """Force refresh inventory data from CSV file"""
+        """Force refresh inventory data and update universal table"""
         try:
             print("🔄 Force refreshing inventory data...")
 
             # Reload inventory data from CSV
-            import pandas as pd
             inventory_path = 'data/inventory.csv'
             if os.path.exists(inventory_path):
-                # Debug: Check file before loading
-                file_size = os.path.getsize(inventory_path)
-                print(f"🔍 REFRESH DEBUG: File size: {file_size} bytes")
-
-                # Load the data
                 loaded_data = pd.read_csv(inventory_path)
-                print(f"🔍 REFRESH DEBUG: Loaded {len(loaded_data)} rows from CSV")
-                print(f"🔍 REFRESH DEBUG: Columns: {list(loaded_data.columns)}")
-
-                # Update data
                 self.data['inventory'] = loaded_data
                 self.inventory_df = self.data['inventory'].copy()
-                print(f"🔍 REFRESH DEBUG: inventory_df now has {len(self.inventory_df)} items")
+
+                # Update the universal table widget
+                if hasattr(self, 'inventory_table_widget'):
+                    self.inventory_table_widget.update_data(self.inventory_df)
+
                 print(f"✅ Reloaded {len(self.inventory_df)} items from CSV")
+                QMessageBox.information(self, "Success", f"Inventory data refreshed! Showing {len(self.inventory_df)} items.")
             else:
                 print("❌ inventory.csv not found")
-                return
-
-            # Reset filters to show all data
-            self.category_combo.setCurrentText("All Categories")
-            self.location_combo.setCurrentText("All Locations")
-            self.search_box.clear()
-
-            # Refresh filter options
-            self.refresh_filter_options()
-
-            # Apply filters to update display
-            self.apply_filters()
-
-            print("✅ Inventory data refreshed successfully")
-            QMessageBox.information(self, "Success", f"Inventory data refreshed! Showing {len(self.inventory_df)} items.")
+                QMessageBox.warning(self, "Error", "Inventory CSV file not found.")
 
         except Exception as e:
             print(f"❌ Error refreshing inventory data: {e}")
             QMessageBox.warning(self, "Error", f"Failed to refresh inventory data: {str(e)}")
 
-    def refresh_filter_options(self):
-        """Refresh the filter dropdown options"""
-        try:
-            # Save current selections
-            current_category = self.category_combo.currentText()
-            current_location = self.location_combo.currentText()
 
-            # Clear and repopulate category filter
-            self.category_combo.clear()
-            self.category_combo.addItem("All Categories")
-            if 'category' in self.inventory_df.columns:
-                categories = self.inventory_df['category'].dropna().unique()
-                category_strings = [str(cat) for cat in categories if pd.notna(cat)]
-                if category_strings:
-                    self.category_combo.addItems(sorted(category_strings))
 
-            # Clear and repopulate location filter
-            self.location_combo.clear()
-            self.location_combo.addItem("All Locations")
-            if 'location' in self.inventory_df.columns:
-                locations = self.inventory_df['location'].dropna().unique()
-                location_strings = [str(loc) for loc in locations if pd.notna(loc)]
-                if location_strings:
-                    self.location_combo.addItems(sorted(location_strings))
 
-            # Restore selections if they still exist
-            category_index = self.category_combo.findText(current_category)
-            if category_index >= 0:
-                self.category_combo.setCurrentIndex(category_index)
 
-            location_index = self.location_combo.findText(current_location)
-            if location_index >= 0:
-                self.location_combo.setCurrentIndex(location_index)
 
-        except Exception as e:
-            print(f"Error refreshing filter options: {e}")
 
-    def show_all_items(self):
-        """Reset all filters and show all items"""
-        try:
-            print("🔄 Showing all items...")
 
-            # Reset all filters
-            self.category_combo.setCurrentText("All Categories")
-            self.location_combo.setCurrentText("All Locations")
-            self.search_box.clear()
 
-            # Force apply filters to update display
-            self.apply_filters()
 
-            # Show success message
-            total_items = len(self.inventory_df)
-            print(f"✅ Showing all {total_items} items")
-            QMessageBox.information(self, "Show All Items", f"Filters reset! Now showing all {total_items} items.")
 
-        except Exception as e:
-            print(f"❌ Error showing all items: {e}")
-            QMessageBox.warning(self, "Error", f"Failed to show all items: {str(e)}")
 
-    def auto_fit_columns_on_load(self):
-        """Automatically resize columns to fit screen width on initial load (silent)"""
-        try:
-            print("📐 Auto-fitting columns on initial load...")
 
-            # Get available width (table width minus scrollbar and margins)
-            table_width = self.inventory_table.width()
-            scrollbar_width = 20  # Approximate scrollbar width
-            margin_width = 40     # Margins and borders
-            available_width = table_width - scrollbar_width - margin_width
 
-            print(f"   📊 Table width: {table_width}px")
-            print(f"   📊 Available width: {available_width}px")
-
-            if available_width < 500:  # Minimum reasonable width
-                print("   ⚠️ Available width too small, using minimum widths")
-                available_width = 1200  # Use a reasonable default
-
-            # Define column priorities and minimum widths
-            column_info = {
-                0: {"name": "ID", "min_width": 40, "priority": 1},
-                1: {"name": "Name", "min_width": 100, "priority": 5},
-                2: {"name": "Category", "min_width": 70, "priority": 4},
-                3: {"name": "Total Qty", "min_width": 60, "priority": 3},
-                4: {"name": "Used Qty", "min_width": 60, "priority": 3},
-                5: {"name": "Available Qty", "min_width": 70, "priority": 4},
-                6: {"name": "Unit", "min_width": 40, "priority": 2},
-                7: {"name": "Avg Price", "min_width": 70, "priority": 3},
-                8: {"name": "Price/Unit", "min_width": 75, "priority": 3},
-                9: {"name": "Total Value", "min_width": 80, "priority": 4},
-                10: {"name": "Location", "min_width": 80, "priority": 4},
-                11: {"name": "Purchase Count", "min_width": 70, "priority": 2},
-                12: {"name": "Total Spent", "min_width": 80, "priority": 3},
-                13: {"name": "Last Purchase Date", "min_width": 100, "priority": 2},
-                14: {"name": "Last Purchase Price", "min_width": 100, "priority": 2},
-                15: {"name": "Expiry Date", "min_width": 90, "priority": 3},
-                16: {"name": "Days Left", "min_width": 70, "priority": 3}
-            }
-
-            # Calculate minimum total width needed
-            min_total_width = sum(info["min_width"] for info in column_info.values())
-
-            if available_width >= min_total_width:
-                # Distribute extra space proportionally based on priority
-                extra_space = available_width - min_total_width
-
-                # Calculate total priority weight
-                total_priority = sum(info["priority"] for info in column_info.values())
-
-                # Distribute widths
-                for col, info in column_info.items():
-                    base_width = info["min_width"]
-                    extra_width = int((extra_space * info["priority"]) / total_priority)
-                    final_width = base_width + extra_width
-
-                    self.inventory_table.setColumnWidth(col, final_width)
-                    print(f"   📏 Column {col} ({info['name']}): {final_width}px")
-            else:
-                # Use minimum widths if screen is too small
-                for col, info in column_info.items():
-                    self.inventory_table.setColumnWidth(col, info["min_width"])
-                    print(f"   📏 Column {col} ({info['name']}): {info['min_width']}px (minimum)")
-
-            # Save the new column settings
-            self.save_column_settings()
-
-            print("✅ Columns auto-fitted to screen width on initial load!")
-
-        except Exception as e:
-            print(f"❌ Error auto-fitting columns on load: {e}")
-
-    def auto_fit_columns(self):
-        """Manually resize columns to fit the available screen width (with user notification)"""
-        try:
-            print("📐 Auto-fitting columns to screen width...")
-
-            # Get available width (table width minus scrollbar and margins)
-            table_width = self.inventory_table.width()
-            scrollbar_width = 20  # Approximate scrollbar width
-            margin_width = 40     # Margins and borders
-            available_width = table_width - scrollbar_width - margin_width
-
-            print(f"   📊 Table width: {table_width}px")
-            print(f"   📊 Available width: {available_width}px")
-
-            if available_width < 500:  # Minimum reasonable width
-                print("   ⚠️ Available width too small, using minimum widths")
-                available_width = 1200  # Use a reasonable default
-
-            # Define column priorities and minimum widths
-            column_info = {
-                0: {"name": "ID", "min_width": 40, "priority": 1},
-                1: {"name": "Name", "min_width": 100, "priority": 5},
-                2: {"name": "Category", "min_width": 70, "priority": 4},
-                3: {"name": "Total Qty", "min_width": 60, "priority": 3},
-                4: {"name": "Used Qty", "min_width": 60, "priority": 3},
-                5: {"name": "Available Qty", "min_width": 70, "priority": 4},
-                6: {"name": "Unit", "min_width": 40, "priority": 2},
-                7: {"name": "Avg Price", "min_width": 70, "priority": 3},
-                8: {"name": "Price/Unit", "min_width": 75, "priority": 3},
-                9: {"name": "Total Value", "min_width": 80, "priority": 4},
-                10: {"name": "Location", "min_width": 80, "priority": 4},
-                11: {"name": "Purchase Count", "min_width": 70, "priority": 2},
-                12: {"name": "Total Spent", "min_width": 80, "priority": 3},
-                13: {"name": "Last Purchase Date", "min_width": 100, "priority": 2},
-                14: {"name": "Last Purchase Price", "min_width": 100, "priority": 2},
-                15: {"name": "Expiry Date", "min_width": 90, "priority": 3},
-                16: {"name": "Days Left", "min_width": 70, "priority": 3}
-            }
-
-            # Calculate minimum total width needed
-            min_total_width = sum(info["min_width"] for info in column_info.values())
-
-            if available_width >= min_total_width:
-                # Distribute extra space proportionally based on priority
-                extra_space = available_width - min_total_width
-
-                # Calculate total priority weight
-                total_priority = sum(info["priority"] for info in column_info.values())
-
-                # Distribute widths
-                for col, info in column_info.items():
-                    base_width = info["min_width"]
-                    extra_width = int((extra_space * info["priority"]) / total_priority)
-                    final_width = base_width + extra_width
-
-                    self.inventory_table.setColumnWidth(col, final_width)
-                    print(f"   📏 Column {col} ({info['name']}): {final_width}px")
-            else:
-                # Use minimum widths if screen is too small
-                for col, info in column_info.items():
-                    self.inventory_table.setColumnWidth(col, info["min_width"])
-                    print(f"   📏 Column {col} ({info['name']}): {info['min_width']}px (minimum)")
-
-            # Save the new column settings
-            self.save_column_settings()
-
-            print("✅ Columns auto-fitted to screen width!")
-            QMessageBox.information(self, "Auto-Fit Complete",
-                                  f"Columns have been resized to fit the available screen width ({available_width}px).")
-
-        except Exception as e:
-            print(f"❌ Error auto-fitting columns: {e}")
-            QMessageBox.warning(self, "Error", f"Failed to auto-fit columns: {str(e)}")
-
-    def make_columns_wider(self):
-        """Make all columns wider for better data visibility"""
-        try:
-            print("🔍 Making columns wider...")
-
-            # Increase all column widths by 20%
-            for col in range(17):
-                current_width = self.inventory_table.columnWidth(col)
-                new_width = int(current_width * 1.2)
-                # Set minimum width to ensure readability
-                new_width = max(new_width, 60)
-                self.inventory_table.setColumnWidth(col, new_width)
-                print(f"   📏 Column {col}: {current_width}px → {new_width}px")
-
-            # Save the new settings
-            self.save_column_settings()
-
-            print("✅ All columns made wider!")
-            QMessageBox.information(self, "Columns Widened",
-                                  "All columns have been made 20% wider for better data visibility.")
-
-        except Exception as e:
-            print(f"❌ Error making columns wider: {e}")
-            QMessageBox.warning(self, "Error", f"Failed to make columns wider: {str(e)}")
-
-    def make_columns_narrower(self):
-        """Make all columns narrower to fit more on screen"""
-        try:
-            print("🔎 Making columns narrower...")
-
-            # Decrease all column widths by 15%
-            for col in range(17):
-                current_width = self.inventory_table.columnWidth(col)
-                new_width = int(current_width * 0.85)
-                # Set minimum width to ensure readability
-                new_width = max(new_width, 40)
-                self.inventory_table.setColumnWidth(col, new_width)
-                print(f"   📏 Column {col}: {current_width}px → {new_width}px")
-
-            # Save the new settings
-            self.save_column_settings()
-
-            print("✅ All columns made narrower!")
-            QMessageBox.information(self, "Columns Narrowed",
-                                  "All columns have been made 15% narrower to fit more on screen.")
-
-        except Exception as e:
-            print(f"❌ Error making columns narrower: {e}")
-            QMessageBox.warning(self, "Error", f"Failed to make columns narrower: {str(e)}")
-
-    def reset_column_widths(self):
-        """Reset all columns to default widths"""
-        try:
-            print("↩️ Resetting column widths to defaults...")
-
-            # Define default column widths
-            default_widths = {
-                0: 50,   # ID
-                1: 150,  # Name
-                2: 100,  # Category
-                3: 80,   # Total Qty
-                4: 80,   # Used Qty
-                5: 100,  # Available Qty
-                6: 60,   # Unit
-                7: 90,   # Avg Price
-                8: 90,   # Price/Unit
-                9: 100,  # Total Value
-                10: 100, # Location
-                11: 90,  # Purchase Count
-                12: 100, # Total Spent
-                13: 120, # Last Purchase Date
-                14: 120, # Last Purchase Price
-                15: 100, # Expiry Date
-                16: 80   # Days Left
-            }
-
-            # Apply default widths
-            for col, width in default_widths.items():
-                self.inventory_table.setColumnWidth(col, width)
-                print(f"   📏 Column {col}: Reset to {width}px")
-
-            # Save the new settings
-            self.save_column_settings()
-
-            print("✅ Column widths reset to defaults!")
-            QMessageBox.information(self, "Widths Reset",
-                                  "All column widths have been reset to default values.")
-
-        except Exception as e:
-            print(f"❌ Error resetting column widths: {e}")
-            QMessageBox.warning(self, "Error", f"Failed to reset column widths: {str(e)}")
 
     def edit_selected_inventory_item(self):
-        """Edit the selected inventory item from the table"""
-        # Check if an item is selected
-        selected_items = self.inventory_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Warning", "Please select an item from the inventory table to edit.")
-            return
+        """Edit the selected inventory item from the universal table"""
+        try:
+            # Get selected row data from universal table widget
+            selected_data = self.inventory_table_widget.get_selected_row_data()
+            if selected_data is None:
+                QMessageBox.warning(self, "Warning", "Please select an item from the inventory table to edit.")
+                return
 
-        # Get the selected row
-        selected_row = self.inventory_table.currentRow()
-        if selected_row < 0:
-            QMessageBox.warning(self, "Warning", "Please select an item to edit.")
-            return
+            # Get item name from selected data
+            item_name = selected_data.get('Name', selected_data.get('item_name', ''))
+            if not item_name:
+                QMessageBox.warning(self, "Warning", "Could not determine item name from selection.")
+                return
 
-        # Get item name from the table
-        item_name = self.inventory_table.item(selected_row, 1).text()  # Name is in column 1
+            # Create edit dialog
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"Edit Inventory Item: {item_name}")
+            dialog.setMinimumWidth(400)
+            dialog.setMinimumHeight(500)
 
-        # Create edit dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle(f"Edit Inventory Item: {item_name}")
-        dialog.setMinimumWidth(400)
-        dialog.setMinimumHeight(500)
+            # Main layout
+            layout = QVBoxLayout(dialog)
 
-        # Main layout
-        layout = QVBoxLayout(dialog)
+            # Form layout
+            form_layout = QFormLayout()
 
-        # Form layout
-        form_layout = QFormLayout()
+            # Find the item in the inventory dataframe
+            item_data = self.inventory_df[self.inventory_df['item_name'] == item_name]
+            if len(item_data) == 0:
+                QMessageBox.warning(self, "Error", f"Item '{item_name}' not found in inventory.")
+                return
 
-        # Find the item in the inventory dataframe
-        item_data = self.inventory_df[self.inventory_df['item_name'] == item_name]
-        if len(item_data) == 0:
-            QMessageBox.warning(self, "Error", f"Item '{item_name}' not found in inventory.")
-            return
+            item = item_data.iloc[0]
 
-        item = item_data.iloc[0]
+            # Category
+            category_combo = QComboBox()
+            category_combo.setEditable(True)
+            if 'categories' in self.data and len(self.data['categories']) > 0:
+                categories = sorted(self.data['categories']['category_name'].unique())
+                category_combo.addItems(categories)
+            if 'category' in item and pd.notna(item['category']):
+                category_combo.setCurrentText(str(item['category']))
+            form_layout.addRow("Category:", category_combo)
 
-        # Category
-        category_combo = QComboBox()
-        category_combo.setEditable(True)
-        if 'categories' in self.data and len(self.data['categories']) > 0:
-            categories = sorted(self.data['categories']['category_name'].unique())
-            category_combo.addItems(categories)
-        if 'category' in item and pd.notna(item['category']):
-            category_combo.setCurrentText(str(item['category']))
-        form_layout.addRow("Category:", category_combo)
+            # Quantity Purchased
+            qty_purchased_spin = QDoubleSpinBox()
+            qty_purchased_spin.setDecimals(2)
+            qty_purchased_spin.setMinimum(0.01)
+            qty_purchased_spin.setMaximum(10000.0)
+            qty_purchased_spin.setSingleStep(0.5)
+            if 'qty_purchased' in item and pd.notna(item['qty_purchased']):
+                qty_purchased_spin.setValue(float(item['qty_purchased']))
+            elif 'quantity' in item and pd.notna(item['quantity']):
+                qty_purchased_spin.setValue(float(item['quantity']))
+            form_layout.addRow("Quantity Purchased:", qty_purchased_spin)
 
-        # Quantity Purchased
-        qty_purchased_spin = QDoubleSpinBox()
-        qty_purchased_spin.setDecimals(2)
-        qty_purchased_spin.setMinimum(0.01)
-        qty_purchased_spin.setMaximum(10000.0)
-        qty_purchased_spin.setSingleStep(0.5)
-        if 'qty_purchased' in item and pd.notna(item['qty_purchased']):
-            qty_purchased_spin.setValue(float(item['qty_purchased']))
-        elif 'quantity' in item and pd.notna(item['quantity']):
-            qty_purchased_spin.setValue(float(item['quantity']))
-        form_layout.addRow("Quantity Purchased:", qty_purchased_spin)
+            # Quantity Used
+            qty_used_spin = QDoubleSpinBox()
+            qty_used_spin.setDecimals(2)
+            qty_used_spin.setMinimum(0.0)
+            qty_used_spin.setMaximum(10000.0)
+            qty_used_spin.setSingleStep(0.5)
+            if 'qty_used' in item and pd.notna(item['qty_used']):
+                qty_used_spin.setValue(float(item['qty_used']))
+            form_layout.addRow("Quantity Used:", qty_used_spin)
 
-        # Quantity Used
-        qty_used_spin = QDoubleSpinBox()
-        qty_used_spin.setDecimals(2)
-        qty_used_spin.setMinimum(0.0)
-        qty_used_spin.setMaximum(10000.0)
-        qty_used_spin.setSingleStep(0.5)
-        if 'qty_used' in item and pd.notna(item['qty_used']):
-            qty_used_spin.setValue(float(item['qty_used']))
-        form_layout.addRow("Quantity Used:", qty_used_spin)
+            # Unit
+            unit_combo = QComboBox()
+            unit_combo.addItems(["kg", "g", "L", "ml", "units", "pcs", "tbsp", "tsp"])
+            unit_combo.setEditable(True)
+            if 'unit' in item and pd.notna(item['unit']):
+                unit_combo.setCurrentText(str(item['unit']))
+            form_layout.addRow("Unit:", unit_combo)
 
-        # Unit
-        unit_combo = QComboBox()
-        unit_combo.addItems(["kg", "g", "L", "ml", "units", "pcs", "tbsp", "tsp"])
-        unit_combo.setEditable(True)
-        if 'unit' in item and pd.notna(item['unit']):
-            unit_combo.setCurrentText(str(item['unit']))
-        form_layout.addRow("Unit:", unit_combo)
+            # Price
+            price_spin = QDoubleSpinBox()
+            price_spin.setMinimum(0.01)
+            price_spin.setMaximum(100000.0)
+            price_spin.setSingleStep(1.0)
+            price_spin.setDecimals(2)
+            if 'price' in item and pd.notna(item['price']):
+                price_spin.setValue(float(item['price']))
+            elif 'avg_price' in item and pd.notna(item['avg_price']):
+                price_spin.setValue(float(item['avg_price']))
+            form_layout.addRow("Price (₹):", price_spin)
 
-        # Price
-        price_spin = QDoubleSpinBox()
-        price_spin.setMinimum(0.01)
-        price_spin.setMaximum(100000.0)
-        price_spin.setSingleStep(1.0)
-        price_spin.setDecimals(2)
-        if 'price' in item and pd.notna(item['price']):
-            price_spin.setValue(float(item['price']))
-        elif 'avg_price' in item and pd.notna(item['avg_price']):
-            price_spin.setValue(float(item['avg_price']))
-        form_layout.addRow("Price (₹):", price_spin)
+            # Location
+            location_combo = QComboBox()
+            location_combo.setEditable(True)
+            if 'location' in self.inventory_df.columns:
+                locations = self.inventory_df['location'].dropna().unique()
+                location_strings = [str(loc) for loc in locations if pd.notna(loc) and str(loc).strip()]
+                if location_strings:
+                    location_combo.addItems(sorted(location_strings))
+            location_combo.addItems(["Pantry", "Refrigerator", "Freezer", "Storage", "Supermarket", "Vegetable Market"])
+            if 'location' in item and pd.notna(item['location']):
+                location_combo.setCurrentText(str(item['location']))
+            form_layout.addRow("Location:", location_combo)
 
-        # Location
-        location_combo = QComboBox()
-        location_combo.setEditable(True)
-        if 'location' in self.inventory_df.columns:
-            locations = self.inventory_df['location'].dropna().unique()
-            location_strings = [str(loc) for loc in locations if pd.notna(loc) and str(loc).strip()]
-            if location_strings:
-                location_combo.addItems(sorted(location_strings))
-        location_combo.addItems(["Pantry", "Refrigerator", "Freezer", "Storage", "Supermarket", "Vegetable Market"])
-        if 'location' in item and pd.notna(item['location']):
-            location_combo.setCurrentText(str(item['location']))
-        form_layout.addRow("Location:", location_combo)
-
-        # Expiry Date
-        expiry_date_edit = QDateEdit()
-        expiry_date_edit.setCalendarPopup(True)
-        if 'expiry_date' in item and pd.notna(item['expiry_date']):
-            try:
-                if isinstance(item['expiry_date'], str):
-                    # Try to parse the date string
-                    try:
-                        date_obj = datetime.strptime(item['expiry_date'], '%Y-%m-%d').date()
-                    except ValueError:
+            # Expiry Date
+            expiry_date_edit = QDateEdit()
+            expiry_date_edit.setCalendarPopup(True)
+            if 'expiry_date' in item and pd.notna(item['expiry_date']):
+                try:
+                    if isinstance(item['expiry_date'], str):
+                        # Try to parse the date string
                         try:
-                            date_obj = datetime.strptime(item['expiry_date'], '%d-%m-%Y').date()
+                            date_obj = datetime.strptime(item['expiry_date'], '%Y-%m-%d').date()
                         except ValueError:
-                            date_obj = QDate.currentDate().addDays(30).toPython()
-                    expiry_date_edit.setDate(QDate(date_obj))
-                else:
+                            try:
+                                date_obj = datetime.strptime(item['expiry_date'], '%d-%m-%Y').date()
+                            except ValueError:
+                                date_obj = QDate.currentDate().addDays(30).toPython()
+                        expiry_date_edit.setDate(QDate(date_obj))
+                    else:
+                        expiry_date_edit.setDate(QDate.currentDate().addDays(30))
+                except:
                     expiry_date_edit.setDate(QDate.currentDate().addDays(30))
-            except:
+            else:
                 expiry_date_edit.setDate(QDate.currentDate().addDays(30))
-        else:
-            expiry_date_edit.setDate(QDate.currentDate().addDays(30))
-        form_layout.addRow("Expiry Date:", expiry_date_edit)
+            form_layout.addRow("Expiry Date:", expiry_date_edit)
 
-        layout.addLayout(form_layout)
+            layout.addLayout(form_layout)
 
-        # Buttons
-        buttons_layout = QHBoxLayout()
-        save_btn = QPushButton("Save Changes")
-        cancel_btn = QPushButton("Cancel")
-        buttons_layout.addWidget(cancel_btn)
-        buttons_layout.addWidget(save_btn)
-        layout.addLayout(buttons_layout)
+            # Buttons
+            buttons_layout = QHBoxLayout()
+            save_btn = QPushButton("Save Changes")
+            cancel_btn = QPushButton("Cancel")
+            buttons_layout.addWidget(cancel_btn)
+            buttons_layout.addWidget(save_btn)
+            layout.addLayout(buttons_layout)
 
-        # Connect signals
-        cancel_btn.clicked.connect(dialog.reject)
+            # Connect signals
+            cancel_btn.clicked.connect(dialog.reject)
 
-        def save_changes():
-            try:
-                # Validate quantities
-                qty_purchased = qty_purchased_spin.value()
-                qty_used = qty_used_spin.value()
+            def save_changes():
+                try:
+                    # Validate quantities
+                    qty_purchased = qty_purchased_spin.value()
+                    qty_used = qty_used_spin.value()
 
-                if qty_used > qty_purchased:
-                    QMessageBox.warning(dialog, "Input Error", "Quantity used cannot be more than quantity purchased.")
-                    return
+                    if qty_used > qty_purchased:
+                        QMessageBox.warning(dialog, "Input Error", "Quantity used cannot be more than quantity purchased.")
+                        return
 
-                # Update the inventory dataframe
-                item_index = self.inventory_df[self.inventory_df['item_name'] == item_name].index[0]
+                    # Update the inventory dataframe
+                    item_index = self.inventory_df[self.inventory_df['item_name'] == item_name].index[0]
 
-                self.inventory_df.loc[item_index, 'category'] = category_combo.currentText()
-                self.inventory_df.loc[item_index, 'qty_purchased'] = qty_purchased
-                self.inventory_df.loc[item_index, 'qty_used'] = qty_used
-                self.inventory_df.loc[item_index, 'quantity'] = qty_purchased - qty_used  # Update available quantity
-                self.inventory_df.loc[item_index, 'unit'] = unit_combo.currentText()
-                self.inventory_df.loc[item_index, 'price'] = price_spin.value()
-                self.inventory_df.loc[item_index, 'avg_price'] = price_spin.value()  # Update avg_price too
-                self.inventory_df.loc[item_index, 'location'] = location_combo.currentText()
-                self.inventory_df.loc[item_index, 'expiry_date'] = expiry_date_edit.date().toString('yyyy-MM-dd')
+                    self.inventory_df.loc[item_index, 'category'] = category_combo.currentText()
+                    self.inventory_df.loc[item_index, 'qty_purchased'] = qty_purchased
+                    self.inventory_df.loc[item_index, 'qty_used'] = qty_used
+                    self.inventory_df.loc[item_index, 'quantity'] = qty_purchased - qty_used  # Update available quantity
+                    self.inventory_df.loc[item_index, 'unit'] = unit_combo.currentText()
+                    self.inventory_df.loc[item_index, 'price'] = price_spin.value()
+                    self.inventory_df.loc[item_index, 'avg_price'] = price_spin.value()  # Update avg_price too
+                    self.inventory_df.loc[item_index, 'location'] = location_combo.currentText()
+                    self.inventory_df.loc[item_index, 'expiry_date'] = expiry_date_edit.date().toString('yyyy-MM-dd')
 
-                # Calculate total value
-                total_value = (qty_purchased - qty_used) * price_spin.value()
-                self.inventory_df.loc[item_index, 'total_value'] = total_value
+                    # Calculate total value
+                    total_value = (qty_purchased - qty_used) * price_spin.value()
+                    self.inventory_df.loc[item_index, 'total_value'] = total_value
 
-                # Update data dictionary
-                self.data['inventory'] = self.inventory_df
+                    # Update data dictionary
+                    self.data['inventory'] = self.inventory_df
 
-                # Save to CSV
-                self.inventory_df.to_csv('data/inventory.csv', index=False)
+                    # Save to CSV
+                    self.inventory_df.to_csv('data/inventory.csv', index=False)
 
-                # Refresh the table
-                self.apply_filters()
+                    # Refresh the universal table widget
+                    if hasattr(self, 'inventory_table_widget'):
+                        self.inventory_table_widget.update_data(self.inventory_df)
 
-                # Close dialog and show success message
-                dialog.accept()
-                QMessageBox.information(self, "Success", f"Item '{item_name}' updated successfully!")
+                    # Close dialog and show success message
+                    dialog.accept()
+                    QMessageBox.information(self, "Success", f"Item '{item_name}' updated successfully!")
 
-            except Exception as e:
-                QMessageBox.critical(dialog, "Error", f"Failed to update item: {str(e)}")
+                except Exception as e:
+                    QMessageBox.critical(dialog, "Error", f"Failed to update item: {str(e)}")
 
-        save_btn.clicked.connect(save_changes)
+            save_btn.clicked.connect(save_changes)
 
-        # Show dialog
-        dialog.exec_()
+            # Show dialog
+            dialog.exec_()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to edit inventory item: {str(e)}")
+            print(f"❌ Error in edit_selected_inventory_item: {e}")
 
     def calculate_average_price_from_purchases(self, item_name):
         """Calculate average price from shopping history purchases"""
@@ -1409,363 +772,35 @@ class InventoryWidget(QWidget):
             return 0
 
     def apply_filters(self):
-        # Get filter values
-        category = self.category_combo.currentText()
-        location = self.location_combo.currentText()
-        search_text = self.search_box.text().lower().strip()
+        """Apply filters using the universal table widget (legacy method for compatibility)"""
+        try:
+            # The universal table widget handles filtering internally
+            # This method is kept for compatibility with existing code
+            if hasattr(self, 'inventory_table_widget'):
+                # Force refresh the universal table widget
+                self.inventory_table_widget.update_data(self.inventory_df)
+                print("✅ Filters applied via universal table widget")
+            else:
+                print("⚠️ Universal table widget not found, using legacy filtering")
+                # Fallback to legacy filtering if needed
 
-        # Apply filters
-        filtered_df = self.inventory_df.copy()
-
-        # Enhanced debug info
-        print(f"\n🔍 INVENTORY FILTER DEBUG:")
-        print(f"   📊 Original inventory_df: {len(self.inventory_df)} items")
-        print(f"   🔧 Filters - Category: '{category}', Location: '{location}', Search: '{search_text}'")
-        print(f"   📋 Starting with {len(filtered_df)} items")
-
-        # Show sample of data being filtered
-        if len(filtered_df) > 0:
-            print(f"   📝 Sample items: {list(filtered_df['item_name'].head(5))}")
-            print(f"   📂 Available categories: {list(filtered_df['category'].dropna().unique()[:5])}")
-            print(f"   📍 Available locations: {list(filtered_df['location'].dropna().unique()[:5])}")
-
-        # Category filter - only filter if not "All Categories"
-        if category != "All Categories" and category.strip():
-            # Only filter by exact category match, don't include missing categories
-            filtered_df = filtered_df[filtered_df['category'] == category]
-            print(f"   ✂️ After category filter '{category}': {len(filtered_df)} items")
-
-        # Location filter - only filter if not "All Locations"
-        if location != "All Locations" and location.strip():
-            # Only filter by exact location match, don't include missing locations
-            filtered_df = filtered_df[filtered_df['location'] == location]
-            print(f"   ✂️ After location filter '{location}': {len(filtered_df)} items")
-
-        # Search filter - handle missing data gracefully
-        if search_text:
-            # Create boolean masks for each column, handling NaN values
-            name_match = filtered_df['item_name'].fillna('').str.lower().str.contains(search_text, na=False)
-            category_match = filtered_df['category'].fillna('').str.lower().str.contains(search_text, na=False)
-            location_match = filtered_df['location'].fillna('').str.lower().str.contains(search_text, na=False)
-
-            # Combine all matches
-            filtered_df = filtered_df[name_match | category_match | location_match]
-            print(f"   ✂️ After search filter '{search_text}': {len(filtered_df)} items")
-
-        print(f"   ✅ FINAL RESULT: {len(filtered_df)} items will be displayed")
-
-        # Show which items will be displayed
-        if len(filtered_df) > 0:
-            print(f"   📋 Items to display: {list(filtered_df['item_name'].head(10))}")
-        else:
-            print(f"   ⚠️ NO ITEMS TO DISPLAY!")
-
-        # Update the table
-        self.update_inventory_table(filtered_df)
+        except Exception as e:
+            print(f"❌ Error applying filters: {e}")
     
     def update_inventory_table(self, df):
-        # Enhanced debug info
-        print(f"\n📊 UPDATE_INVENTORY_TABLE DEBUG:")
-        print(f"   📥 Received DataFrame: {len(df)} rows × {len(df.columns)} columns")
-        print(f"   📋 DataFrame columns: {list(df.columns)}")
-
-        # Clear the table
-        self.inventory_table.setRowCount(0)
-
-        # Calculate additional fields
-        today = datetime.now().date()
-
-        # Make sure total_value is calculated
-        if 'price' in df.columns and 'quantity' in df.columns:
-            if 'total_value' not in df.columns:
-                df['total_value'] = df['quantity'] * df['price']
-
-        # Add rows
-        print(f"   🔧 Setting table row count to: {len(df)}")
-        self.inventory_table.setRowCount(len(df))
-
-        print(f"   🔄 Processing {len(df)} rows...")
-        for i, (_, row) in enumerate(df.iterrows()):
-            # Item ID - column 0
-            if 'item_id' in row:
-                self.inventory_table.setItem(i, 0, QTableWidgetItem(str(row['item_id'])))
+        """Legacy method - now handled by universal table widget"""
+        try:
+            if hasattr(self, 'inventory_table_widget'):
+                # Update the universal table widget instead
+                self.inventory_table_widget.update_data(df)
+                print(f"✅ Updated universal table widget with {len(df)} items")
             else:
-                self.inventory_table.setItem(i, 0, QTableWidgetItem(str(i+1)))
-            
-            # Name - column 1
-            if 'item_name' in row and pd.notna(row['item_name']):
-                self.inventory_table.setItem(i, 1, QTableWidgetItem(str(row['item_name'])))
-            else:
-                self.inventory_table.setItem(i, 1, QTableWidgetItem(""))
+                print("⚠️ Universal table widget not found")
+        except Exception as e:
+            print(f"❌ Error updating inventory table: {e}")
 
-            # Category - column 2
-            if 'category' in row and pd.notna(row['category']):
-                self.inventory_table.setItem(i, 2, QTableWidgetItem(str(row['category'])))
-            else:
-                self.inventory_table.setItem(i, 2, QTableWidgetItem(""))
-            
-            # Quantity Purchased - column 3
-            qty_purchased = row.get('qty_purchased', row['quantity'])
-            self.inventory_table.setItem(i, 3, QTableWidgetItem(str(qty_purchased)))
-            
-            # Quantity Used - column 4
-            qty_used = row.get('qty_used', 0)
-            self.inventory_table.setItem(i, 4, QTableWidgetItem(str(qty_used)))
-            
-            # Quantity Left - column 5
-            qty_left = float(qty_purchased) - float(qty_used)
-            qty_left_item = QTableWidgetItem(str(qty_left))
-            
-            # Check if stock is running low
-            threshold = row.get('reorder_level', 1.0)  # Default threshold is 1.0
-            if qty_left <= threshold:
-                qty_left_item.setBackground(QColor(255, 200, 200))  # Light red for low stock
-            self.inventory_table.setItem(i, 5, qty_left_item)
-            
-            # Unit - column 6
-            if 'unit' in row and pd.notna(row['unit']):
-                self.inventory_table.setItem(i, 6, QTableWidgetItem(str(row['unit'])))
-            else:
-                self.inventory_table.setItem(i, 6, QTableWidgetItem(""))
-            
-            # Get currency symbol from settings, default to Indian Rupee (₹)
-            currency_symbol = "₹"
-            if 'settings' in self.data and 'currency' in self.data['settings']:
-                currency_symbol = self.data['settings']['currency']
-                
-            # Average Price - column 7
-            if 'avg_price' in row and pd.notna(row['avg_price']):
-                self.inventory_table.setItem(i, 7, QTableWidgetItem(f"{currency_symbol}{float(row['avg_price']):.2f}"))
-            elif 'price' in row and pd.notna(row['price']):
-                # If avg_price not available, use regular price
-                price = float(row['price'])
-                self.inventory_table.setItem(i, 7, QTableWidgetItem(f"{currency_symbol}{price:.2f}"))
-            else:
-                self.inventory_table.setItem(i, 7, QTableWidgetItem(f"{currency_symbol}0.00"))
-            
-            # Price per gram/ml/unit - column 8
-            # Get price, preferring avg_price if available
-            if 'avg_price' in row and pd.notna(row['avg_price']) and float(row['avg_price']) > 0:
-                price = float(row['avg_price'])
-            elif 'price' in row and pd.notna(row['price']) and float(row['price']) > 0:
-                price = float(row['price'])
-            else:
-                price = 0
-            
-            # Use quantity left for price per unit calculation
-            qty = float(qty_left) if qty_left > 0 else 0  # Use quantity left (calculated above)
-            
-            # Get unit information
-            unit = ""
-            if 'unit' in row and pd.notna(row['unit']):
-                unit = row['unit'].lower()
-            
-            # Calculate price per unit based on unit type
-            if price > 0 and qty > 0:
-                if unit == 'kg':
-                    # 1 kg = 1000 g
-                    qty_in_grams = qty * 1000
-                    price_per_g = price / qty_in_grams
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_g:.4f}/g"))
-                elif unit == 'g':
-                    # Already in grams
-                    price_per_g = price / qty
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_g:.4f}/g"))
-                elif unit in ['l', 'litre', 'liter']:
-                    # 1 L = 1000 ml
-                    qty_in_ml = qty * 1000
-                    price_per_ml = price / qty_in_ml
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_ml:.4f}/ml"))
-                elif unit == 'ml':
-                    # Already in ml
-                    price_per_ml = price / qty
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_ml:.4f}/ml"))
-                elif unit:
-                    # For other units, calculate generic price per unit
-                    price_per_unit = price / qty
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_unit:.4f}/{unit}"))
-                else:
-                    # No unit specified but we have price and quantity
-                    price_per_unit = price / qty
-                    self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price_per_unit:.4f}/unit"))
-            elif price > 0:
-                # We have price but no quantity
-                self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}{price:.2f} (no qty)"))
-            elif qty > 0:
-                # We have quantity but no price
-                self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}0.00"))
-            else:
-                # No price and no quantity
-                self.inventory_table.setItem(i, 8, QTableWidgetItem(f"{currency_symbol}0.00"))
-                
-            # Total value - column 9 (calculated for all items)
-            # Calculate total value based on available quantity and average price
-            qty = float(qty_left)  # Use available quantity (calculated above)
 
-            # Calculate proper average price from purchase history
-            avg_price = self.calculate_average_price_from_purchases(row.get('item_name', ''))
 
-            # If no purchase history, use stored avg_price or price
-            if avg_price == 0:
-                if 'avg_price' in row and pd.notna(row['avg_price']):
-                    avg_price = float(row['avg_price'])
-                elif 'price' in row and pd.notna(row['price']):
-                    avg_price = float(row['price'])
-                else:
-                    avg_price = 0
-
-            # Calculate price per unit correctly
-            # avg_price should be the total cost, so price_per_unit = avg_price / qty_purchased
-            price_per_unit = 0
-            if 'qty_purchased' in row and pd.notna(row['qty_purchased']) and float(row['qty_purchased']) > 0:
-                # avg_price is total cost, so divide by total quantity purchased
-                price_per_unit = avg_price / float(row['qty_purchased'])
-            elif 'price_per_unit' in row and pd.notna(row['price_per_unit']):
-                # Use stored price_per_unit if available
-                price_per_unit = float(row['price_per_unit'])
-            elif qty > 0 and avg_price > 0:
-                # Fallback calculation
-                price_per_unit = avg_price / qty
-
-            # Calculate total value based on available quantity
-            total_value = qty * price_per_unit
-            self.inventory_table.setItem(i, 9, QTableWidgetItem(f"{currency_symbol}{total_value:.2f}"))
-            
-            # Location - column 10 (consolidated location/store)
-            location_value = ""
-            if 'location' in row and pd.notna(row['location']) and str(row['location']).strip():
-                location_value = str(row['location']).strip()
-            elif 'store' in row and pd.notna(row['store']) and str(row['store']).strip():
-                # Fallback to store value if location is empty (for data migration)
-                location_value = str(row['store']).strip()
-
-            self.inventory_table.setItem(i, 10, QTableWidgetItem(location_value))
-
-            # Purchase tracking columns
-            # Purchase Count - column 11
-            purchase_count = self.get_purchase_count(row.get('item_name', ''))
-            self.inventory_table.setItem(i, 11, QTableWidgetItem(str(purchase_count)))
-
-            # Total Spent - column 12
-            total_spent = self.get_total_spent(row.get('item_name', ''))
-            self.inventory_table.setItem(i, 12, QTableWidgetItem(f"{currency_symbol}{total_spent:.2f}"))
-
-            # Last Purchase Date - column 13
-            last_purchase_date = self.get_last_purchase_date(row.get('item_name', ''))
-            self.inventory_table.setItem(i, 13, QTableWidgetItem(last_purchase_date))
-
-            # Last Purchase Price - column 14
-            last_purchase_price = self.get_last_purchase_price(row.get('item_name', ''))
-            self.inventory_table.setItem(i, 14, QTableWidgetItem(f"{currency_symbol}{last_purchase_price:.2f}"))
-
-            # Expiry Date - column 15 (shifted due to new columns)
-            expiry_date_str = ""
-            days_left_str = "N/A"
-            expiry_item = None
-            days_left_item = None
-
-            if 'expiry_date' in row and pd.notna(row['expiry_date']) and str(row['expiry_date']).strip():
-                expiry_date_raw = str(row['expiry_date']).strip()
-
-                # Try to parse the expiry date with prioritized DD/MM/YYYY format
-                expiry_date = None
-                parsed_format = ""
-
-                # List of date formats to try (in order of preference)
-                # User prefers DD/MM/YYYY format (day/month/year)
-                date_formats = [
-                    ('%d/%m/%Y', 'DD/MM/YYYY'),      # 9/7/2025 (day/month/year) - USER PREFERENCE
-                    ('%d-%m-%Y', 'DD-MM-YYYY'),      # 9-7-2025 (day-month-year)
-                    ('%d.%m.%Y', 'DD.MM.YYYY'),      # 9.7.2025 (day.month.year)
-                    ('%Y-%m-%d', 'YYYY-MM-DD'),      # 2025-07-09 (stored format)
-                    ('%Y/%m/%d', 'YYYY/MM/DD'),      # 2025/7/9
-                    ('%m/%d/%Y', 'MM/DD/YYYY'),      # 7/9/2025 (US format) - LAST RESORT
-                ]
-
-                for date_format, format_name in date_formats:
-                    try:
-                        expiry_date = datetime.strptime(expiry_date_raw, date_format).date()
-                        parsed_format = format_name
-                        break
-                    except ValueError:
-                        continue
-
-                if not expiry_date:
-                    # If all parsing fails, show the raw string
-                    expiry_date_str = f"{expiry_date_raw} (Unknown Format)"
-                    days_left_str = "Invalid Date"
-
-                if expiry_date:
-                    # Format for display as DD-MM-YYYY with format info
-                    expiry_date_str = f"{expiry_date.strftime('%d-%m-%Y')}"
-
-                    # Calculate days left
-                    today = datetime.now().date()
-                    days_left = (expiry_date - today).days
-
-                    # Create table items
-                    expiry_item = QTableWidgetItem(expiry_date_str)
-                    days_left_item = QTableWidgetItem(str(days_left))
-
-                    # Add tooltip with more information
-                    expiry_item.setToolTip(f"Parsed as {parsed_format}: {expiry_date.strftime('%A, %B %d, %Y')}")
-
-                    # Highlight and format based on days left
-                    if days_left < 0:
-                        # Expired - Red background
-                        expiry_item.setBackground(QColor(255, 100, 100))
-                        days_left_item.setBackground(QColor(255, 100, 100))
-                        days_left_item.setText(f"{abs(days_left)} days ago (EXPIRED)")
-                        days_left_item.setToolTip(f"Expired {abs(days_left)} days ago on {expiry_date.strftime('%d-%m-%Y')}")
-                    elif days_left == 0:
-                        # Expires today - Red background
-                        expiry_item.setBackground(QColor(255, 150, 150))
-                        days_left_item.setBackground(QColor(255, 150, 150))
-                        days_left_item.setText("TODAY (URGENT)")
-                        days_left_item.setToolTip("Expires today!")
-                    elif days_left == 1:
-                        # Expires tomorrow - Orange background
-                        expiry_item.setBackground(QColor(255, 200, 100))
-                        days_left_item.setBackground(QColor(255, 200, 100))
-                        days_left_item.setText("1 day (TOMORROW)")
-                        days_left_item.setToolTip("Expires tomorrow!")
-                    elif days_left <= 3:
-                        # Very close to expiry - Orange background
-                        expiry_item.setBackground(QColor(255, 200, 100))
-                        days_left_item.setBackground(QColor(255, 200, 100))
-                        days_left_item.setText(f"{days_left} days (URGENT)")
-                        days_left_item.setToolTip(f"Expires in {days_left} days on {expiry_date.strftime('%d-%m-%Y')}")
-                    elif days_left <= 7:
-                        # Close to expiry - Yellow background
-                        expiry_item.setBackground(QColor(255, 255, 150))
-                        days_left_item.setBackground(QColor(255, 255, 150))
-                        days_left_item.setText(f"{days_left} days (SOON)")
-                        days_left_item.setToolTip(f"Expires in {days_left} days on {expiry_date.strftime('%d-%m-%Y')}")
-                    elif days_left <= 30:
-                        # Within a month - Light green background
-                        expiry_item.setBackground(QColor(200, 255, 200))
-                        days_left_item.setBackground(QColor(200, 255, 200))
-                        days_left_item.setText(f"{days_left} days")
-                        days_left_item.setToolTip(f"Expires in {days_left} days on {expiry_date.strftime('%d-%m-%Y')}")
-                    else:
-                        # Good - Normal display
-                        days_left_item.setText(f"{days_left} days")
-                        days_left_item.setToolTip(f"Expires in {days_left} days on {expiry_date.strftime('%d-%m-%Y')}")
-
-            # Set the table items
-            if expiry_item:
-                self.inventory_table.setItem(i, 15, expiry_item)
-            else:
-                self.inventory_table.setItem(i, 15, QTableWidgetItem(expiry_date_str))
-
-            if days_left_item:
-                self.inventory_table.setItem(i, 16, days_left_item)
-            else:
-                self.inventory_table.setItem(i, 16, QTableWidgetItem(days_left_str))
-
-        # Final completion message
-        print(f"   ✅ TABLE UPDATE COMPLETED: {len(df)} rows processed and displayed")
-        print(f"   📊 Table now shows {self.inventory_table.rowCount()} rows")
     
     def setup_add_edit_tab(self):
         # Create layout for the tab
@@ -3451,18 +2486,33 @@ class InventoryWidget(QWidget):
             self.inventory_df['calculated_total_value'] = self.inventory_df.apply(calculate_row_value, axis=1)
             
             # Now do the category analysis with our calculated value
-            category_analysis = self.inventory_df.groupby('category').agg({
-                'item_id': 'count' if 'item_id' in self.inventory_df.columns else 'size',
-                'calculated_total_value': 'sum'
-            }).reset_index()
-            category_analysis.columns = ['category', 'item_count', 'total_value']
+            if 'item_id' in self.inventory_df.columns:
+                category_analysis = self.inventory_df.groupby('category').agg({
+                    'item_id': 'count',
+                    'calculated_total_value': 'sum'
+                }).reset_index()
+                category_analysis.columns = ['category', 'item_count', 'total_value']
+            else:
+                # Use item_name for counting if item_id doesn't exist
+                category_analysis = self.inventory_df.groupby('category').agg({
+                    'item_name': 'count',
+                    'calculated_total_value': 'sum'
+                }).reset_index()
+                category_analysis.columns = ['category', 'item_count', 'total_value']
         else:
             # Fallback if we can't calculate values
-            category_analysis = self.inventory_df.groupby('category').agg({
-                'item_id': 'count' if 'item_id' in self.inventory_df.columns else 'size'
-            }).reset_index()
+            if 'item_id' in self.inventory_df.columns:
+                category_analysis = self.inventory_df.groupby('category').agg({
+                    'item_id': 'count'
+                }).reset_index()
+                category_analysis.columns = ['category', 'item_count']
+            else:
+                # Use item_name for counting if item_id doesn't exist
+                category_analysis = self.inventory_df.groupby('category').agg({
+                    'item_name': 'count'
+                }).reset_index()
+                category_analysis.columns = ['category', 'item_count']
             category_analysis['total_value'] = 1  # Placeholder value for display
-            category_analysis.columns = ['category', 'item_count', 'total_value']
         
         # Left side - Category value chart
         left_widget = QWidget()
@@ -3554,11 +2604,19 @@ class InventoryWidget(QWidget):
             self.inventory_df['calculated_total_value'] = self.inventory_df.apply(calculate_row_value, axis=1)
         
         # Now do the location analysis with our calculated value
-        location_analysis = self.inventory_df.groupby('location').agg({
-            'item_id': 'count' if 'item_id' in self.inventory_df.columns else 'size',
-            'calculated_total_value': 'sum'
-        }).reset_index()
-        location_analysis.columns = ['location', 'item_count', 'total_value']
+        if 'item_id' in self.inventory_df.columns:
+            location_analysis = self.inventory_df.groupby('location').agg({
+                'item_id': 'count',
+                'calculated_total_value': 'sum'
+            }).reset_index()
+            location_analysis.columns = ['location', 'item_count', 'total_value']
+        else:
+            # Use item_name for counting if item_id doesn't exist
+            location_analysis = self.inventory_df.groupby('location').agg({
+                'item_name': 'count',
+                'calculated_total_value': 'sum'
+            }).reset_index()
+            location_analysis.columns = ['location', 'item_count', 'total_value']
         
         # Left side - Location value chart
         left_widget2 = QWidget()

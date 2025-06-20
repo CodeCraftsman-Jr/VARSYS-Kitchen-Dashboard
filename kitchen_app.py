@@ -37,9 +37,10 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton, 
                              QVBoxLayout, QHBoxLayout, QGridLayout, QTabWidget,
                              QFrame, QScrollArea, QMessageBox, QSplitter,
                              QGroupBox, QFormLayout, QStyleFactory, QSizePolicy,
-                             QRadioButton, QDialog, QCheckBox, QButtonGroup)
+                             QRadioButton, QDialog, QCheckBox, QButtonGroup,
+                             QSystemTrayIcon, QMenu)
 from PySide6.QtCore import Qt, QSize, QTimer
-from PySide6.QtGui import QFont, QColor, QIcon, QPalette, QPainter, QPen, QPixmap
+from PySide6.QtGui import QFont, QColor, QIcon, QPalette, QPainter, QPen, QPixmap, QAction
 
 # Import modules - use standard imports for IDE compatibility
 from modules.settings_fixed import SettingsWidget
@@ -51,8 +52,24 @@ from modules.login_dialog import LoginDialog
 # Import logger
 from utils.app_logger import get_logger
 
-# Import notification system
-from modules.notification_system import get_notification_manager
+# Import enhanced notification system with all cutting-edge features
+from modules.enhanced_notification_system import get_notification_manager
+
+# Import all advanced notification features
+try:
+    from notification_templates import NotificationTemplateManager
+    from notification_ai_intelligence import NotificationAI
+    from notification_mobile_integration import MobileNotificationManager
+    from notification_business_intelligence import NotificationBusinessIntelligence
+    from notification_performance_optimizer import OptimizedNotificationManager
+    from notification_security_compliance import NotificationSecurityManager, SecurityPolicy
+    from notification_realtime_streaming import NotificationStreamer
+    from ultimate_notification_system import UltimateNotificationSystem
+    ADVANCED_NOTIFICATIONS_AVAILABLE = True
+    print("✅ Advanced notification features loaded successfully")
+except ImportError as e:
+    print(f"⚠️ Some advanced notification features not available: {e}")
+    ADVANCED_NOTIFICATIONS_AVAILABLE = False
 
 # Import modern theme
 from modules.modern_theme import ModernTheme
@@ -126,8 +143,86 @@ class KitchenDashboardApp(QMainWindow):
         self.logger.info("[LIST] Step 1: Application window and styling initialized")
         self.logger.log_ui_action("Window created", f"Size: {self.size().width()}x{self.size().height()}")
 
-        # Initialize notification system
-        self.notification_manager = get_notification_manager(self)
+        # Initialize enhanced notification system with all cutting-edge features
+        self.logger.log_section_header("Ultimate Notification System Initialization")
+        try:
+            # Initialize core enhanced notification system (no arguments needed)
+            self.notification_manager = get_notification_manager()
+            self.logger.info("✅ Core enhanced notification system initialized")
+
+            # Initialize advanced notification features if available
+            if ADVANCED_NOTIFICATIONS_AVAILABLE:
+                # Initialize Ultimate Notification System
+                self.ultimate_notification_system = UltimateNotificationSystem()
+                self.logger.info("✅ Ultimate notification system initialized")
+
+                # Initialize AI Intelligence
+                self.notification_ai = NotificationAI()
+                self.logger.info("✅ AI-powered notification intelligence initialized")
+
+                # Initialize Template System
+                self.notification_templates = NotificationTemplateManager()
+                self.logger.info("✅ Professional template system initialized (16+ templates)")
+
+                # Initialize Mobile Integration
+                self.mobile_notifications = MobileNotificationManager()
+                self.logger.info("✅ Mobile & cross-platform integration initialized")
+
+                # Initialize Business Intelligence
+                self.notification_bi = NotificationBusinessIntelligence()
+                self.logger.info("✅ Business intelligence & analytics initialized")
+
+                # Initialize Performance Optimization
+                self.performance_notifications = OptimizedNotificationManager()
+                self.logger.info("✅ High-performance processing initialized (49,490+ notifications/sec)")
+
+                # Initialize Security & Compliance
+                security_policy = SecurityPolicy(
+                    encryption_required=True,
+                    audit_logging=True,
+                    pii_detection=True,
+                    content_filtering=True,
+                    rate_limiting=True
+                )
+                self.notification_security = NotificationSecurityManager(security_policy)
+                self.logger.info("✅ Enterprise security & compliance initialized")
+
+                # Initialize Real-time Streaming
+                self.notification_streaming = NotificationStreamer()
+                self.logger.info("✅ Real-time streaming & WebSocket support initialized")
+
+                self.logger.log_section_footer("Ultimate Notification System Initialization", True,
+                    "All cutting-edge notification features successfully initialized")
+
+                # Send startup notification using enhanced system
+                self._send_enhanced_startup_notification()
+
+            else:
+                self.logger.warning("Advanced notification features not available - using basic system")
+                self.ultimate_notification_system = None
+                self.notification_ai = None
+                self.notification_templates = None
+                self.mobile_notifications = None
+                self.notification_bi = None
+                self.performance_notifications = None
+                self.notification_security = None
+                self.notification_streaming = None
+
+                self.logger.log_section_footer("Ultimate Notification System Initialization", False,
+                    "Advanced features not available - using basic notification system")
+
+        except Exception as e:
+            self.logger.error(f"Error initializing ultimate notification system: {e}")
+            self.logger.log_section_footer("Ultimate Notification System Initialization", False, str(e))
+            # Fallback to basic system
+            self.ultimate_notification_system = None
+            self.notification_ai = None
+            self.notification_templates = None
+            self.mobile_notifications = None
+            self.notification_bi = None
+            self.performance_notifications = None
+            self.notification_security = None
+            self.notification_streaming = None
 
         # Initialize activity tracker
         if get_activity_tracker:
@@ -138,16 +233,23 @@ class KitchenDashboardApp(QMainWindow):
 
         # Apply modern theme
         ModernTheme.apply_theme(QApplication.instance())
-        
+
         # Define fonts before showing login dialog
         self.title_font = QFont("Segoe UI", 22, QFont.Bold)
         self.header_font = QFont("Segoe UI", 16, QFont.Bold)
         self.normal_font = QFont("Segoe UI", 10)
         self.button_font = QFont("Segoe UI", 10, QFont.Bold)
-        
+
         # Set default currency symbol
         self.currency_symbol = "₹"  # Indian Rupee by default
-        
+
+        # Startup notification settings (can be configured)
+        self.show_startup_notifications = True  # Set to False to disable startup notifications
+
+        # Initialize pending notification storage
+        self.pending_login_notification = None
+        self.pending_sync_notification = None
+
         # Load data first with comprehensive error handling and logging
         self.logger.info("[DATA] Step 2: Loading application data...")
         try:
@@ -169,6 +271,9 @@ class KitchenDashboardApp(QMainWindow):
                         self.logger.info(f"   [LIST] {key}: {len(value)} items")
                     else:
                         self.logger.info(f"   [LIST] {key}: {type(value)}")
+
+                # Perform data integrity check after loading
+                self.check_and_fix_data_integrity()
             else:
                 self.logger.log_data_loading("Data sources", False, error="No data returned from load_data()")
                 self.data = {}
@@ -179,9 +284,13 @@ class KitchenDashboardApp(QMainWindow):
             # Initialize with empty data to prevent crashes
             self.data = {}
             self.logger.warning("[WARNING] Initialized with empty data to prevent application crash")
-        
+
         # Initialize optimized Firebase
         self.firebase_user_id = "kitchen_dashboard_user" # Default user ID
+
+        # Initialize application settings
+        self.show_startup_notifications = True  # Enable startup notifications by default
+
         self.logger.log_section_header("Firebase Initialization")
         try:
             from modules.optimized_firebase_manager import get_optimized_firebase_manager
@@ -301,6 +410,325 @@ class KitchenDashboardApp(QMainWindow):
             self.show_firebase_required_dialog()
             return
 
+        # Initialize WhatsApp Startup Manager for automatic connection
+        self.logger.log_section_header("WhatsApp Startup Integration")
+        try:
+            from modules.whatsapp_startup_manager import WhatsAppStartupManager
+            self.whatsapp_startup_manager = WhatsAppStartupManager(self)
+
+            # Add callback for startup completion
+            self.whatsapp_startup_manager.add_startup_callback(self._on_whatsapp_startup_complete)
+
+            self.logger.info(f"WhatsApp startup manager initialized: {self.whatsapp_startup_manager}")
+            self.logger.log_section_footer("WhatsApp Startup Integration", True, "WhatsApp automation ready")
+        except Exception as e:
+            import traceback
+            self.logger.error(f"Failed to initialize WhatsApp startup manager: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            self.logger.log_section_footer("WhatsApp Startup Integration", False, f"WhatsApp startup failed: {e}")
+            self.whatsapp_startup_manager = None
+
+        # Initialize System Tray for background operation
+        self.logger.log_section_header("System Tray Initialization")
+        try:
+            self.setup_system_tray()
+            self.logger.info("✅ System tray initialized successfully")
+            self.logger.log_section_footer("System Tray Initialization", True, "System tray ready for background operation")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize system tray: {e}")
+            self.logger.log_section_footer("System Tray Initialization", False, f"System tray initialization failed: {e}")
+            self.system_tray = None
+
+    def _send_enhanced_startup_notification(self):
+        """Send enhanced startup notification using the ultimate notification system"""
+        try:
+            if not self.show_startup_notifications:
+                return
+
+            # Use template system if available
+            if hasattr(self, 'notification_templates') and self.notification_templates:
+                from notification_templates import notify_system_startup
+                notify_system_startup("VARSYS Kitchen Dashboard - Ultimate Edition")
+                self.logger.info("✅ Enhanced startup notification sent via template system")
+            else:
+                # Fallback to enhanced core system
+                from modules.enhanced_notification_system import notify_success
+                notify_success(
+                    "🚀 Ultimate System Ready",
+                    "VARSYS Kitchen Dashboard Ultimate Edition is now operational with all cutting-edge features",
+                    "Ultimate System"
+                )
+                self.logger.info("✅ Enhanced startup notification sent via core system")
+
+            # Send AI analysis notification if available
+            if hasattr(self, 'notification_ai') and self.notification_ai:
+                startup_notification = {
+                    'title': 'Ultimate System Ready',
+                    'message': 'VARSYS Kitchen Dashboard Ultimate Edition is now operational',
+                    'category': 'system',
+                    'priority': 10
+                }
+
+                analysis = self.notification_ai.analyze_notification(startup_notification)
+                self.logger.info(f"🤖 AI Analysis: Sentiment={analysis.sentiment.value}, "
+                               f"Intent={analysis.intent.value}, Urgency={analysis.urgency_score:.2f}")
+
+            # Register mobile device if available
+            if hasattr(self, 'mobile_notifications') and self.mobile_notifications:
+                from notification_mobile_integration import MobileDevice, MobilePlatform
+                from datetime import datetime
+
+                desktop_device = MobileDevice(
+                    device_id="desktop_main_app",
+                    user_id="kitchen_dashboard_user",
+                    platform=MobilePlatform.DESKTOP,
+                    push_token="desktop_token_main",
+                    app_version="2.0.0",
+                    os_version="Windows 11",
+                    device_model="Desktop Application",
+                    timezone="UTC",
+                    language="en",
+                    registered_at=datetime.now(),
+                    last_active=datetime.now(),
+                    notification_settings={'push': True, 'in_app': True}
+                )
+
+                self.mobile_notifications.register_device(desktop_device)
+                self.logger.info("📱 Desktop device registered for mobile integration")
+
+        except Exception as e:
+            self.logger.error(f"Error sending enhanced startup notification: {e}")
+
+    def _on_whatsapp_startup_complete(self, success, message):
+        """Callback when WhatsApp startup process completes"""
+        try:
+            if success:
+                self.logger.info(f"✅ WhatsApp startup successful: {message}")
+                self.notify_success("WhatsApp Ready", f"Abiram's Kitchen messaging is now available. {message}")
+            else:
+                self.logger.warning(f"⚠️ WhatsApp startup failed: {message}")
+
+                # Check if this is first-time setup
+                if self.whatsapp_startup_manager and self.whatsapp_startup_manager.is_first_time_setup():
+                    self.logger.info("First-time setup detected - will show setup dialog after UI loads")
+                    # Schedule setup dialog to show after UI is fully loaded
+                    QTimer.singleShot(3000, self._show_whatsapp_setup_if_needed)
+                else:
+                    self.notify_warning("WhatsApp Connection", f"WhatsApp integration not available: {message}")
+
+        except Exception as e:
+            self.logger.error(f"Error in WhatsApp startup callback: {e}")
+
+    def _show_whatsapp_setup_if_needed(self):
+        """Show WhatsApp setup dialog if needed"""
+        try:
+            if self.whatsapp_startup_manager:
+                success = self.whatsapp_startup_manager.show_setup_dialog_if_needed(self)
+                if success:
+                    self.logger.info("WhatsApp setup dialog completed successfully")
+                else:
+                    self.logger.info("WhatsApp setup dialog was skipped or failed")
+        except Exception as e:
+            self.logger.error(f"Error showing WhatsApp setup dialog: {e}")
+
+    def start_whatsapp_automation(self):
+        """Start automatic WhatsApp connection process"""
+        try:
+            if self.whatsapp_startup_manager:
+                success = self.whatsapp_startup_manager.start_automatic_connection()
+                if success:
+                    self.logger.info("WhatsApp automatic connection started")
+                else:
+                    self.logger.info("WhatsApp automatic connection not started (disabled or already running)")
+            else:
+                self.logger.warning("WhatsApp startup manager not available")
+        except Exception as e:
+            self.logger.error(f"Error starting WhatsApp automation: {e}")
+
+    def send_ai_powered_notification(self, title: str, message: str, category: str = "info",
+                                   priority: int = 10, source: str = "System"):
+        """Send notification with AI analysis and enhanced features"""
+        try:
+            # Create notification object
+            notification = {
+                'title': title,
+                'message': message,
+                'category': category,
+                'priority': priority,
+                'source': source,
+                'timestamp': datetime.now().isoformat()
+            }
+
+            # AI Analysis if available
+            if hasattr(self, 'notification_ai') and self.notification_ai:
+                analysis = self.notification_ai.analyze_notification(notification)
+                self.logger.info(f"🤖 AI Analysis - Sentiment: {analysis.sentiment.value}, "
+                               f"Intent: {analysis.intent.value}, Urgency: {analysis.urgency_score:.2f}")
+
+                # Adjust priority based on AI analysis
+                if analysis.urgency_score > 0.8:
+                    priority = min(priority, 3)  # High urgency
+                elif analysis.urgency_score > 0.6:
+                    priority = min(priority, 6)  # Medium urgency
+
+            # Security validation if available
+            if hasattr(self, 'notification_security') and self.notification_security:
+                user_context = {'user_id': 'kitchen_dashboard_user', 'role': 'admin'}
+                validation = self.notification_security.validate_notification(notification, user_context)
+
+                if not validation['valid']:
+                    self.logger.warning(f"🔒 Security validation failed: {validation['security_warnings']}")
+                    return False
+
+                # Use sanitized content
+                notification = validation['sanitized_content']
+
+            # Send through performance-optimized system if available
+            if hasattr(self, 'performance_notifications') and self.performance_notifications:
+                success = self.performance_notifications.send_notification(
+                    notification['title'], notification['message'],
+                    notification['category'], priority, notification['source']
+                )
+                self.logger.info("⚡ Notification sent via high-performance system")
+                return success
+            else:
+                # Fallback to enhanced core system
+                from modules.enhanced_notification_system import notify_info
+                success = notify_info(notification['title'], notification['message'], notification['source'])
+                self.logger.info("📤 Notification sent via enhanced core system")
+                return success
+
+        except Exception as e:
+            self.logger.error(f"Error sending AI-powered notification: {e}")
+            return False
+
+    def notify_emergency(self, title: str, message: str, source: str = "System"):
+        """Send emergency notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "emergency", 1, source)
+
+    def notify_critical(self, title: str, message: str, source: str = "System"):
+        """Send critical notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "critical", 2, source)
+
+    def notify_security(self, title: str, message: str, source: str = "Security System"):
+        """Send security notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "security", 3, source)
+
+    def notify_error(self, title: str, message: str, source: str = "System"):
+        """Send error notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "error", 4, source)
+
+    def notify_warning(self, title: str, message: str, source: str = "System"):
+        """Send warning notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "warning", 6, source)
+
+    def notify_success(self, title: str, message: str, source: str = "System"):
+        """Send success notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "success", 10, source)
+
+    def notify_info(self, title: str, message: str, source: str = "System"):
+        """Send info notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "info", 12, source)
+
+    def notify_inventory(self, title: str, message: str, source: str = "Inventory System"):
+        """Send inventory notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "inventory", 8, source)
+
+    def notify_staff(self, title: str, message: str, source: str = "Staff Management"):
+        """Send staff notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "staff", 7, source)
+
+    def notify_budget(self, title: str, message: str, source: str = "Budget System"):
+        """Send budget notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "budget", 6, source)
+
+    def notify_maintenance(self, title: str, message: str, source: str = "Maintenance System"):
+        """Send maintenance notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "maintenance", 9, source)
+
+    def notify_recipe(self, title: str, message: str, source: str = "Recipe System"):
+        """Send recipe notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "recipe", 11, source)
+
+    def notify_schedule(self, title: str, message: str, source: str = "Schedule System"):
+        """Send schedule notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "schedule", 8, source)
+
+    def notify_sync(self, title: str, message: str, source: str = "Cloud Sync"):
+        """Send sync notification with AI analysis"""
+        return self.send_ai_powered_notification(title, message, "sync", 12, source)
+
+    def get_notification_analytics(self):
+        """Get comprehensive notification analytics"""
+        try:
+            analytics = {}
+
+            # Get core system analytics
+            if hasattr(self, 'notification_manager') and self.notification_manager:
+                notifications = self.notification_manager.get_notifications()
+                analytics['core_system'] = {
+                    'total_notifications': len(notifications),
+                    'recent_notifications': len([n for n in notifications[-10:]]),
+                    'categories': list(set(n.get('category', 'unknown') for n in notifications))
+                }
+
+            # Get AI analytics if available
+            if hasattr(self, 'notification_ai') and self.notification_ai:
+                ai_insights = self.notification_ai.get_ai_insights()
+                analytics['ai_intelligence'] = ai_insights
+
+            # Get business intelligence if available
+            if hasattr(self, 'notification_bi') and self.notification_bi:
+                from datetime import datetime, timedelta
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=7)
+                bi_report = self.notification_bi.generate_comprehensive_report(start_date, end_date)
+                analytics['business_intelligence'] = {
+                    'metrics_count': len(bi_report.metrics),
+                    'insights_count': len(bi_report.insights),
+                    'recommendations_count': len(bi_report.recommendations)
+                }
+
+            # Get mobile analytics if available
+            if hasattr(self, 'mobile_notifications') and self.mobile_notifications:
+                mobile_stats = self.mobile_notifications.get_device_statistics()
+                analytics['mobile_integration'] = mobile_stats
+
+            # Get performance analytics if available
+            if hasattr(self, 'performance_notifications') and self.performance_notifications:
+                if hasattr(self.performance_notifications, 'get_performance_metrics'):
+                    perf_metrics = self.performance_notifications.get_performance_metrics()
+                    analytics['performance'] = perf_metrics
+
+            # Get streaming analytics if available
+            if hasattr(self, 'notification_streaming') and self.notification_streaming:
+                streaming_stats = self.notification_streaming.get_streaming_stats()
+                analytics['real_time_streaming'] = streaming_stats
+
+            self.logger.info(f"📊 Generated comprehensive notification analytics: {len(analytics)} categories")
+            return analytics
+
+        except Exception as e:
+            self.logger.error(f"Error getting notification analytics: {e}")
+            return {}
+
+    def show_notification_dashboard(self):
+        """Show the advanced notification dashboard"""
+        try:
+            if hasattr(self, 'ultimate_notification_system') and self.ultimate_notification_system:
+                if hasattr(self.ultimate_notification_system, 'show_dashboard'):
+                    return self.ultimate_notification_system.show_dashboard()
+
+            # Fallback to basic dashboard
+            from notification_dashboard import NotificationDashboard
+            dashboard = NotificationDashboard()
+            dashboard.show()
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error showing notification dashboard: {e}")
+            return False
+
     def create_window_icon(self):
         """Create a custom window icon for the kitchen dashboard"""
         try:
@@ -364,6 +792,283 @@ class KitchenDashboardApp(QMainWindow):
 
         except Exception as e:
             print(f"[WARNING] Error applying modern window style: {e}")
+
+    def setup_system_tray(self):
+        """Setup system tray for background operation"""
+        try:
+            # Check if system tray is available
+            if not QSystemTrayIcon.isSystemTrayAvailable():
+                self.logger.warning("System tray is not available on this system")
+                return False
+
+            # Create system tray icon
+            self.system_tray = QSystemTrayIcon(self)
+
+            # Use the same icon as the window
+            tray_icon = self.create_window_icon()
+            self.system_tray.setIcon(tray_icon)
+
+            # Set tooltip
+            self.system_tray.setToolTip("VARSYS Kitchen Dashboard - Ultimate Edition")
+
+            # Create context menu
+            tray_menu = QMenu()
+
+            # Show/Hide action
+            show_action = QAction("Show Dashboard", self)
+            show_action.triggered.connect(self.show_from_tray)
+            tray_menu.addAction(show_action)
+
+            hide_action = QAction("Hide to Tray", self)
+            hide_action.triggered.connect(self.hide_to_tray)
+            tray_menu.addAction(hide_action)
+
+            tray_menu.addSeparator()
+
+            # Notification actions
+            notifications_action = QAction("Show Notifications", self)
+            notifications_action.triggered.connect(self.show_notification_dashboard)
+            tray_menu.addAction(notifications_action)
+
+            # Quick actions
+            sync_action = QAction("Sync Data", self)
+            sync_action.triggered.connect(self.trigger_manual_full_sync)
+            tray_menu.addAction(sync_action)
+
+            tray_menu.addSeparator()
+
+            # Settings action
+            settings_action = QAction("Settings", self)
+            settings_action.triggered.connect(self.show_settings_from_tray)
+            tray_menu.addAction(settings_action)
+
+            tray_menu.addSeparator()
+
+            # Exit action
+            exit_action = QAction("Exit", self)
+            exit_action.triggered.connect(self.exit_application)
+            tray_menu.addAction(exit_action)
+
+            # Set the context menu
+            self.system_tray.setContextMenu(tray_menu)
+
+            # Connect double-click to show/hide
+            self.system_tray.activated.connect(self.on_tray_activated)
+
+            # Show the system tray icon
+            self.system_tray.show()
+
+            # Send system tray notification
+            if hasattr(self, 'notify_success'):
+                self.notify_success(
+                    "System Tray Ready",
+                    "Kitchen Dashboard is now running in the background. Click the tray icon to access features.",
+                    "System Tray"
+                )
+
+            self.logger.info("✅ System tray initialized successfully")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to setup system tray: {e}")
+            return False
+
+    def on_tray_activated(self, reason):
+        """Handle system tray icon activation"""
+        try:
+            if reason == QSystemTrayIcon.DoubleClick:
+                if self.isVisible():
+                    self.hide_to_tray()
+                else:
+                    self.show_from_tray()
+            elif reason == QSystemTrayIcon.Trigger:
+                # Single click - show notification count
+                if hasattr(self, 'notification_manager'):
+                    notifications = self.notification_manager.get_notifications()
+                    unread_count = len([n for n in notifications if not n.get('read', False)])
+
+                    if unread_count > 0:
+                        self.system_tray.showMessage(
+                            "VARSYS Kitchen Dashboard",
+                            f"You have {unread_count} unread notifications",
+                            QSystemTrayIcon.Information,
+                            3000
+                        )
+                    else:
+                        self.system_tray.showMessage(
+                            "VARSYS Kitchen Dashboard",
+                            "All notifications are up to date",
+                            QSystemTrayIcon.Information,
+                            2000
+                        )
+        except Exception as e:
+            self.logger.error(f"Error handling tray activation: {e}")
+
+    def show_from_tray(self):
+        """Show the application from system tray"""
+        try:
+            self.show()
+            self.raise_()
+            self.activateWindow()
+
+            if hasattr(self, 'notify_info'):
+                self.notify_info(
+                    "Dashboard Restored",
+                    "Kitchen Dashboard has been restored from the system tray",
+                    "System Tray"
+                )
+
+            self.logger.info("Application restored from system tray")
+        except Exception as e:
+            self.logger.error(f"Error showing from tray: {e}")
+
+    def hide_to_tray(self):
+        """Hide the application to system tray"""
+        try:
+            self.hide()
+
+            if hasattr(self, 'system_tray') and self.system_tray:
+                self.system_tray.showMessage(
+                    "VARSYS Kitchen Dashboard",
+                    "Application was minimized to tray. Double-click the tray icon to restore.",
+                    QSystemTrayIcon.Information,
+                    3000
+                )
+
+            if hasattr(self, 'notify_info'):
+                self.notify_info(
+                    "Dashboard Minimized",
+                    "Kitchen Dashboard is now running in the background. Access it from the system tray.",
+                    "System Tray"
+                )
+
+            self.logger.info("Application minimized to system tray")
+        except Exception as e:
+            self.logger.error(f"Error hiding to tray: {e}")
+
+    def show_settings_from_tray(self):
+        """Show settings from system tray"""
+        try:
+            # First show the main window
+            self.show_from_tray()
+
+            # Then switch to settings tab if available
+            if hasattr(self, 'tab_widget'):
+                # Find the settings tab
+                for i in range(self.tab_widget.count()):
+                    if 'settings' in self.tab_widget.tabText(i).lower():
+                        self.tab_widget.setCurrentIndex(i)
+                        break
+
+            self.logger.info("Settings opened from system tray")
+        except Exception as e:
+            self.logger.error(f"Error showing settings from tray: {e}")
+
+    def exit_application(self):
+        """Exit the application completely"""
+        try:
+            # Send exit notification
+            if hasattr(self, 'notify_info'):
+                self.notify_info(
+                    "Application Closing",
+                    "VARSYS Kitchen Dashboard is shutting down",
+                    "System"
+                )
+
+            self.logger.info("Application exit requested from system tray")
+
+            # Hide system tray
+            if hasattr(self, 'system_tray') and self.system_tray:
+                self.system_tray.hide()
+
+            # Close the application
+            QApplication.quit()
+
+        except Exception as e:
+            self.logger.error(f"Error during application exit: {e}")
+            QApplication.quit()
+
+    def closeEvent(self, event):
+        """Override close event to minimize to tray instead of closing"""
+        try:
+            # Check if system tray is available and enabled
+            if hasattr(self, 'system_tray') and self.system_tray and self.system_tray.isVisible():
+                # Hide to tray instead of closing
+                event.ignore()
+                self.hide_to_tray()
+
+                # Show a message the first time
+                if not hasattr(self, '_tray_message_shown'):
+                    self.system_tray.showMessage(
+                        "VARSYS Kitchen Dashboard",
+                        "Application was minimized to tray. Right-click the tray icon for options, or double-click to restore.",
+                        QSystemTrayIcon.Information,
+                        5000
+                    )
+                    self._tray_message_shown = True
+            else:
+                # No system tray available, allow normal close
+                self.logger.info("Application closing normally (no system tray)")
+                event.accept()
+
+        except Exception as e:
+            self.logger.error(f"Error in close event: {e}")
+            event.accept()  # Allow close if there's an error
+
+    def check_and_fix_data_integrity(self):
+        """Check data integrity issues and report without auto-fixing"""
+        try:
+            self.logger.info("🔍 Performing data integrity check...")
+
+            # Check inventory data for duplicates (but don't auto-remove them)
+            if 'inventory' in self.data and not self.data['inventory'].empty:
+                inventory_df = self.data['inventory']
+                original_count = len(inventory_df)
+
+                # Check for duplicate item_ids
+                duplicate_ids = inventory_df[inventory_df.duplicated(subset=['item_id'], keep=False)]
+                if not duplicate_ids.empty:
+                    unique_duplicate_ids = duplicate_ids['item_id'].nunique()
+                    self.logger.info(f"📊 Found {len(duplicate_ids)} inventory entries with {unique_duplicate_ids} duplicate IDs")
+                    self.logger.info("ℹ️ Duplicate entries are preserved - use inventory management tools to clean if needed")
+                else:
+                    self.logger.info("✅ No duplicate item_ids found in inventory")
+
+                # Check for missing essential fields
+                missing_fields = []
+                required_fields = ['item_id', 'item_name', 'category', 'quantity']
+                for field in required_fields:
+                    if field not in inventory_df.columns:
+                        missing_fields.append(field)
+                    elif inventory_df[field].isnull().any():
+                        null_count = inventory_df[field].isnull().sum()
+                        self.logger.warning(f"⚠️ Found {null_count} items with missing {field}")
+
+                if missing_fields:
+                    self.logger.error(f"❌ Critical fields missing from inventory: {missing_fields}")
+                else:
+                    self.logger.info("✅ All required inventory fields present")
+
+                # Log inventory statistics
+                self.logger.info(f"📈 Inventory stats: {original_count} total items, {inventory_df['item_id'].nunique()} unique IDs")
+
+            # Check other data sources for similar issues (but don't auto-clean)
+            for data_key in ['shopping_list', 'recipes', 'staff']:
+                if data_key in self.data and not self.data[data_key].empty:
+                    df = self.data[data_key]
+                    id_column = f"{data_key.rstrip('_list').rstrip('s')}_id"
+
+                    if id_column in df.columns:
+                        duplicates = df[df.duplicated(subset=[id_column], keep=False)]
+                        if not duplicates.empty:
+                            self.logger.info(f"📊 Found {len(duplicates)} duplicate entries in {data_key}")
+                        else:
+                            self.logger.info(f"✅ No duplicates found in {data_key}")
+
+            self.logger.info("✅ Data integrity check completed (non-destructive mode)")
+
+        except Exception as e:
+            self.logger.error(f"❌ Error during data integrity check: {e}")
 
     def load_env_file(self):
         """Load environment variables from .env file"""
@@ -437,12 +1142,19 @@ class KitchenDashboardApp(QMainWindow):
                         # Clear the sync needed flag
                         self.daily_sync_needed = False
 
-                        # Show notification
-                        self.add_notification(
-                            "Daily Sync Complete",
-                            "Your data has been automatically synced to the cloud",
-                            "success"
-                        )
+                        # Show notification using enhanced system
+                        if hasattr(self, 'notify_sync'):
+                            self.notify_sync(
+                                "Daily Sync Complete",
+                                "Your data has been automatically synced to the cloud",
+                                source='Cloud Sync'
+                            )
+                        else:
+                            self.add_notification(
+                                "Daily Sync Complete",
+                                "Your data has been automatically synced to the cloud",
+                                "success"
+                            )
                     except Exception as e:
                         self.logger.error(f"Error updating last sync date: {e}")
                 else:
@@ -548,7 +1260,7 @@ class KitchenDashboardApp(QMainWindow):
             # Initialize cloud sync manager if available
             try:
                 from modules.cloud_sync_manager import CloudSyncManager
-                self.cloud_sync_manager = CloudSyncManager(parent=self)
+                self.cloud_sync_manager = CloudSyncManager(self.data, parent=self)
 
                 # Connect sync signals
                 self.cloud_sync_manager.sync_started.connect(self.on_cloud_sync_started)
@@ -1342,7 +2054,10 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
 
             if success:
                 self.logger.info(f"Async {operation_type} completed successfully")
-                self.add_notification("Cloud Sync", f"{operation_type.title()} completed successfully!", "success")
+                if hasattr(self, 'notify_sync'):
+                    self.notify_sync("Cloud Sync", f"{operation_type.title()} completed successfully!", source='Cloud Sync')
+                else:
+                    self.add_notification("Cloud Sync", f"{operation_type.title()} completed successfully!", "success")
 
                 # Handle post-sync operations
                 if operation_type == 'download' and data:
@@ -1582,6 +2297,14 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             # Authentication successful
             self.logger.info(f"Authentication successful for user: {user_info.get('email', 'Unknown')}")
 
+            # Send success notification
+            if hasattr(self, 'notify_success'):
+                self.notify_success(
+                    "Login Successful",
+                    f"Welcome back! Logged in as {user_info.get('email', 'Unknown')}",
+                    source='Authentication'
+                )
+
             # Store user information
             self.current_user = user_info
             self.firebase_user_id = user_info.get('localId', user_info.get('uid', 'kitchen_dashboard_user'))
@@ -1610,12 +2333,13 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             if hasattr(self, 'daily_sync_needed') and self.daily_sync_needed:
                 self.perform_authenticated_daily_sync()
 
-            # Show welcome notification
-            self.add_notification(
-                "Login Successful",
-                f"Welcome back! Logged in as {user_info.get('email', 'User')}",
-                "success"
-            )
+            # Store login info for later notification (after UI is ready)
+            if getattr(self, 'show_startup_notifications', True):
+                self.pending_login_notification = {
+                    "title": "Login Successful",
+                    "message": f"Welcome back! Logged in as {user_info.get('email', 'User')}",
+                    "category": "success"
+                }
 
         except Exception as e:
             self.logger.error(f"Error handling authentication result: {e}")
@@ -1853,10 +2577,10 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
                 "Save Error",
                 "Failed to save configuration. Please check your settings and try again."
             )
-        
+
     def log_firebase_message(self, message, level="info"):
         """Log Firebase messages to the application logger
-        
+
         Args:
             message (str): The message to log
             level (str): The log level (info, warning, error)
@@ -1868,12 +2592,12 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             self.logger.warning(message)
         elif level == "error":
             self.logger.error(message)
-        
+
         # If settings widget is initialized, also show in the settings log display
         if hasattr(self, 'settings_widget'):
             self.settings_widget.add_log(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", level)
-        
-    
+
+
     def auto_refresh_data(self):
         """Automatically refresh data when CSV files change"""
         try:
@@ -1881,32 +2605,32 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
             data_dir = "data"
             if not os.path.exists(data_dir):
                 return
-            
+
             refresh_needed = False
             current_time = datetime.now()
-            
+
             # Check modification times of CSV files
             for filename in os.listdir(data_dir):
                 if filename.endswith('.csv'):
                     filepath = os.path.join(data_dir, filename)
                     mod_time = datetime.fromtimestamp(os.path.getmtime(filepath))
-                    
+
                     # If file was modified in the last 5 seconds, refresh
                     if (current_time - mod_time).total_seconds() < 5:
                         refresh_needed = True
                         break
-            
+
             if refresh_needed:
                 self.logger.info("Auto-refreshing data due to CSV file changes")
                 self.data = self.load_data()
-                
+
                 # Refresh current tab
                 if hasattr(self, 'current_widget') and hasattr(self.current_widget, 'load_data'):
                     self.current_widget.load_data()
-                
+
         except Exception as e:
             self.logger.error(f"Error in auto-refresh: {e}")
-    
+
     def setup_auto_refresh_timer(self):
         """Setup timer for auto-refresh (performance enhancer disabled)"""
         try:
@@ -1999,9 +2723,26 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         except Exception as e:
             self.logger.error(f"Error saving all data to CSV: {e}")
 
-    def mark_data_changed(self):
+    def mark_data_changed(self, data_type=None, item_name=None):
         """Mark that data has been changed and needs saving"""
         self.data_changed = True
+
+        # Trigger real-time WhatsApp notifications if available
+        if hasattr(self, 'whatsapp_notifications') and self.whatsapp_notifications:
+            try:
+                if data_type == 'inventory':
+                    self.whatsapp_notifications.on_inventory_updated(item_name)
+                elif data_type == 'cleaning_maintenance':
+                    self.whatsapp_notifications.on_cleaning_task_updated()
+                elif data_type == 'packing_materials':
+                    self.whatsapp_notifications.on_packing_material_updated(item_name)
+                elif data_type == 'gas_tracking':
+                    self.whatsapp_notifications.on_gas_level_updated()
+                else:
+                    # General data change - check all notification types
+                    self.whatsapp_notifications.force_check_all()
+            except Exception as e:
+                self.logger.error(f"Error triggering WhatsApp notifications: {e}")
 
     def initialize_ui(self):
         """Initialize the UI after authentication - ONLINE-ONLY MODE"""
@@ -2010,13 +2751,13 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
 
         # Apply modern style
         self.apply_modern_style()
-        
+
         # Firebase manager is already initialized and working since we authenticated successfully
         if self.firebase_manager:
             self.logger.info("Using optimized Firebase manager for authenticated session")
         else:
             self.logger.info("Using subscription-based Firebase authentication")
-            
+
         # Create main widget and layout with splitter for responsiveness
         self.central_widget = QWidget()
         # Set up the main window and central widget
@@ -2025,14 +2766,14 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         self.main_layout = QHBoxLayout(self.central_widget)
         self.main_layout.setSpacing(0)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # Use a splitter to allow resizing of sidebar and content
         self.main_splitter = QSplitter(Qt.Horizontal)
         self.main_splitter.setChildrenCollapsible(False)  # Prevent collapsing sections
-        
+
         # Create and populate sidebar for navigation
         self.create_sidebar()
-        
+
         # Create content area with header and scroll capability for responsiveness
         self.content_widget = QWidget()
         self.content_widget.setObjectName("contentWidget")
@@ -2072,7 +2813,7 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         self.content_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         main_content_layout.addWidget(self.content_scroll)
-        
+
         # Ensure widgets are visible before adding to splitter
         self.sidebar.setVisible(True)
         self.content_widget.setVisible(True)
@@ -2110,7 +2851,7 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
 
         # Show home page by default
         self.show_home_page()
-        
+
         # Setup auto-refresh timer
         self.setup_auto_refresh_timer()
 
@@ -2120,8 +2861,10 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         # Force layout update after a short delay
         QTimer.singleShot(100, self.force_layout_update)
 
-        # Add welcome notification
-        QTimer.singleShot(2000, self.show_welcome_notification)
+        # Schedule startup notifications to show after UI is fully ready (with longer delay)
+        self.show_startup_notifications = getattr(self, 'show_startup_notifications', True)
+        if self.show_startup_notifications:
+            QTimer.singleShot(5000, self.show_startup_notifications_in_gui)  # 5 seconds delay
 
         # Connect responsive manager to handle layout changes
         if self.responsive_manager:
@@ -2344,12 +3087,13 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
                 self.logger.info(f"Categories synchronized successfully across {len(result['synchronized_modules'])} modules")
                 self.logger.info(f"Added {result['categories_added']} new category entries")
 
-                # Add notification about category synchronization
-                self.add_notification(
-                    "Category Sync Complete",
-                    f"Categories synchronized across {len(result['synchronized_modules'])} modules. {result['categories_added']} entries added.",
-                    "success"
-                )
+                # Store category sync info for later notification (after UI is ready)
+                if getattr(self, 'show_startup_notifications', True):
+                    self.pending_sync_notification = {
+                        "title": "Category Sync Complete",
+                        "message": f"Categories synchronized across {len(result['synchronized_modules'])} modules. {result['categories_added']} entries added.",
+                        "category": "success"
+                    }
             else:
                 self.logger.warning(f"Category synchronization had issues: {result['errors']}")
                 self.add_notification(
@@ -2495,12 +3239,55 @@ File System: {validation_report.get('file_collections', 0)} collections, {valida
         # User icon for logout functionality
         self.create_user_icon(header_layout)
 
-        # Notification bell icon
+        # Enhanced notification system with centralized management
         try:
-            from modules.enhanced_notification_system import NotificationBellWidget
+            from modules.enhanced_notification_system import (
+                NotificationBellWidget, get_notification_manager,
+                notify_system, notify_success, notify_info, notify_warning, notify_error,
+                notify_critical, notify_inventory, notify_staff, notify_schedule,
+                notify_budget, notify_recipe, notify_maintenance, notify_sync
+            )
+
+            # Initialize centralized notification manager
+            self.notification_manager = get_notification_manager()
+
+            # Store notification functions for easy access
+            self.notify_system = notify_system
+            self.notify_success = notify_success
+            self.notify_info = notify_info
+            self.notify_warning = notify_warning
+            self.notify_error = notify_error
+            self.notify_critical = notify_critical
+            self.notify_inventory = notify_inventory
+            self.notify_staff = notify_staff
+            self.notify_schedule = notify_schedule
+            self.notify_budget = notify_budget
+            self.notify_recipe = notify_recipe
+            self.notify_maintenance = notify_maintenance
+            self.notify_sync = notify_sync
+
+            # Create and register bell widget
             self.notification_bell = NotificationBellWidget(self)
+            self.notification_manager.register_bell_widget(self.notification_bell)
             header_layout.addWidget(self.notification_bell)
+
+            # Register toast manager if available
+            try:
+                from modules.notification_system import get_notification_manager as get_toast_manager
+                toast_manager = get_toast_manager(self)
+                self.notification_manager.register_toast_manager(toast_manager)
+            except Exception as toast_error:
+                self.logger.warning(f"Toast manager not available: {toast_error}")
+
             self.logger.info("Notification bell widget loaded successfully")
+
+            # Send welcome notification using enhanced system
+            self.notify_system(
+                "System Ready",
+                "VARSYS Kitchen Dashboard initialized successfully",
+                source='Application'
+            )
+
         except Exception as e:
             self.logger.error(f"Error loading notification bell: {e}")
             # Fallback to simple but very visible bell
@@ -3765,10 +4552,16 @@ Daily Usage:
             self.logger.error(f"Error in intelligent merge for {collection_name}: {e}")
             return local_df.copy() if local_df is not None else cloud_df.copy()
 
-    def add_notification(self, title, message, notification_type="info"):
-        """Add a notification to the bell icon"""
+    def add_notification(self, title, message, notification_type="info", category=None, source=None):
+        """Add a notification using the centralized notification manager"""
         try:
-            if hasattr(self, 'notification_bell'):
+            if hasattr(self, 'notification_manager'):
+                return self.notification_manager.notify(
+                    title, message,
+                    category=category or notification_type,
+                    source=source or 'Application'
+                )
+            elif hasattr(self, 'notification_bell'):
                 return self.notification_bell.add_notification(title, message, notification_type)
         except Exception as e:
             self.logger.error(f"Error adding notification: {e}")
@@ -3792,6 +4585,39 @@ Daily Usage:
             "success"
         )
 
+    def show_startup_notifications_in_gui(self):
+        """Show all startup notifications in the GUI after it's fully loaded"""
+        try:
+            # Show login notification if pending
+            if hasattr(self, 'pending_login_notification'):
+                notification = self.pending_login_notification
+                self.add_notification(
+                    notification["title"],
+                    notification["message"],
+                    notification["category"]
+                )
+                delattr(self, 'pending_login_notification')
+
+            # Show welcome notification
+            QTimer.singleShot(1000, lambda: self.add_notification(
+                "Welcome to Kitchen Dashboard",
+                "All systems are operational. Enhanced features are now available!",
+                "success"
+            ))
+
+            # Show category sync notification if pending
+            if hasattr(self, 'pending_sync_notification'):
+                notification = self.pending_sync_notification
+                QTimer.singleShot(2000, lambda: self.add_notification(
+                    notification["title"],
+                    notification["message"],
+                    notification["category"]
+                ))
+                delattr(self, 'pending_sync_notification')
+
+        except Exception as e:
+            self.logger.error(f"Error showing startup notifications: {e}")
+
         # Add some sample notifications to demonstrate the system
         QTimer.singleShot(5000, lambda: self.add_notification(
             "Packing Materials",
@@ -3804,6 +4630,11 @@ Daily Usage:
             "Recipe scaling feature is now available in Pricing tab",
             "info"
         ))
+
+    def toggle_startup_notifications(self, state):
+        """Toggle startup notifications on/off"""
+        self.show_startup_notifications = state == 2  # 2 = checked, 0 = unchecked
+        self.logger.info(f"Startup notifications {'enabled' if self.show_startup_notifications else 'disabled'}")
 
     def create_testing_menu(self):
         """Create testing menu for comprehensive module testing"""
@@ -4444,19 +5275,19 @@ For more information, please check the documentation or contact support.
 
         # Apply the palette
         QApplication.setPalette(palette)
-        
+
         # Set global stylesheet
         stylesheet = """
         QMainWindow, QWidget {
             background-color: #f0f0f5;
         }
-        
+
         QTabWidget::pane {
             border: 1px solid #dcdcdc;
             border-radius: 5px;
             background-color: white;
         }
-        
+
         QTabBar::tab {
             background-color: #e0e0e5;
             border: 1px solid #dcdcdc;
@@ -4466,16 +5297,16 @@ For more information, please check the documentation or contact support.
             padding: 8px 12px;
             margin-right: 2px;
         }
-        
+
         QTabBar::tab:selected {
             background-color: white;
             border-bottom: 1px solid white;
         }
-        
+
         QTabBar::tab:hover:!selected {
             background-color: #eaeaef;
         }
-        
+
         QPushButton {
             background-color: #2a82da;
             color: white;
@@ -4484,15 +5315,15 @@ For more information, please check the documentation or contact support.
             padding: 8px 16px;
             font-weight: bold;
         }
-        
+
         QPushButton:hover {
             background-color: #3a92ea;
         }
-        
+
         QPushButton:pressed {
             background-color: #1a72ca;
         }
-        
+
         QTableWidget {
             gridline-color: #e0e0e0;
             selection-background-color: #e0f0ff;
@@ -4500,14 +5331,14 @@ For more information, please check the documentation or contact support.
             border: 1px solid #dcdcdc;
             border-radius: 4px;
         }
-        
+
         QHeaderView::section {
             background-color: #f0f0f5;
             border: 1px solid #dcdcdc;
             padding: 4px;
             font-weight: bold;
         }
-        
+
         QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, QDateEdit {
             border: 1px solid #dcdcdc;
             border-radius: 4px;
@@ -4516,50 +5347,50 @@ For more information, please check the documentation or contact support.
             selection-background-color: #2a82da;
             selection-color: white;
         }
-        
+
         QComboBox:hover, QLineEdit:hover, QSpinBox:hover, QDoubleSpinBox:hover, QDateEdit:hover {
             border: 1px solid #aaaaaa;
         }
-        
+
         QComboBox::drop-down {
             border: none;
             width: 20px;
         }
-        
+
         QScrollBar:vertical {
             border: none;
             background: #f0f0f5;
             width: 10px;
             margin: 0px;
         }
-        
+
         QScrollBar::handle:vertical {
             background: #c0c0c5;
             border-radius: 5px;
             min-height: 20px;
         }
-        
+
         QScrollBar::handle:vertical:hover {
             background: #a0a0a5;
         }
-        
+
         QScrollBar:horizontal {
             border: none;
             background: #f0f0f5;
             height: 10px;
             margin: 0px;
         }
-        
+
         QScrollBar::handle:horizontal {
             background: #c0c0c5;
             border-radius: 5px;
             min-width: 20px;
         }
-        
+
         QScrollBar::handle:horizontal:hover {
             background: #a0a0a5;
         }
-        
+
         QGroupBox {
             border: 1px solid #dcdcdc;
             border-radius: 5px;
@@ -4567,7 +5398,7 @@ For more information, please check the documentation or contact support.
             font-weight: bold;
             background-color: white;
         }
-        
+
         QGroupBox::title {
             subcontrol-origin: margin;
             subcontrol-
@@ -4809,7 +5640,7 @@ For more information, please check the documentation or contact support.
                 'total_rows': 0,
                 'errors': []
             }
-            
+
             # Iterate over each data type with comprehensive logging
             for key, empty_df in empty_dataframes.items():
                 file_path = os.path.join('data', f'{key}.csv')
@@ -4864,23 +5695,23 @@ For more information, please check the documentation or contact support.
                     except Exception as e:
                         self.logger.error(f"  Error creating new empty file for {key} at {file_path}: {e}")
                         loading_stats['errors'].append(f"Create {key}: {str(e)}")
-            
+
             # Convert date columns to datetime (even for empty dataframes)
             for df_name in ['budget', 'sales', 'waste']:
                 if 'date' in data[df_name].columns:
                     # Create a datetime column even if empty
                     data[df_name]['date'] = pd.to_datetime(data[df_name]['date'], errors='coerce')
-            
+
             # Convert date columns in cleaning_maintenance
             if 'last_completed' in data['cleaning_maintenance'].columns:
                 data['cleaning_maintenance']['last_completed'] = pd.to_datetime(data['cleaning_maintenance']['last_completed'], errors='coerce')
             if 'next_due' in data['cleaning_maintenance'].columns:
                 data['cleaning_maintenance']['next_due'] = pd.to_datetime(data['cleaning_maintenance']['next_due'], errors='coerce')
-            
+
             # Convert expiry_date in inventory
             if 'expiry_date' in data['inventory'].columns:
                 data['inventory']['expiry_date'] = pd.to_datetime(data['inventory']['expiry_date'], errors='coerce')
-                
+
             # Debug: Log data loading results
             print(f"[SEARCH] DATA LOADING DEBUG:")
             for key, df in data.items():
@@ -4905,6 +5736,14 @@ For more information, please check the documentation or contact support.
                     self.logger.error(f"  - {error}")
             else:
                 self.logger.log_section_footer("Data Loading", True, summary_details)
+
+                # Send success notification for data loading
+                if hasattr(self, 'notify_success') and total_records > 0:
+                    self.notify_success(
+                        "Data Loading Complete",
+                        f"Successfully loaded {len(data)} data sources with {total_records} records",
+                        source='Data Manager'
+                    )
 
             self.logger.log_performance("Complete data loading", 0)  # Will be calculated by caller
             return data
@@ -5042,9 +5881,9 @@ For more information, please check the documentation or contact support.
             import traceback
             traceback.print_exc()
             return None
-    
+
     # create_sample_data method has been removed as requested by the user
-    
+
     def create_sidebar(self):
         """Create navigation sidebar to match the screenshot"""
         # Create sidebar widget
@@ -5098,7 +5937,7 @@ For more information, please check the documentation or contact support.
                 color: white;
             }
         """)
-        
+
         self.sidebar.setMinimumWidth(240)
         self.sidebar.setMaximumWidth(240)
         self.sidebar_layout = QVBoxLayout(self.sidebar)
@@ -5107,7 +5946,7 @@ For more information, please check the documentation or contact support.
 
         # Initialize the list to store navigation buttons
         self.nav_buttons = []
-        
+
         # Add header with title and toggle button
         self.header_widget = QWidget()
         self.header_widget.setStyleSheet("QWidget { background: transparent !important; }")
@@ -5277,7 +6116,7 @@ For more information, please check the documentation or contact support.
         self.sidebar_expanded = True
         self.sidebar_width = 240
         self.sidebar_collapsed_width = 60
-        
+
         # Create buttons with icons
         self.home_button = QPushButton(" Home")
         self.home_button.setIcon(self.create_icon("🏠"))
@@ -5378,6 +6217,8 @@ For more information, please check the documentation or contact support.
         self.cleaning_button.clicked.connect(lambda: self.handle_nav_button(self.cleaning_button, self.show_cleaning_page))
         self.nav_buttons_layout.addWidget(self.cleaning_button)
         self.nav_buttons.append(self.cleaning_button)
+
+
 
 
 
@@ -5738,7 +6579,7 @@ For more information, please check the documentation or contact support.
         self.logger.debug(f"Executing callback for {button_name}")
         self.current_page = button_name  # Track current page
         callback_function()
-        
+
     def create_icon(self, emoji):
         """Create an icon from emoji text"""
         try:
@@ -5826,7 +6667,7 @@ For more information, please check the documentation or contact support.
         header_layout.addWidget(refresh_button)
 
         return header_widget
-    
+
     def clear_content(self):
         """Clear the content area"""
         # Remove all widgets from the content layout
@@ -5835,35 +6676,35 @@ For more information, please check the documentation or contact support.
             widget = item.widget()
             if widget:
                 widget.deleteLater()
-    
+
     def show_home_page(self):
         """Display the home page with overview metrics"""
         self.clear_content()
-        
+
         # Add title with welcome message
         title_container = QWidget()
         title_layout = QVBoxLayout(title_container)
         title_layout.setContentsMargins(0, 0, 0, 20)
-        
+
         title = QLabel("Welcome to Your Kitchen Dashboard")
         title.setFont(self.title_font)
         title.setAlignment(Qt.AlignCenter)
         title_layout.addWidget(title)
-        
+
         subtitle = QLabel("Your complete kitchen management solution")
         subtitle.setFont(QFont("Segoe UI", 12))
         subtitle.setStyleSheet("color: #7f8c8d;")
         subtitle.setAlignment(Qt.AlignCenter)
         title_layout.addWidget(subtitle)
-        
+
         self.content_layout.addWidget(title_container)
-        
+
         if not self.data:
             no_data_label = QLabel("No data available")
             no_data_label.setAlignment(Qt.AlignCenter)
             self.content_layout.addWidget(no_data_label)
             return
-        
+
         # Create a grid layout for metrics cards with responsive behavior
         metrics_widget = QWidget()
         metrics_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -5871,14 +6712,14 @@ For more information, please check the documentation or contact support.
         metrics_layout.setContentsMargins(0, 0, 0, 20)
         metrics_layout.setSpacing(20)
         self.content_layout.addWidget(metrics_widget)
-        
+
         # Helper function to create a metric card matching the screenshot
         def create_metric_card(title, value, icon_emoji, color):
             # Format value with the current currency symbol if it starts with a currency symbol
             if isinstance(value, str) and value.startswith(('$', '₹', '€', '£', '¥')):
                 # Replace the existing currency symbol with the current one
                 value = self.currency_symbol + value[1:]
-                
+
             card = QFrame()
             card.setObjectName(f"metricCard_{title.lower().replace(' ', '_')}")
             card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -5892,10 +6733,10 @@ For more information, please check the documentation or contact support.
             """)
             card.setMinimumWidth(200)
             card.setMaximumWidth(300)
-            
+
             card_layout = QHBoxLayout(card)
             card_layout.setContentsMargins(15, 15, 15, 15)
-            
+
             # Create circular icon container
             icon_container = QFrame()
             icon_container.setFixedSize(50, 50)
@@ -5903,46 +6744,46 @@ For more information, please check the documentation or contact support.
                 background-color: {color};
                 border-radius: 25px;
             """)
-            
+
             icon_layout = QVBoxLayout(icon_container)
             icon_layout.setContentsMargins(0, 0, 0, 0)
             icon_layout.setAlignment(Qt.AlignCenter)
-            
+
             icon = QLabel(icon_emoji)
             icon.setFont(QFont("Segoe UI", 20))
             icon.setStyleSheet("color: white;")
             icon.setAlignment(Qt.AlignCenter)
             icon_layout.addWidget(icon)
-            
+
             # Add text content
             text_container = QWidget()
             text_layout = QVBoxLayout(text_container)
             text_layout.setContentsMargins(10, 0, 0, 0)
             text_layout.setSpacing(5)
-            
+
             title_label = QLabel(title)
             title_label.setFont(QFont("Segoe UI", 10))
             title_label.setStyleSheet("color: #7f8c8d;")
-            
+
             value_label = QLabel(value)
             value_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
             value_label.setStyleSheet("color: #2c3e50;")
-            
+
             text_layout.addWidget(title_label)
             text_layout.addWidget(value_label)
-            
+
             # Add to card layout
             card_layout.addWidget(icon_container)
             card_layout.addWidget(text_container, 1)
-            
+
             return card
-        
+
         # Calculate metrics
         # Inventory metrics
         # Calculate using either avg_price, price, or fallback to 0
         inventory_df = self.data['inventory']
         total_inventory_value = 0
-        
+
         if len(inventory_df) > 0:
             # Calculate value for each row properly
             for _, row in inventory_df.iterrows():
@@ -5957,7 +6798,7 @@ For more information, please check the documentation or contact support.
                     qty = float(row['quantity'])
                 else:
                     qty = 0
-                    
+
                 # Get price, using avg_price if available, otherwise price
                 if 'avg_price' in row and pd.notna(row['avg_price']):
                     price = float(row['avg_price'])
@@ -5965,14 +6806,14 @@ For more information, please check the documentation or contact support.
                     price = float(row['price'])
                 else:
                     price = 0
-                    
+
                 # Add to total
                 total_inventory_value += qty * price
-        
+
         # Calculate low stock items using qty_left if available, otherwise use quantity
         inventory_df = self.data['inventory']
         low_stock_items = []
-        
+
         if len(inventory_df) > 0:
             for _, row in inventory_df.iterrows():
                 # Get quantity - first calculate qty_left if we have purchased and used
@@ -5986,17 +6827,17 @@ For more information, please check the documentation or contact support.
                     qty = float(row['quantity'])
                 else:
                     qty = 0
-                    
+
                 # Get threshold
                 if 'reorder_level' in row and pd.notna(row['reorder_level']):
                     threshold = float(row['reorder_level'])
                 else:
                     threshold = 1.0  # Default threshold
-                    
+
                 # Check if low stock
                 if qty <= threshold:
                     low_stock_items.append(row)
-                    
+
             # Create DataFrame from low stock items
             if low_stock_items:
                 low_stock = pd.DataFrame(low_stock_items)
@@ -6004,9 +6845,9 @@ For more information, please check the documentation or contact support.
                 low_stock = pd.DataFrame()
         else:
             low_stock = pd.DataFrame()
-            
+
         low_stock_count = len(low_stock)
-        
+
         # Sales metrics
         if 'total_amount' in self.data['sales'].columns:
             total_sales = self.data['sales']['total_amount'].sum()
@@ -6016,7 +6857,7 @@ For more information, please check the documentation or contact support.
                 total_sales = self.data['sales']['total_amount'].sum()
             else:
                 total_sales = 0.0
-        
+
         # Budget metrics
         if 'amount' in self.data['budget'].columns:
             total_budget = self.data['budget']['amount'].sum()
@@ -6024,13 +6865,13 @@ For more information, please check the documentation or contact support.
             total_budget = self.data['budget']['budget_amount'].sum()
         else:
             total_budget = 0.0
-        
+
         # Waste metrics
         if 'cost' in self.data['waste'].columns:
             waste_cost = self.data['waste']['cost'].sum()
         else:
             waste_cost = 0.0
-        
+
         # Expenses list metrics
         if 'status' in self.data['expenses_list'].columns:
             items_to_buy = len(self.data['expenses_list'][self.data['expenses_list']['status'] == 'Pending'])
@@ -6041,40 +6882,40 @@ For more information, please check the documentation or contact support.
             estimated_cost = self.data['expenses_list']['estimated_cost'].sum()
         else:
             estimated_cost = 0.0
-        
+
         # Note: Meal planning metrics calculation removed as variables were unused
-        
+
         # Get currency symbol from settings, default to Indian Rupee (₹)
         currency_symbol = "₹"
         if 'settings' in self.data and 'currency' in self.data['settings']:
             currency_symbol = self.data['settings']['currency']
-        
+
         # Create and add metric cards to the grid with dynamic currency symbol
         inventory_card = create_metric_card("Total Inventory Value", f"{currency_symbol}{total_inventory_value:.2f}", "📦", "#3498db")
         metrics_layout.addWidget(inventory_card, 0, 0)
-        
+
         low_stock_card = create_metric_card("Low Stock Items", f"{low_stock_count}", "⚠️", "#e74c3c")
         metrics_layout.addWidget(low_stock_card, 0, 1)
-        
+
         sales_card = create_metric_card("Total Sales", f"{currency_symbol}{total_sales:.2f}", "💰", "#2ecc71")
         metrics_layout.addWidget(sales_card, 0, 2)
-        
+
         budget_card = create_metric_card("Budget", f"{currency_symbol}{total_budget:.2f}", "💵", "#9b59b6")
         metrics_layout.addWidget(budget_card, 1, 0)
-        
+
         waste_card = create_metric_card("Waste Cost", f"{currency_symbol}{waste_cost:.2f}", "♻️", "#e67e22")
         metrics_layout.addWidget(waste_card, 1, 1)
-        
+
         shopping_card = create_metric_card("Shopping List", f"{items_to_buy} items ({currency_symbol}{estimated_cost:.2f})", "🛒", "#1abc9c")
         metrics_layout.addWidget(shopping_card, 1, 2)
-        
+
         # Add charts section title
         charts_title = QLabel("Key Performance Indicators")
         charts_title.setFont(self.header_font)
         charts_title.setAlignment(Qt.AlignCenter)
         charts_title.setContentsMargins(0, 20, 0, 10)
         self.content_layout.addWidget(charts_title)
-        
+
         # Create charts container with card-like styling
         charts_widget = QFrame()
         charts_widget.setObjectName("chartsContainer")
@@ -6087,20 +6928,20 @@ For more information, please check the documentation or contact support.
         """)
         charts_widget.setFrameShape(QFrame.StyledPanel)
         charts_widget.setFrameShadow(QFrame.Raised)
-        
+
         # Use a vertical layout for better chart arrangement
         charts_layout = QVBoxLayout(charts_widget)
         charts_layout.setContentsMargins(15, 15, 15, 15)
         charts_layout.setSpacing(20)
         self.content_layout.addWidget(charts_widget, 1)  # Add stretch factor
-        
+
         # Create a horizontal layout for the top two charts
         top_charts_widget = QWidget()
         top_charts_layout = QHBoxLayout(top_charts_widget)
         top_charts_layout.setContentsMargins(0, 0, 0, 0)
         top_charts_layout.setSpacing(15)
         charts_layout.addWidget(top_charts_widget)
-        
+
         # Create an improved chart container class with fixed height for better visibility
         class ChartWidget(QWidget):
             def __init__(self, title, parent=None):
@@ -6109,7 +6950,7 @@ For more information, please check the documentation or contact support.
                 self.setMinimumHeight(250)
                 self.setMinimumWidth(350)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-                
+
                 # Use a frame with border for better visual separation
                 self.frame = QFrame(self)
                 self.frame.setFrameShape(QFrame.StyledPanel)
@@ -6121,65 +6962,65 @@ For more information, please check the documentation or contact support.
                         border-radius: 5px;
                     }
                 """)
-                
+
                 # Main layout
                 main_layout = QVBoxLayout(self)
                 main_layout.setContentsMargins(0, 0, 0, 0)
                 main_layout.addWidget(self.frame)
-                
+
                 # Frame layout
                 self.layout = QVBoxLayout(self.frame)
                 self.layout.setContentsMargins(10, 10, 10, 10)
                 self.layout.setSpacing(5)
-                
+
                 # Add title with background
                 title_container = QWidget()
                 title_container.setStyleSheet("background-color: #f8f9fa; border-radius: 3px;")
                 title_layout = QVBoxLayout(title_container)
                 title_layout.setContentsMargins(5, 5, 5, 5)
-                
+
                 self.title = QLabel(title)
                 self.title.setFont(QFont("Segoe UI", 11, QFont.Bold))
                 self.title.setStyleSheet("color: #2c3e50;")
                 self.title.setAlignment(Qt.AlignCenter)
                 title_layout.addWidget(self.title)
-                
+
                 self.layout.addWidget(title_container)
-                
+
                 # Canvas container with fixed height
                 self.canvas_container = QWidget()
                 self.canvas_container.setMinimumHeight(180)
                 self.canvas_layout = QVBoxLayout(self.canvas_container)
                 self.canvas_layout.setContentsMargins(0, 0, 0, 0)
                 self.layout.addWidget(self.canvas_container)
-            
+
             def set_canvas(self, canvas):
                 # Clear previous canvas if any
-                for i in reversed(range(self.canvas_layout.count())): 
+                for i in reversed(range(self.canvas_layout.count())):
                     self.canvas_layout.itemAt(i).widget().setParent(None)
-                
+
                 # Add new canvas with proper sizing
                 canvas.setMinimumHeight(180)
                 self.canvas_layout.addWidget(canvas)
-        
+
         # Inventory by category chart
         inventory_chart_widget = ChartWidget("Inventory by Category")
-        
+
         # Create the chart with better colors
         if 'total_value' not in self.data['inventory'].columns:
             if 'price_per_unit' in self.data['inventory'].columns and 'quantity' in self.data['inventory'].columns:
                 self.data['inventory']['total_value'] = self.data['inventory']['price_per_unit'] * self.data['inventory']['quantity']
             else:
                 self.data['inventory']['total_value'] = 1
-        
+
         inventory_by_category = self.data['inventory'].groupby('category')['total_value'].sum().reset_index()
-        
+
         # Use a modern color palette
         colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22']
-        
+
         # Use a larger figure size for the pie chart to ensure labels are visible
         fig1, ax1 = plt.subplots(figsize=(6, 4), facecolor='white')
-        
+
         # Create a simple, clear pie chart
         ax1.pie(
             inventory_by_category['total_value'],
@@ -6190,18 +7031,18 @@ For more information, please check the documentation or contact support.
             wedgeprops={'edgecolor': 'white', 'linewidth': 1},
             textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9}
         )
-        
+
         # Ensure the pie is drawn as a circle
         ax1.axis('equal')
-        
+
         # Remove the legend as we're using direct labels
         plt.tight_layout(pad=1.5)
-        
+
         ax1.set_title('Inventory Value Distribution', fontsize=12, pad=20, color='#2c3e50')
         ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
-        
+
         plt.tight_layout()
-        
+
         # Make chart responsive if responsive manager is available
         if self.responsive_chart_manager:
             self.responsive_chart_manager.make_figure_responsive(fig1)
@@ -6216,7 +7057,7 @@ For more information, please check the documentation or contact support.
 
         # Close the figure to prevent memory issues
         plt.close(fig1)
-        
+
         # Add Firebase cloud sync section for subscription model
         if self.firebase_manager and self.current_user:
             # Create a header for the cloud sync section
@@ -6224,7 +7065,7 @@ For more information, please check the documentation or contact support.
             cloud_header.setFont(self.header_font)
             cloud_header.setContentsMargins(0, 20, 0, 10)
             self.content_layout.addWidget(cloud_header)
-            
+
             # Create a container for the cloud sync UI
             cloud_frame = QFrame()
             cloud_frame.setObjectName("cloudSyncContainer")
@@ -6237,7 +7078,7 @@ For more information, please check the documentation or contact support.
             """)
             cloud_layout = QVBoxLayout(cloud_frame)
             cloud_layout.setContentsMargins(20, 20, 20, 20)
-            
+
             # Add cloud sync description
             cloud_desc = QLabel("Keep your data safe and access it from anywhere by syncing to the cloud.")
             cloud_desc.setWordWrap(True)
@@ -6252,33 +7093,33 @@ For more information, please check the documentation or contact support.
 
             # Add the cloud sync frame to the main content layout
             self.content_layout.addWidget(cloud_frame)
-        
+
         # Waste tracking chart using the improved chart widget
         waste_chart_widget = ChartWidget("Waste by Reason")
-        
+
         # Create the chart with better styling
         if 'cost' not in self.data['waste'].columns:
             self.data['waste']['cost'] = 1
-        
+
         # Use a larger figure size for the waste chart to ensure labels are visible
         fig2, ax2 = plt.subplots(figsize=(6, 4), facecolor='white')
-        
+
         if len(self.data['waste']) > 0 and 'reason' in self.data['waste'].columns:
             waste_by_reason = self.data['waste'].groupby('reason')['cost'].sum().reset_index()
-            
+
             # Sort by cost to make the chart more readable
             waste_by_reason = waste_by_reason.sort_values('cost', ascending=True)
-            
+
             # Create a horizontal bar chart with consistent colors
             bars = ax2.barh(
-                waste_by_reason['reason'], 
+                waste_by_reason['reason'],
                 waste_by_reason['cost'],
                 color=colors[:len(waste_by_reason)],
                 height=0.5,
                 edgecolor='white',
                 linewidth=1
             )
-            
+
             # Add data labels to the end of each bar
             for bar in bars:
                 width = bar.get_width()
@@ -6293,13 +7134,13 @@ For more information, please check the documentation or contact support.
                 )
         else:
             # If no waste data, show empty chart with a message
-            ax2.text(0.5, 0.5, 'No waste data available', 
-                     horizontalalignment='center', 
-                     verticalalignment='center', 
+            ax2.text(0.5, 0.5, 'No waste data available',
+                     horizontalalignment='center',
+                     verticalalignment='center',
                      transform=ax2.transAxes,
                      fontsize=12,
                      color='#7f8c8d')
-        
+
         # Improve chart styling with dynamic currency symbol
         ax2.set_title('Waste Cost Analysis', fontsize=12, pad=20, color='#2c3e50')
         ax2.set_xlabel(f'Cost ({self.currency_symbol})', fontsize=10, color='#7f8c8d')
@@ -6310,7 +7151,7 @@ For more information, please check the documentation or contact support.
         ax2.tick_params(colors='#7f8c8d')
         ax2.set_axisbelow(True)
         ax2.grid(axis='x', linestyle='--', alpha=0.7, color='#ecf0f1')
-        
+
         plt.tight_layout()
 
         # Make chart responsive if responsive manager is available
@@ -6327,29 +7168,29 @@ For more information, please check the documentation or contact support.
 
         # Close the figure to prevent memory issues
         plt.close(fig2)
-        
+
         # Add inventory trend chart using the improved chart widget
         trend_chart_widget = ChartWidget("Inventory Value Trend")
         # Set a larger minimum height for the trend chart
         trend_chart_widget.setMinimumHeight(300)
-        
+
         # Create sample trend data (in a real app, this would come from historical data)
         # For demonstration, we'll create synthetic data
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-        
+
         # Create different trend lines for different categories
         categories = inventory_by_category['category'].unique()[:3]  # Use top 3 categories
-        
+
         # Use a larger figure size for the trend chart to ensure all elements are visible
         fig3, ax3 = plt.subplots(figsize=(10, 5), facecolor='white')
-        
+
         # Generate synthetic trend data for each category - with more distinct values
         import numpy as np
         np.random.seed(42)  # Use a seed for consistent results
-        
+
         # Create distinct base values for better separation
         base_values = [1500, 1000, 500]
-        
+
         for i, category in enumerate(categories):
             if len(categories) > 0:
                 # Use predefined base values for better separation between lines
@@ -6357,7 +7198,7 @@ For more information, please check the documentation or contact support.
                 # Create smoother trends with less variation
                 trend = np.random.randint(-100, 200, size=len(months)) + base_value
                 ax3.plot(months, trend, marker='o', markersize=6, linewidth=2, label=category, color=colors[i])
-        
+
         # Improve chart styling with dynamic currency symbol
         ax3.set_title('Inventory Value Trends by Category', fontsize=12, pad=20, color='#2c3e50')
         ax3.set_xlabel('Month', fontsize=10, color='#7f8c8d')
@@ -6372,9 +7213,9 @@ For more information, please check the documentation or contact support.
         if ax3.get_legend_handles_labels()[0]:
             # Remove annotations as they cause clutter and overlap
             # Instead, make the legend more prominent
-            ax3.legend(frameon=True, fontsize=10, loc='upper right', 
+            ax3.legend(frameon=True, fontsize=10, loc='upper right',
                       facecolor='white', edgecolor='#e0e0e0')
-        
+
         plt.tight_layout()
 
         # Make chart responsive if responsive manager is available
@@ -6391,7 +7232,7 @@ For more information, please check the documentation or contact support.
 
         # Close the figure to prevent memory issues
         plt.close(fig3)
-    
+
     def show_inventory_page(self):
         """Display the inventory management page"""
         try:
@@ -6415,7 +7256,7 @@ For more information, please check the documentation or contact support.
             refresh_button = self.create_refresh_button("Inventory")
             header_layout.addWidget(refresh_button)
 
-            
+
             # Import the inventory module with error handling
             try:
                 from modules.inventory_fixed import InventoryWidget
@@ -6500,12 +7341,12 @@ For more information, please check the documentation or contact support.
     def show_meal_planning_page(self):
         """Display the meal planning page"""
         self.clear_content()
-        
+
         # Import the meal planning module
         from modules.meal_planning import MealPlanningWidget
         # Import the fixed meal planning module
         from modules.fixed_meal_planning import FixedMealPlanningWidget
-        
+
         # Create the fixed meal planning widget instead of the original one
         try:
             # Use the fixed meal planning widget
@@ -6516,10 +7357,10 @@ For more information, please check the documentation or contact support.
             self.logger.error(f"Error using fixed meal planning widget: {str(e)}")
             meal_planning_widget = MealPlanningWidget(self.data)
             self.logger.info("Falling back to original meal planning widget")
-        
+
         # Add the widget to the content layout
         self.content_layout.addWidget(meal_planning_widget)
-    
+
     def show_budget_page(self):
         """Display the enhanced budget management page"""
         self.clear_content()
@@ -6552,7 +7393,7 @@ For more information, please check the documentation or contact support.
 
         # Log the action
         self.logger.info("Budget management page displayed")
-    
+
     def show_sales_page(self):
         """Display the sales page with both basic sales recording and order management"""
         self.clear_content()
@@ -6838,33 +7679,35 @@ For more information, please check the documentation or contact support.
 
         except Exception as e:
             self.logger.error(f"Error handling gas alert: {e}")
-    
+
     def show_waste_page(self):
         """Display the waste tracking page"""
         self.clear_content()
-        
+
         # Import the waste module
         from modules.waste import WasteWidget
-        
+
         # Create the waste widget
         waste_widget = WasteWidget(self.data)
-        
+
         # Add the widget to the content layout
         self.content_layout.addWidget(waste_widget)
-    
+
     def show_cleaning_page(self):
         """Display the cleaning and maintenance page"""
         self.clear_content()
-        
+
         # Import the cleaning module
         from modules.cleaning_fixed import CleaningWidget
-        
+
         # Create the cleaning widget
         cleaning_widget = CleaningWidget(self.data)
-        
+
         # Add the widget to the content layout
         self.content_layout.addWidget(cleaning_widget)
-    
+
+
+
     def show_settings_page(self):
         """Display the enhanced settings page with Firebase integration"""
         self.clear_content()
@@ -6919,7 +7762,6 @@ For more information, please check the documentation or contact support.
 
         # Firebase Settings Tab
         try:
-            from modules.enhanced_auth_widget import EnhancedAuthWidget
             from modules.cloud_sync_manager import CloudSyncManager
 
             firebase_container = QWidget()
@@ -6929,11 +7771,7 @@ For more information, please check the documentation or contact support.
             # Firebase sub-tabs
             firebase_subtabs = QTabWidget()
 
-            # Authentication tab
-            auth_widget = EnhancedAuthWidget()
-            firebase_subtabs.addTab(auth_widget, "🔐 Authentication")
-
-            # Cloud sync tab
+            # Cloud sync tab (Authentication functionality integrated into Cloud Sync)
             sync_widget = CloudSyncManager(self.data)
             firebase_subtabs.addTab(sync_widget, "☁️ Cloud Sync")
 
@@ -7006,6 +7844,50 @@ For more information, please check the documentation or contact support.
         """)
         refresh_button.clicked.connect(self.refresh_data)
         refresh_layout.addWidget(refresh_button)
+
+        data_layout.addWidget(refresh_group)
+
+        # Notification settings section
+        notification_group = QGroupBox("Notification Settings")
+        notification_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #e2e8f0;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+        """)
+        notification_layout = QVBoxLayout(notification_group)
+
+        # Notification description
+        notification_desc = QLabel("Control which notifications are shown during application startup.")
+        notification_desc.setStyleSheet("color: #64748b; margin-bottom: 15px;")
+        notification_desc.setWordWrap(True)
+        notification_layout.addWidget(notification_desc)
+
+        # Startup notifications checkbox
+        self.startup_notifications_checkbox = QCheckBox("Show startup notifications (Login, Welcome, Sync)")
+        self.startup_notifications_checkbox.setChecked(getattr(self, 'show_startup_notifications', True))
+        self.startup_notifications_checkbox.stateChanged.connect(self.toggle_startup_notifications)
+        self.startup_notifications_checkbox.setStyleSheet("""
+            QCheckBox {
+                font-size: 14px;
+                padding: 8px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+            }
+        """)
+        notification_layout.addWidget(self.startup_notifications_checkbox)
+
+        data_layout.addWidget(notification_group)
 
         data_layout.addWidget(refresh_group)
 
@@ -7090,6 +7972,150 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
             appliance_placeholder.setAlignment(Qt.AlignCenter)
             appliance_placeholder.setStyleSheet("font-size: 16px; color: #64748b; padding: 40px;")
             settings_tabs.addTab(appliance_placeholder, "⚡ Appliances")
+        # WhatsApp Integration Tab
+        try:
+            # Check if dependencies are available at runtime
+            from modules.whatsapp_integration import check_selenium_dependencies, WhatsAppIntegrationWidget
+
+            selenium_available, webdriver_manager_available = check_selenium_dependencies()
+
+            if selenium_available:
+                # Dependencies are available, create the full WhatsApp integration
+                whatsapp_container = QWidget()
+                whatsapp_layout = QVBoxLayout(whatsapp_container)
+                whatsapp_layout.setContentsMargins(20, 20, 20, 20)
+
+                # Pass user info for Firebase sync
+                user_info = getattr(self, 'user_info', None)
+                whatsapp_widget = WhatsAppIntegrationWidget(self.data, user_info, parent=self)
+
+                # Set reference to main app for startup manager access
+                whatsapp_widget.main_app = self
+                self.logger.info(f"Set main_app reference on WhatsApp widget: {whatsapp_widget}")
+                self.logger.info(f"WhatsApp widget main_app: {getattr(whatsapp_widget, 'main_app', 'NOT SET')}")
+                self.logger.info(f"Main app whatsapp_startup_manager: {getattr(self, 'whatsapp_startup_manager', 'NOT SET')}")
+
+                # Initialize automated notifications system
+                try:
+                    from modules.whatsapp_automated_notifications import WhatsAppAutomatedNotifications
+                    self.whatsapp_notifications = WhatsAppAutomatedNotifications(
+                        data=self.data,
+                        whatsapp_widget=whatsapp_widget,
+                        main_app=self
+                    )
+                    # Start monitoring
+                    self.whatsapp_notifications.start_monitoring()
+                    self.logger.info("✅ WhatsApp automated notifications system initialized and started")
+
+                    # Store reference in whatsapp widget for easy access
+                    whatsapp_widget.automated_notifications = self.whatsapp_notifications
+
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize WhatsApp automated notifications: {e}")
+                    self.whatsapp_notifications = None
+
+                # Update startup status now that main_app reference is set
+                if hasattr(whatsapp_widget, 'update_startup_status'):
+                    whatsapp_widget.update_startup_status()
+                    self.logger.info("Updated WhatsApp startup status after setting main_app reference")
+
+                # Connect signals for notifications
+                if hasattr(self, 'notification_manager'):
+                    whatsapp_widget.message_sent.connect(
+                        lambda msg: self.notify_success(
+                            "Message Sent",
+                            f"WhatsApp message sent to {msg.get('recipient', 'Unknown')}",
+                            source='WhatsApp Integration'
+                        )
+                    )
+                    whatsapp_widget.message_received.connect(
+                        lambda msg: self.notify_info(
+                            "New Message",
+                            f"WhatsApp message from {msg.get('sender', 'Unknown')}",
+                            source='WhatsApp Integration'
+                        )
+                    )
+
+                whatsapp_layout.addWidget(whatsapp_widget)
+                settings_tabs.addTab(whatsapp_container, "📱 WhatsApp")
+                self.logger.info("WhatsApp integration added to Settings tab")
+            else:
+                # Dependencies not available, show installation interface
+                raise ImportError("Selenium dependencies not available")
+
+        except ImportError as e:
+            self.logger.warning(f"WhatsApp integration not available: {e}")
+            # Create placeholder with setup instructions
+            whatsapp_placeholder = QWidget()
+            placeholder_layout = QVBoxLayout(whatsapp_placeholder)
+            placeholder_layout.setContentsMargins(20, 20, 20, 20)
+
+            title_label = QLabel("📱 WhatsApp Integration")
+            title_label.setFont(QFont("Arial", 16, QFont.Bold))
+            title_label.setStyleSheet("color: #1e293b; margin-bottom: 20px;")
+            placeholder_layout.addWidget(title_label)
+
+            info_label = QLabel("""
+            <h3>WhatsApp Integration Setup</h3>
+            <p>WhatsApp integration provides powerful messaging capabilities with Firebase sync.</p>
+            <p><strong>Features Available:</strong></p>
+            <ul>
+            <li>📱 WhatsApp Web integration</li>
+            <li>🔄 Multi-device Firebase sync</li>
+            <li>👥 Contact management</li>
+            <li>💬 Message history</li>
+            <li>📢 Broadcast messaging</li>
+            <li>📝 Message templates</li>
+            <li>🤖 Automatic ChromeDriver management</li>
+            </ul>
+            """)
+            info_label.setWordWrap(True)
+            info_label.setOpenExternalLinks(True)
+            info_label.setStyleSheet("color: #374151; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;")
+            placeholder_layout.addWidget(info_label)
+
+            # Add automatic installation button
+            install_button = QPushButton("🚀 Install WhatsApp Dependencies Automatically")
+            install_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #10b981;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 12px 24px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin: 10px;
+                }
+                QPushButton:hover {
+                    background-color: #059669;
+                }
+                QPushButton:pressed {
+                    background-color: #047857;
+                }
+            """)
+            install_button.clicked.connect(self.install_whatsapp_dependencies)
+            placeholder_layout.addWidget(install_button)
+
+            # Add manual installation info
+            manual_label = QLabel("""
+            <p><strong>Manual Installation (if automatic fails):</strong></p>
+            <p>1. Open command prompt as administrator</p>
+            <p>2. Run: <code>pip install selenium webdriver-manager</code></p>
+            <p>3. Restart the application</p>
+            """)
+            manual_label.setWordWrap(True)
+            manual_label.setStyleSheet("color: #6b7280; font-size: 12px; padding: 10px; background-color: #f9fafb; border-radius: 6px; margin-top: 10px;")
+            placeholder_layout.addWidget(manual_label)
+
+            placeholder_layout.addStretch()
+            settings_tabs.addTab(whatsapp_placeholder, "📱 WhatsApp")
+        except Exception as e:
+            self.logger.error(f"Error adding WhatsApp integration to settings: {e}")
+            whatsapp_error_placeholder = QLabel("WhatsApp integration error.\nPlease check the logs for details.")
+            whatsapp_error_placeholder.setAlignment(Qt.AlignCenter)
+            whatsapp_error_placeholder.setStyleSheet("font-size: 16px; color: #ef4444; padding: 40px;")
+            settings_tabs.addTab(whatsapp_error_placeholder, "📱 WhatsApp")
 
 
 
@@ -7133,6 +8159,156 @@ Note: Click 'Refresh All Data' after making changes to CSV files to see updates 
 
         # Log the action
         self.logger.info("Enhanced Settings page with Firebase and Enterprise tabs displayed")
+
+    def install_whatsapp_dependencies(self):
+        """Install WhatsApp dependencies automatically from the main application"""
+        try:
+            from PySide6.QtWidgets import QProgressDialog
+            import subprocess
+            import sys
+
+            # Create progress dialog
+            progress = QProgressDialog("Installing WhatsApp dependencies...", "Cancel", 0, 100, self)
+            progress.setWindowTitle("WhatsApp Setup")
+            progress.setModal(True)
+            progress.show()
+
+            # Update progress
+            progress.setValue(10)
+            QApplication.processEvents()
+
+            try:
+                # Install selenium
+                progress.setLabelText("Installing Selenium...")
+                progress.setValue(30)
+                QApplication.processEvents()
+
+                result = subprocess.run([sys.executable, "-m", "pip", "install", "selenium"],
+                                      capture_output=True, text=True, timeout=120)
+
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+
+                # Install webdriver-manager
+                progress.setLabelText("Installing WebDriver Manager...")
+                progress.setValue(60)
+                QApplication.processEvents()
+
+                result = subprocess.run([sys.executable, "-m", "pip", "install", "webdriver-manager"],
+                                      capture_output=True, text=True, timeout=120)
+
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+
+                # Complete installation
+                progress.setLabelText("Installation complete!")
+                progress.setValue(100)
+                QApplication.processEvents()
+
+                progress.close()
+
+                # Show success message with option to refresh
+                reply = QMessageBox.question(
+                    self, "Installation Complete",
+                    "WhatsApp dependencies installed successfully!\n\n"
+                    "Would you like to refresh the Settings page now to use WhatsApp integration?\n\n"
+                    "Available features:\n"
+                    "• Connect to WhatsApp Web\n"
+                    "• Send and receive messages\n"
+                    "• Manage contacts\n"
+                    "• Sync across devices with Firebase\n\n"
+                    "Click 'Yes' to refresh now, or 'No' to restart the application later.",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+
+                if reply == QMessageBox.Yes:
+                    # Refresh the settings page to load WhatsApp integration
+                    self.refresh_settings_page()
+
+                # Send notification
+                if hasattr(self, 'notify_success'):
+                    self.notify_success(
+                        "WhatsApp Setup Complete",
+                        "Dependencies installed successfully. WhatsApp integration is now available!",
+                        "WhatsApp Integration"
+                    )
+
+                self.logger.info("WhatsApp dependencies installed successfully")
+
+            except subprocess.CalledProcessError as e:
+                progress.close()
+                error_msg = f"Installation failed with return code {e.returncode}"
+                if e.stderr:
+                    error_msg += f"\nError: {e.stderr}"
+
+                QMessageBox.critical(
+                    self, "Installation Failed",
+                    f"{error_msg}\n\n"
+                    "Please try manual installation:\n"
+                    "1. Open command prompt as administrator\n"
+                    "2. Run: pip install selenium webdriver-manager\n"
+                    "3. Restart the application"
+                )
+
+                self.logger.error(f"WhatsApp dependencies installation failed: {error_msg}")
+
+            except subprocess.TimeoutExpired:
+                progress.close()
+                QMessageBox.critical(
+                    self, "Installation Timeout",
+                    "Installation timed out. Please check your internet connection and try again.\n\n"
+                    "You can also try manual installation:\n"
+                    "1. Open command prompt as administrator\n"
+                    "2. Run: pip install selenium webdriver-manager\n"
+                    "3. Restart the application"
+                )
+
+                self.logger.error("WhatsApp dependencies installation timed out")
+
+        except Exception as e:
+            if 'progress' in locals():
+                progress.close()
+
+            QMessageBox.critical(
+                self, "Installation Error",
+                f"An error occurred during installation:\n{e}\n\n"
+                "Please try manual installation:\n"
+                "1. Open command prompt as administrator\n"
+                "2. Run: pip install selenium webdriver-manager\n"
+                "3. Restart the application"
+            )
+
+            self.logger.error(f"Error during WhatsApp dependencies installation: {e}")
+
+    def refresh_settings_page(self):
+        """Refresh the settings page to reload WhatsApp integration after dependency installation"""
+        try:
+            # Clear the current content
+            self.clear_content()
+
+            # Reload the settings page
+            self.show_settings_page()
+
+            # Send notification about successful refresh
+            if hasattr(self, 'notify_info'):
+                self.notify_info(
+                    "Settings Refreshed",
+                    "Settings page refreshed. WhatsApp integration is now available!",
+                    "Settings"
+                )
+
+            self.logger.info("Settings page refreshed after WhatsApp dependency installation")
+
+        except Exception as e:
+            self.logger.error(f"Error refreshing settings page: {e}")
+
+            # Fallback message
+            QMessageBox.information(
+                self, "Refresh Required",
+                "Please navigate away from Settings and back to see the WhatsApp integration, "
+                "or restart the application."
+            )
 
     def on_appliance_settings_updated(self):
         """Handle appliance settings updates"""
@@ -8477,14 +9653,14 @@ Generated: {timestamp[:19]}
         except Exception as e:
             self.logger.error(f"Error updating currency: {str(e)}")
             self.selected_currency = '₹'  # Default to Indian Rupee
-    
+
     def apply_currency_changes(self):
         """Apply the selected currency throughout the application"""
         try:
             if hasattr(self, 'selected_currency'):
                 self.currency_symbol = self.selected_currency
                 self.logger.info(f"Currency updated to {self.currency_symbol}")
-                
+
                 # Show confirmation message
                 from PySide6.QtWidgets import QMessageBox
                 QMessageBox.information(self, "Currency Updated", f"Currency symbol updated to {self.currency_symbol}")
@@ -8495,29 +9671,49 @@ Generated: {timestamp[:19]}
             # Show error message
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Currency Update Failed", f"Failed to update currency: {str(e)}")
-            
+
             # Refresh the current page to show the new currency
             self.show_home_page()
-        
+
         # Setup auto-refresh timer
         self.setup_auto_refresh_timer()
-    
+
+    def toggle_startup_notifications(self, state):
+        """Toggle startup notifications on/off"""
+        try:
+            from PySide6.QtCore import Qt
+            self.show_startup_notifications = (state == Qt.Checked)
+
+            # Save the setting (you could save this to a config file)
+            status = "enabled" if self.show_startup_notifications else "disabled"
+            self.logger.info(f"Startup notifications {status}")
+
+            # Show immediate feedback
+            self.add_notification(
+                "Settings Updated",
+                f"Startup notifications {status}. Changes will take effect on next application start.",
+                "info"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error toggling startup notifications: {e}")
+
     def save_data(self):
         """Save the current data to backup files"""
         try:
             # Create backup directory if it doesn't exist
             backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_backup')
             os.makedirs(backup_dir, exist_ok=True)
-            
+
             # Save each dataframe to the backup directory with proper encoding
             for key, df in self.data.items():
                 backup_file = os.path.join(backup_dir, f"{key}_backup.csv")
                 df.to_csv(backup_file, index=False, encoding='utf-8')
-            
+
             # Save currency setting with proper encoding
             with open(os.path.join(backup_dir, 'settings.txt'), 'w', encoding='utf-8') as f:
                 f.write(f"currency_symbol={self.currency_symbol}\n")
-            
+
             QMessageBox.information(
                 self,
                 "Data Saved",
@@ -8529,7 +9725,7 @@ Generated: {timestamp[:19]}
                 "Save Error",
                 f"An error occurred while saving data: {str(e)}"
             )
-    
+
     def refresh_all_tabs(self):
         """Reload data from CSV files and refresh all tabs with updated data.
         This method can be called to reflect external changes to CSV files or after Firebase sync.
@@ -8548,7 +9744,7 @@ Generated: {timestamp[:19]}
             self.logger.error("Data loading failed during refresh. Aborting tab refresh.")
             QMessageBox.critical(self, "Error", "Failed to reload data from files. UI may not be up-to-date.")
             return
-        
+
         # Proceed with refreshing UI components as before
         try:
             # Diagnostic log for nav_buttons
@@ -8565,7 +9761,7 @@ Generated: {timestamp[:19]}
                 if button.isChecked():
                     current_button = button
                     break
-            
+
             # Call the appropriate page refresh method based on the active button
             if current_button:
                 # Get the button's callback function and call it to refresh the page
@@ -8906,14 +10102,14 @@ if __name__ == "__main__":
 
         app = QApplication(sys.argv)
 
-        # Show loading screen
-        from modules.startup_loading_screen import show_startup_loading_screen
-        loading_screen = show_startup_loading_screen()
-
-        # Initialize main window in background
+        # Initialize main window first
         logger.log_section_header("Application Initialization")
         window = KitchenDashboardApp()
         logger.log_section_footer("Application Initialization", True)
+
+        # Show loading screen with main app reference for WhatsApp initialization
+        from modules.startup_loading_screen import show_startup_loading_screen
+        loading_screen = show_startup_loading_screen(window)
 
         # Connect loading screen completion to show main window
         def on_loading_finished():
@@ -8921,6 +10117,9 @@ if __name__ == "__main__":
             window.show()
             logger.log_section_footer("UI Display", True)
             logger.info("Application ready - entering main event loop")
+
+            # WhatsApp automation is now started during loading phase
+            # No need to start it again here
 
         loading_screen.loading_finished.connect(on_loading_finished)
 

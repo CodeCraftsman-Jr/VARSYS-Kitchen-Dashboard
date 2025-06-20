@@ -949,6 +949,40 @@ class OptimizedFirebaseManager(QObject):
             self.logger.error(f"Error getting cloud data summary: {e}")
             return {}
 
+    def get_collection_data(self, collection_name: str, user_id: str = None) -> List[Dict]:
+        """Get data from a specific collection for migration compatibility"""
+        if not self.db or not self.current_session:
+            self.logger.error("Firebase not initialized or user not authenticated")
+            return []
+
+        try:
+            # Use current session user_id if not provided
+            if not user_id:
+                user_id = self.current_session.user_id
+
+            # Get collection reference
+            collection_ref = (self.db.collection('users')
+                            .document(user_id)
+                            .collection(collection_name))
+
+            # Get all documents
+            docs = collection_ref.stream()
+            records = []
+
+            for doc in docs:
+                doc_data = doc.to_dict()
+                # Remove metadata fields
+                doc_data.pop('_sync_timestamp', None)
+                doc_data.pop('_record_hash', None)
+                records.append(doc_data)
+
+            self.logger.info(f"Retrieved {len(records)} records from {collection_name}")
+            return records
+
+        except Exception as e:
+            self.logger.error(f"Error getting collection data for {collection_name}: {e}")
+            return []
+
     def clear_user_cloud_data(self, user_id: str = None, collections: List[str] = None) -> bool:
         """Clear user's cloud data (with caution)"""
         if not self.db or not self.current_session:

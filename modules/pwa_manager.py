@@ -223,12 +223,13 @@ class PWAManager(QObject):
             # Simple connection check - in a real app, you might ping a server
             # For now, we'll simulate connection status
             import socket
-            
+
             # Try to connect to a reliable server
             socket.create_connection(("8.8.8.8", 53), timeout=3)
             new_status = ConnectionStatus.ONLINE
-            
-        except (socket.error, OSError):
+
+        except Exception:
+            # Catch all exceptions including import errors and socket errors
             new_status = ConnectionStatus.OFFLINE
         
         if new_status != self.connection_status:

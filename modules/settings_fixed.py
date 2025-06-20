@@ -7,7 +7,7 @@ including currency settings and data management.
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                               QComboBox, QPushButton, QGroupBox, QFormLayout,
                               QMessageBox, QFileDialog, QTextEdit, QSplitter,
-                              QDoubleSpinBox)
+                              QDoubleSpinBox, QProgressDialog, QApplication)
 from PySide6.QtCore import Qt, Signal
 import logging
 import traceback
@@ -409,30 +409,105 @@ class SettingsWidget(QWidget):
             self.logger.error(f"SettingsWidget: Failed to trigger manual sync: {detailed_error} (summary).")
 
     def handle_refresh_data_request(self):
-        """Handles the request to refresh data from files."""
-        self.logger.info("Refresh Data from Files button clicked. Requesting main app to refresh.")
-        if self.main_app and hasattr(self.main_app, 'refresh_all_tabs'):
-            self.main_app.refresh_all_tabs()
-            QMessageBox.information(self, "Data Refresh", "Application data has been reloaded from files.")
-            self.logger.info("Main app refresh_all_tabs called successfully.")
-        else:
-            # Detailed logging for why the call might fail
-            detailed_error = "Main application link or method unavailable."
+        """Enhanced data refresh with progress indicator and comprehensive error handling."""
+        from PySide6.QtWidgets import QProgressDialog
+        from PySide6.QtCore import QTimer
+
+        self.logger.info("Enhanced refresh data from files initiated.")
+
+        # Create progress dialog
+        progress = QProgressDialog("Refreshing data from CSV files...", "Cancel", 0, 100, self)
+        progress.setWindowTitle("Data Refresh")
+        progress.setModal(True)
+        progress.setMinimumDuration(0)
+        progress.show()
+
+        try:
+            # Step 1: Validate main app connection
+            progress.setValue(10)
+            progress.setLabelText("Validating application connection...")
+            QApplication.processEvents()
+
             if not self.main_app:
-                detailed_error = "self.main_app is None."
-                self.logger.error(f"Failed to call refresh_all_tabs: {detailed_error}")
-            elif not hasattr(self.main_app, 'refresh_all_tabs'):
-                detailed_error = f"self.main_app (type: {type(self.main_app)}) does not have 'refresh_all_tabs'."
-                self.logger.error(f"Failed to call refresh_all_tabs: {detailed_error}")
-                # Log attributes only if main_app exists but lacks the method
-                self.logger.error("Attributes of main_app object: " + str(dir(self.main_app)))
-            else: # Should not happen if the main condition failed, but as a fallback
-                detailed_error = f"Unknown issue with self.main_app (type: {type(self.main_app)})."
-                self.logger.error(f"Failed to call refresh_all_tabs on main_app for an unknown reason: {detailed_error}")
-            
-            QMessageBox.warning(self, "Error", f"Could not trigger data refresh. {detailed_error}")
-            # Summary error log
-            self.logger.error(f"Failed to call refresh_all_tabs on main_app (summary). {detailed_error}")
+                raise Exception("Main application reference is not available.")
+
+            if not hasattr(self.main_app, 'refresh_all_tabs'):
+                raise Exception(f"Main application does not have 'refresh_all_tabs' method. Available methods: {[attr for attr in dir(self.main_app) if not attr.startswith('_')]}")
+
+            # Step 2: Check data directory
+            progress.setValue(20)
+            progress.setLabelText("Checking data directory...")
+            QApplication.processEvents()
+
+            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
+            if not os.path.exists(data_dir):
+                raise Exception(f"Data directory not found: {data_dir}")
+
+            # Step 3: Count CSV files
+            progress.setValue(30)
+            progress.setLabelText("Scanning CSV files...")
+            QApplication.processEvents()
+
+            csv_files = [f for f in os.listdir(data_dir) if f.endswith('.csv')]
+            if not csv_files:
+                raise Exception("No CSV files found in data directory.")
+
+            self.logger.info(f"Found {len(csv_files)} CSV files to refresh: {csv_files}")
+
+            # Step 4: Reload data
+            progress.setValue(50)
+            progress.setLabelText("Reloading data from CSV files...")
+            QApplication.processEvents()
+
+            # Call the main app's refresh method
+            self.main_app.refresh_all_tabs()
+
+            # Step 5: Verify data reload
+            progress.setValue(80)
+            progress.setLabelText("Verifying data integrity...")
+            QApplication.processEvents()
+
+            # Check if data was actually reloaded
+            if hasattr(self.main_app, 'data') and self.main_app.data:
+                loaded_tables = len(self.main_app.data)
+                self.logger.info(f"Data refresh completed. {loaded_tables} tables loaded.")
+            else:
+                self.logger.warning("Data refresh completed but data verification failed.")
+
+            # Step 6: Complete
+            progress.setValue(100)
+            progress.setLabelText("Refresh complete!")
+            QApplication.processEvents()
+
+            # Close progress dialog
+            progress.close()
+
+            # Show success message
+            QMessageBox.information(
+                self,
+                "Data Refresh Complete",
+                f"✅ Successfully refreshed data from {len(csv_files)} CSV files.\n\n"
+                f"All module displays have been updated with the latest data."
+            )
+
+            self.logger.info("Enhanced data refresh completed successfully.")
+
+        except Exception as e:
+            progress.close()
+            error_msg = str(e)
+            self.logger.error(f"Enhanced data refresh failed: {error_msg}")
+
+            QMessageBox.critical(
+                self,
+                "Data Refresh Failed",
+                f"❌ Failed to refresh data from files.\n\n"
+                f"Error: {error_msg}\n\n"
+                f"Please check the logs for more details."
+            )
+
+        finally:
+            if progress.isVisible():
+                progress.close()
 
     def update_currency(self, index):
         """Store the selected currency symbol"""

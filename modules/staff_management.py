@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QGridLayout, QFrame, QScrollArea)
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QFont, QColor
+from modules.universal_table_widget import UniversalTableWidget
 
 class StaffManagementWidget(QWidget):
     """Main widget for staff management system"""
@@ -100,19 +101,18 @@ class StaffManagementWidget(QWidget):
         
         layout.addLayout(header_layout)
         
-        # Staff table
-        self.staff_table = QTableWidget()
-        self.staff_table.setColumnCount(8)
-        self.staff_table.setHorizontalHeaderLabels([
-            "ID", "Name", "Role", "Contact", "Email", "Hire Date", "Status", "Notes"
-        ])
-        
-        # Configure table
-        header = self.staff_table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Interactive)
-        header.setStretchLastSection(True)
-        
-        layout.addWidget(self.staff_table)
+        # Staff table with universal filtering and sorting
+        staff_columns = ["ID", "Name", "Role", "Contact", "Email", "Hire Date", "Status", "Notes"]
+        self.staff_table_widget = UniversalTableWidget(
+            data=self.data.get('staff', pd.DataFrame()),
+            columns=staff_columns,
+            parent=self
+        )
+
+        # Connect signals for row selection
+        self.staff_table_widget.row_selected.connect(self.on_staff_row_selected)
+
+        layout.addWidget(self.staff_table_widget)
         
         # Action buttons
         button_layout = QHBoxLayout()
@@ -394,26 +394,50 @@ class StaffManagementWidget(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to open task assignment dialog: {str(e)}")
     
     def load_staff_data(self):
-        """Load staff data into table"""
+        """Load staff data into universal table widget"""
         try:
             if 'staff' not in self.data or self.data['staff'].empty:
+                self.staff_table_widget.update_data(pd.DataFrame())
                 return
-            
-            staff_df = self.data['staff']
-            self.staff_table.setRowCount(len(staff_df))
-            
-            for row, (_, staff) in enumerate(staff_df.iterrows()):
-                self.staff_table.setItem(row, 0, QTableWidgetItem(str(staff.get('staff_id', ''))))
-                self.staff_table.setItem(row, 1, QTableWidgetItem(str(staff.get('staff_name', ''))))
-                self.staff_table.setItem(row, 2, QTableWidgetItem(str(staff.get('role', ''))))
-                self.staff_table.setItem(row, 3, QTableWidgetItem(str(staff.get('contact_number', ''))))
-                self.staff_table.setItem(row, 4, QTableWidgetItem(str(staff.get('email', ''))))
-                self.staff_table.setItem(row, 5, QTableWidgetItem(str(staff.get('hire_date', ''))))
-                self.staff_table.setItem(row, 6, QTableWidgetItem(str(staff.get('status', ''))))
-                self.staff_table.setItem(row, 7, QTableWidgetItem(str(staff.get('notes', ''))))
-                
+
+            staff_df = self.data['staff'].copy()
+
+            # Ensure all required columns exist and rename for display
+            column_mapping = {
+                'staff_id': 'ID',
+                'staff_name': 'Name',
+                'role': 'Role',
+                'contact_number': 'Contact',
+                'email': 'Email',
+                'hire_date': 'Hire Date',
+                'status': 'Status',
+                'notes': 'Notes'
+            }
+
+            # Create display dataframe with proper column names
+            display_data = pd.DataFrame()
+            for original_col, display_col in column_mapping.items():
+                if original_col in staff_df.columns:
+                    display_data[display_col] = staff_df[original_col]
+                else:
+                    display_data[display_col] = ''
+
+            # Update the universal table widget
+            self.staff_table_widget.update_data(display_data)
+            print(f"✅ Updated staff table with {len(display_data)} staff members")
+
         except Exception as e:
             self.logger.error(f"Error loading staff data: {e}")
+            self.staff_table_widget.update_data(pd.DataFrame())
+
+    def on_staff_row_selected(self, row_index):
+        """Handle staff row selection"""
+        try:
+            if 'staff' in self.data and row_index >= 0 and row_index < len(self.data['staff']):
+                selected_staff = self.data['staff'].iloc[row_index]
+                print(f"Selected staff: {selected_staff.get('staff_name', 'Unknown')} - {selected_staff.get('role', 'No role')}")
+        except Exception as e:
+            print(f"Error handling staff row selection: {e}")
 
     def load_task_assignments(self):
         """Load task assignments into table"""
@@ -466,47 +490,61 @@ class StaffManagementWidget(QWidget):
 
     def edit_staff_member(self):
         """Edit selected staff member"""
-        current_row = self.staff_table.currentRow()
+        current_row = self.staff_table_widget.table.currentRow()
         if current_row < 0:
             QMessageBox.warning(self, "No Selection", "Please select a staff member to edit.")
             return
 
-        staff_id = self.staff_table.item(current_row, 0).text()
-        dialog = StaffDialog(self.data, staff_id=staff_id, parent=self)
-        if dialog.exec() == QDialog.Accepted:
-            self.load_staff_data()
-            self.data_changed.emit()
+        try:
+            # Get staff ID from the filtered data
+            if current_row < len(self.staff_table_widget.filtered_data):
+                display_row = self.staff_table_widget.filtered_data.iloc[current_row]
+                staff_id = str(display_row['ID'])
+
+                dialog = StaffDialog(self.data, staff_id=staff_id, parent=self)
+                if dialog.exec() == QDialog.Accepted:
+                    self.load_staff_data()
+                    self.data_changed.emit()
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to edit staff member: {e}")
 
     def delete_staff_member(self):
         """Delete selected staff member"""
-        current_row = self.staff_table.currentRow()
+        current_row = self.staff_table_widget.table.currentRow()
         if current_row < 0:
             QMessageBox.warning(self, "No Selection", "Please select a staff member to delete.")
             return
 
-        staff_name = self.staff_table.item(current_row, 1).text()
-        reply = QMessageBox.question(
-            self, "Confirm Delete",
-            f"Are you sure you want to delete staff member '{staff_name}'?",
-            QMessageBox.Yes | QMessageBox.No
-        )
+        try:
+            # Get staff info from the filtered data
+            if current_row < len(self.staff_table_widget.filtered_data):
+                display_row = self.staff_table_widget.filtered_data.iloc[current_row]
+                staff_id = str(display_row['ID'])
+                staff_name = str(display_row['Name'])
 
-        if reply == QMessageBox.Yes:
-            staff_id = self.staff_table.item(current_row, 0).text()
+                reply = QMessageBox.question(
+                    self, "Confirm Delete",
+                    f"Are you sure you want to delete staff member '{staff_name}'?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
 
-            # Remove from dataframe
-            if 'staff' in self.data:
-                self.data['staff'] = self.data['staff'][
-                    self.data['staff']['staff_id'] != int(staff_id)
-                ]
+                if reply == QMessageBox.Yes:
+                    # Remove from dataframe
+                    if 'staff' in self.data:
+                        self.data['staff'] = self.data['staff'][
+                            self.data['staff']['staff_id'] != int(staff_id)
+                        ]
 
-                # Save to CSV
-                self.data['staff'].to_csv('data/staff.csv', index=False)
+                        # Save to CSV
+                        self.data['staff'].to_csv('data/staff.csv', index=False)
 
-                self.load_staff_data()
-                self.data_changed.emit()
+                        # Refresh display
+                        self.load_staff_data()
+                        self.data_changed.emit()
 
-                QMessageBox.information(self, "Success", f"Staff member '{staff_name}' deleted successfully.")
+                        QMessageBox.information(self, "Success", f"Staff member '{staff_name}' deleted successfully.")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to delete staff member: {e}")
 
     def assign_task(self):
         """Assign a task to staff member"""

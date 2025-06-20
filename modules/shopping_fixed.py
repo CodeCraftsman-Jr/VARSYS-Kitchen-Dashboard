@@ -1427,47 +1427,90 @@ class ShoppingWidget(QWidget):
                 'purchase_count', 'total_spent', 'last_purchase_date', 'last_purchase_price'
             ])
 
-        # Find the item in inventory
+        # Find the item in inventory using improved matching logic
         inventory_df = self.data['inventory']
-        matching_inventory = inventory_df[inventory_df['item_name'] == item_name]
+
+        # First try exact name match
+        matching_inventory = inventory_df[inventory_df['item_name'].str.lower().str.strip() == item_name.lower().strip()]
+
+        # If no exact match, try fuzzy matching for similar names
+        if len(matching_inventory) == 0:
+            # Try partial matching (contains)
+            matching_inventory = inventory_df[inventory_df['item_name'].str.lower().str.contains(item_name.lower().strip(), na=False)]
+
+            if len(matching_inventory) > 1:
+                # Multiple matches found - use the most recent one (highest item_id)
+                matching_inventory = matching_inventory.loc[matching_inventory['item_id'].idxmax():matching_inventory['item_id'].idxmax()]
+                print(f"🔍 Multiple matches found for '{item_name}', using most recent: {matching_inventory.iloc[0]['item_name']}")
 
         if len(matching_inventory) > 0:
             # Item exists in inventory - update it
             item_id = matching_inventory.iloc[0]['item_id']
+            existing_name = matching_inventory.iloc[0]['item_name']
 
-            # Get current quantities
-            current_qty_purchased = matching_inventory.iloc[0].get('qty_purchased', 0) if pd.notna(matching_inventory.iloc[0].get('qty_purchased', 0)) else 0
-            current_qty_used = matching_inventory.iloc[0].get('qty_used', 0) if pd.notna(matching_inventory.iloc[0].get('qty_used', 0)) else 0
+            print(f"📦 Found existing inventory item: ID {item_id} - '{existing_name}'")
+
+            # Get current quantities with better null handling
+            current_qty_purchased = matching_inventory.iloc[0].get('qty_purchased', 0)
+            current_qty_used = matching_inventory.iloc[0].get('qty_used', 0)
+
+            # Handle NaN values properly
+            if pd.isna(current_qty_purchased) or current_qty_purchased is None:
+                current_qty_purchased = 0
+            if pd.isna(current_qty_used) or current_qty_used is None:
+                current_qty_used = 0
 
             # Update quantities
             new_qty_purchased = float(current_qty_purchased) + quantity
             new_quantity = new_qty_purchased - float(current_qty_used)
 
-            # Update inventory
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'qty_purchased'] = new_qty_purchased
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'quantity'] = new_quantity
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'price_per_unit'] = current_price
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'total_value'] = new_quantity * current_price
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'last_purchase_date'] = datetime.now().strftime('%Y-%m-%d')
-            self.data['inventory'].loc[self.data['inventory']['item_id'] == item_id, 'last_purchase_price'] = current_price
+            # Update inventory with comprehensive field updates
+            mask = self.data['inventory']['item_id'] == item_id
+            self.data['inventory'].loc[mask, 'qty_purchased'] = new_qty_purchased
+            self.data['inventory'].loc[mask, 'quantity'] = new_quantity
+            self.data['inventory'].loc[mask, 'price_per_unit'] = current_price
+            self.data['inventory'].loc[mask, 'total_value'] = new_quantity * current_price
+            self.data['inventory'].loc[mask, 'last_purchase_date'] = datetime.now().strftime('%Y-%m-%d')
+            self.data['inventory'].loc[mask, 'last_purchase_price'] = current_price
+            self.data['inventory'].loc[mask, 'last_updated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            print(f"Updated inventory: {item_name} - New qty: {new_quantity}, Price: ₹{current_price}")
+            # Update purchase tracking
+            self.update_purchase_tracking(item_id, current_price, item_name)
+
+            print(f"✅ Updated inventory: {existing_name} - New qty: {new_quantity}, Price: ₹{current_price}")
         else:
             # Item doesn't exist in inventory - create new entry
-            # Get next item_id
-            if len(inventory_df) > 0:
-                next_id = inventory_df['item_id'].max() + 1
+            # Get next item_id safely
+            if len(inventory_df) > 0 and not inventory_df['item_id'].empty:
+                next_id = int(inventory_df['item_id'].max()) + 1
             else:
                 next_id = 1
 
-            # Get category from items table if available
-            category = "Unknown"
-            if 'items' in self.data and len(self.data['items']) > 0:
-                items_match = self.data['items'][self.data['items']['item_name'] == item_name]
+            print(f"🆕 Creating new inventory item: '{item_name}' with ID {next_id}")
+
+            # Get category from shopping list or items table
+            category = shopping_row.get('category', 'Unknown')
+            if category == 'Unknown' and 'items' in self.data and len(self.data['items']) > 0:
+                items_match = self.data['items'][self.data['items']['item_name'].str.lower().str.strip() == item_name.lower().strip()]
                 if len(items_match) > 0:
                     category = items_match.iloc[0].get('category', 'Unknown')
 
-            # Create new inventory entry
+            # Set expiry date based on category (improved logic)
+            expiry_date = ''
+            if category.lower() in ['dairy', 'meat', 'poultry', 'seafood', 'prepared foods']:
+                # Perishable items - set expiry to 3 days from now
+                from datetime import timedelta
+                expiry_date = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')
+            elif category.lower() in ['vegetables', 'fruits']:
+                # Fresh produce - set expiry to 1 week from now
+                from datetime import timedelta
+                expiry_date = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+            elif category.lower() in ['spices', 'condiments', 'oils']:
+                # Long-lasting items - set expiry to 1 year from now
+                from datetime import timedelta
+                expiry_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+
+            # Create new inventory entry with comprehensive data
             new_inventory_item = {
                 'item_id': next_id,
                 'item_name': item_name,
@@ -1476,26 +1519,33 @@ class ShoppingWidget(QWidget):
                 'unit': unit,
                 'price_per_unit': current_price,
                 'location': shopping_row.get('location', 'Local Market'),
-                'expiry_date': '',
-                'reorder_level': 10,
+                'expiry_date': expiry_date,
+                'reorder_level': max(quantity * 0.2, 10),  # 20% of purchased quantity or minimum 10
                 'total_value': quantity * current_price,
                 'price': current_price,
                 'qty_purchased': quantity,
                 'qty_used': 0,
                 'avg_price': current_price,
-                'description': f"Added from shopping list purchase",
+                'description': f"Added from shopping list purchase on {datetime.now().strftime('%Y-%m-%d')}",
                 'default_cost': current_price,
                 'purchase_count': 1,
                 'total_spent': current_price * quantity,
                 'last_purchase_date': datetime.now().strftime('%Y-%m-%d'),
-                'last_purchase_price': current_price
+                'last_purchase_price': current_price,
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
+
+            # Verify item_id uniqueness before adding
+            while next_id in inventory_df['item_id'].values:
+                next_id += 1
+                new_inventory_item['item_id'] = next_id
+                print(f"⚠️ ID conflict detected, using next available ID: {next_id}")
 
             # Add to inventory
             new_row = pd.DataFrame([new_inventory_item])
             self.data['inventory'] = pd.concat([self.data['inventory'], new_row], ignore_index=True)
 
-            print(f"Added to inventory: {item_name} - Qty: {quantity}, Price: ₹{current_price}")
+            print(f"✅ Added to inventory: {item_name} - ID: {next_id}, Qty: {quantity}, Price: ₹{current_price}, Expiry: {expiry_date or 'N/A'}")
 
         # Save inventory to CSV
         self.data['inventory'].to_csv('data/inventory.csv', index=False)
